@@ -235,6 +235,7 @@ scene("park", () => {
         anchor("right"),
         color(255, 240, 80),
         outline(4, rgb(0, 0, 0)),
+        opacity(1),
         lifespan(1.6, { fade: 0.4 }),
       ]);
       wait(1.8, triggerCracks);
