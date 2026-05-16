@@ -53,6 +53,7 @@ scene("park", () => {
     pos(width() * 0.25, height() * 0.45),
     scale(0.18),
     anchor("center"),
+    area({ scale: 0.5 }),
     "friend",
     { name: "Annie" },
   ]));
@@ -71,10 +72,11 @@ scene("park", () => {
 
   // The batter (one of the friends, standing at home plate)
   friends.push(add([
-    rect(28, 44),
-    pos(batterPos.sub(14, 22)),
+    rect(40, 60),
+    pos(batterPos.sub(20, 30)),
     color(160, 90, 50),
     anchor("topleft"),
+    area(),
     "friend",
     "batter",
     { name: "Batter" },
@@ -95,6 +97,7 @@ scene("park", () => {
       pos(width() * p.x, height() * p.y),
       color(p.c),
       anchor("center"),
+      area(),
       "friend",
       { name: p.name },
     ]));
