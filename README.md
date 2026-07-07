@@ -1,37 +1,175 @@
-# nua-roguelike
+# NUA: The Roguelike — playable build
 
-A browser-based top-down action roguelike. Surprise 10-year anniversary gift for the NUA friend group.
+**Status:** Tech proof DONE, plus a UI polish pass (June 2026). The full
+game skeleton runs end to end: title → character select → Victoria Park
+tutorial → 5 chapters × 5 areas → Old Age finale → ending message screen.
 
-**Status:** Pre-production. Tech stack locked (Kaboom.js + GitHub Pages). Victoria Park tutorial vertical slice in progress.
+**The UI look:** translucent rounded panels, gold accent colour, soft
+glows, smooth animated bars, cinematic vignette, slide/fade motion on
+everything. All drawn in code (core/ui.js + core/art.js) - no image
+files, so it survives the real art pass untouched.
 
-**Play it:** URL will appear here once GitHub Pages is enabled.
-
-**Confidential:** Do not share. The intended audience does not know this exists.
+Everything visual is a placeholder except the Ollie and Annie sprites.
+Everything written (jokes, lines, the ending message) is placeholder text
+flagged for your review.
 
 ---
 
-## Repo layout
+## 1. HOW TO PLAY IT RIGHT NOW
+
+Two options:
+
+1. **Double-click `index.html`** — opens in your browser. Needs internet
+   (the game engine loads from a CDN). That's it.
+2. When you're ready for phone testing: put this folder in your GitHub repo
+   and turn on GitHub Pages (steps in `TECH_STACK.md` section 4).
+
+Best on desktop in a normal browser window. On a phone, turn it sideways
+(landscape) — portrait works but everything is small.
+
+---
+
+## 2. CONTROLS
+
+**Desktop**
+- Move: WASD or arrow keys
+- Aim: mouse (your character fires automatically when enemies are alive)
+- Companion special: SPACE (when the yellow meter is full)
+- Swap companion: 1 / 2 / 3 / 4, or Q / E to cycle, or click their portrait
+
+**Phone**
+- Move: touch and drag on the left half of the screen
+- Aim: automatic (locks to the nearest enemy)
+- Special: tap the SP button, bottom right
+- Swap companion: tap their portrait, top right
+
+---
+
+## 3. TESTING CHEATS (for you, not the friends)
+
+While playing:
+- `n` — sound on/off (this one's for everyone, not just testing)
+- `k` — kill everything in the room
+- `h` — full heal
+- `m` — fill the special meter
+- `g` — god mode on/off
+- `]` — skip to the next area
+
+From the browser console (right-click → Inspect → Console):
+- `dev.area(3, 5)` — jump straight to the Chapter 3 boss
+- `dev.area(5, 5)` — jump to the finale
+- `dev.tutorial()` — jump to Victoria Park
+- `dev.ending()` — jump to the ending screen
+
+---
+
+## 4. WHAT IS PLACEHOLDER vs REAL
+
+**Real and staying:**
+- The whole game structure (all 25 areas, bosses, companions, specials)
+- Ollie and Annie sprites (embedded, shrunk to game size)
+- Companion passives matching the roster (Lucy +2 HP, Cal +25% speed, etc.)
+- Companions trail behind you on the field in a chain (gold glow marks
+  the selected one). Cosmetic only - they can't be hurt or block shots
+- All spoken dialogue appears as a speech bubble above the actual
+  speaker, outlined in their colour, and follows them as they move.
+  Simultaneous lines stack instead of overlapping. If a speaker isn't
+  on the field, the line falls back to a named subtitle. Damage numbers
+  and system text stay as plain floating text so speech stands out
+- Pair interactions (Cal/Sam/Lucy "milky lady", Josh's lines, "Silly
+  boys!", Ollie+Lucy hug hearts, Josh+Sam's rare easy-to-miss kiss)
+- Door-locks-until-room-clear, randomised enemies and companions per run
+
+**Placeholder — needs your input or future sessions:**
+- Game title: "TEN YEARS" — pick the real one
+- Ending message — marked in `scenes/ending.js`, write it when ready
+- All 8 other character sprites (generated colour figures for now)
+- All enemy designs — named placeholders ("Seagull", "Mercy Bouncer"...)
+  using 4 basic behaviours. Real enemy design is its own session
+- All map layouts — correct shapes and feel per LEVEL_DESIGN.md, but drawn
+  as simple ASCII grids. Easy to redraw (see section 5)
+- Special attack cutscene frames — currently a text banner. Real illustrated
+  frames come from the art sessions
+- Chat-up lines, Josh's non-sequiturs, Ana's Spanish line — all marked
+  PLACEHOLDER in `data/characters.js`. Rewrite with real inside jokes
+- All balance numbers (damage, HP, boss difficulty, run length). Current run
+  is much shorter than the 1-hour target - pacing comes later
+- Sound effects are IN (code-generated retro synth in `core/sfx.js`):
+  shots, hits, hurt, pickups, recruit jingle, special riser, boss roar,
+  Sam's fart, the car honk, menu blips. Press N to mute (remembered).
+  The 8-bit soundtrack (real songs) is still its own session
+- Megan Whiteside NPC stands in Propaganda with a PLACEHOLDER greeting
+- New easter egg dialogue: Lucy's Geordie lines, Jess's blunt one-liners,
+  Ana's ocean lines near water, Adam's "Watch this.", the Sam+Josh
+  haircut exchange - all PLACEHOLDER wording for Ollie to rewrite
+
+---
+
+## 5. WHICH FILE DOES WHAT
 
 ```
-.
-├── index.html              ← entry point, loaded by GitHub Pages
-├── game.js                 ← main game code
-├── scenes/                 ← one file per scene
-├── characters/             ← character definitions
-├── sprites/                ← character sprite PNGs
-└── assets/                 ← tile sets, UI, cutscene frames
+nua-roguelike/
+├── index.html            loads everything, in order
+├── game.js               starts the game + dev jump helpers
+├── data/
+│   ├── characters.js     ← all 10 friends: passives, specials, lines
+│   └── chapters.js       ← every chapter, area map, enemy set, boss
+├── core/
+│   ├── boot.js           engine start, shared state, base stats
+│   ├── sprites-real.js   Ollie + Annie sprites (embedded as data)
+│   ├── art.js            generates the placeholder sprites
+│   ├── player.js         movement, aiming, auto-attack, damage
+│   ├── enemies.js        enemy behaviours + boss patterns
+│   ├── companions.js     recruitment, specials, easter eggs
+│   └── ui.js             hearts, meter, portraits, touch controls
+└── scenes/
+    ├── title.js          title screen
+    ├── select.js         character select
+    ├── tutorial.js       Victoria Park + the cracks cutscene
+    ├── area.js           runs every gameplay area + the finale
+    └── ending.js         message, stats, What You Missed
 ```
 
-## How to update the game
+The maps in `data/chapters.js` are text drawings — `=` wall, `o` obstacle,
+`E` enemy spawn, `P` player start, `X` exit, `C` companion, `B` boss.
+Change the text, refresh the browser, the level changes.
 
-1. Open this repo on github.com.
-2. Click the file you want to edit (or click **Add file → Create new file** for a new one).
-3. Paste the new contents.
-4. Scroll down, click **Commit changes**.
-5. Wait ~30 seconds. The live URL updates automatically.
+---
 
-That's it. No terminal, no install.
+## 6. SWAPPING IN REAL SPRITES LATER
 
-## Design docs
+When a new character sprite is approved (1024px PNG, transparent
+background, per the workflow in PROJECT_CONTEXT.md section 6):
+give it to Claude in a build session and it gets embedded the same way
+as Ollie's and Annie's. Nothing else needs to change — the game scales
+all sprites to the right height automatically.
 
-The design docs live in Ollie's local project folder, not in this repo. The repo only holds the code and assets that go into the live build.
+---
+
+## 7. ENTER THE GUNGEON NOTES (from research, June 2026)
+
+- Gungeon characters are ~30px on screen; ours land at 34-46px. Close enough
+- Gungeon's camera leans toward your aim cursor — already in (desktop only)
+- Gungeon locks doors until the room is cleared — already in
+- Gungeon's signature move is the dodge roll with invincibility frames.
+  Our locked design is auto-attack with movement focus instead. If combat
+  feels flat in playtesting, a dodge roll is the first thing to consider
+  adding — raise it in the Core Mechanics session
+
+---
+
+## 8. A NOTE IN index.html
+
+There's a tiny script at the top of `index.html` that keeps the game loop
+alive when the browser tab is hidden. Players will never notice it - it
+exists so automated testing can drive the game off-screen. Leave it in.
+
+## 9. KNOWN ROUGH EDGES
+
+- Boss fights: patterns work but bosses wander a bit aimlessly between them
+- Side-scrolling areas (Norwich dash, Thames walk) use the same camera as
+  open areas — they work, but don't feel "urgent" yet
+- The park restoration at the finale is covered by the fade to white rather
+  than shown — decide later if it deserves its own moment
+- Death restarts the current chapter (companions kept). Friendly, not
+  hardcore — flag if you want it harsher
