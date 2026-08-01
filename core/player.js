@@ -13,7 +13,7 @@ PLAYER.make = (spawnPos) => {
   G.run.hp = Math.min(G.run.hp, G.stats().maxHp);
 
   const p = add([
-    ...ART.charComps(c.id, 42),
+    ...ART.charComps(c.id, G.charH()),
     pos(spawnPos),
     area({ scale: 0.6 }),
     body(),
@@ -94,10 +94,10 @@ PLAYER.fire = (p, dir, s) => {
   const c = G.playerChar();
   SFX.play("shoot");
   add([
-    rect(11, 11, { radius: 3 }),
+    rect(G.charH(0.26), G.charH(0.26), { radius: 3 }),
     color(c.weapon.color[0], c.weapon.color[1], c.weapon.color[2]),
     outline(1, rgb(20, 20, 25)),
-    pos(p.pos.add(dir.scale(26))),
+    pos(p.pos.add(dir.scale(G.charH(0.62)))),   // leaves the hand, not the chest
     anchor("center"),
     rotate(rand(0, 360)),
     area(),

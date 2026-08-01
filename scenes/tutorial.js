@@ -23,7 +23,7 @@ scene("tutorial", () => {
     const p = i === 0
       ? batterPos
       : m.playerSpawn.add(rand(-60, 320), rand(-260, -40));
-    const f = add([...ART.charComps(c.id, 40), pos(p), z(44), opacity(1), "friend", { charId: c.id }]);
+    const f = add([...ART.charComps(c.id, G.charH(0.95)), pos(p), z(44), opacity(1), "friend", { charId: c.id }]);
     friends.push(f);
   });
 

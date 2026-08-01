@@ -74,9 +74,13 @@ const GONZOS_PLATE = {
   // Two ways in, both marked on Ollie's annotated screenshot.
   // Top four: the doorway beside the bar, where the stairs come down.
   // Bottom four: the corridor mouth at the bottom of the room.
+  //
+  // These are held clear of the walls by more than half the width of the
+  // widest enemy (the brute), so nothing ever arrives inside the scenery.
+  // If G.CHAR_H goes up, check them again.
   enemySpawns: [
-    [19.5, 4.9], [19.5, 5.9], [20.4, 5.3], [20.4, 6.4],
-    [10.6, 17.2], [11.5, 17.2], [12.4, 17.2], [13.2, 17.2],
+    [19.9, 5.4], [20.5, 5.4], [19.9, 6.5], [20.5, 6.5],
+    [10.6, 17.0], [11.5, 17.0], [12.4, 17.0], [13.2, 17.0],
   ],
 
   // Way out, bottom left, past the toilets. Sits flush with the bottom

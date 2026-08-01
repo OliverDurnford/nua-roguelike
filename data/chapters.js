@@ -53,7 +53,7 @@ const CHAPTERS = [
       { type: "brute",   name: "Mercy Bouncer",      color: [50, 50, 60] },
       { type: "shooter", name: "Spilled Trebles",    color: [120, 220, 120] },
     ],
-    boss: { name: "THE OBNOXIOUS DJ", hp: 90, size: 84, color: [160, 70, 220], patterns: ["radial", "aimed", "spawn"], speed: 38 },
+    boss: { name: "THE OBNOXIOUS DJ", hp: 90, size: G.charH(2), color: [160, 70, 220], patterns: ["radial", "aimed", "spawn"], speed: 38 },
     areas: [
       {
         // Real painted level, not an ASCII placeholder. Geometry and
@@ -152,7 +152,7 @@ const CHAPTERS = [
       { type: "brute",   name: "Noise Complaint", color: [120, 80, 160] },
       { type: "chaser",  name: "Harsh Crit",      color: [120, 120, 130] },
     ],
-    boss: { name: "BIG DICK DEAN", hp: 120, size: 84, color: [120, 30, 40], patterns: ["charge", "aimed", "spawn"], speed: 55 },
+    boss: { name: "BIG DICK DEAN", hp: 120, size: G.charH(2), color: [120, 30, 40], patterns: ["charge", "aimed", "spawn"], speed: 55 },
     areas: [
       {
         name: "Norwich Market", feel: "colourful stalls, weave for cover", enemyBudget: 6,
@@ -252,7 +252,7 @@ const CHAPTERS = [
       { type: "runner",  name: "Caffeine Shakes",  color: [140, 90, 50] },
       { type: "shooter", name: "Hand-In Reminder", color: [220, 80, 80] },
     ],
-    boss: { name: "BIG DICK DEAN: GRADUATION FORM", hp: 150, size: 88, color: [90, 20, 30], patterns: ["charge", "radial", "aimed"], speed: 70 },
+    boss: { name: "BIG DICK DEAN: GRADUATION FORM", hp: 150, size: G.charH(2.1), color: [90, 20, 30], patterns: ["charge", "radial", "aimed"], speed: 70 },
     areas: [
       {
         name: "Playhouse Bar", feel: "PLACEHOLDER layout - spatial details TBD", enemyBudget: 6,
@@ -348,7 +348,7 @@ const CHAPTERS = [
       { type: "brute",   name: "Moving Box",      color: [170, 130, 80] },
       { type: "runner",  name: "Lockdown Jogger", color: [230, 230, 70] },
     ],
-    boss: { name: "THE COVID", hp: 190, size: 92, color: [80, 180, 70], patterns: ["spiral", "spawn", "radial"], speed: 42 },
+    boss: { name: "THE COVID", hp: 190, size: G.charH(2.2), color: [80, 180, 70], patterns: ["spiral", "spawn", "radial"], speed: 42 },
     areas: [
       {
         name: "The Train Carriage", feel: "long, narrow, confined", enemyBudget: 7, sidescroll: true,
@@ -437,7 +437,7 @@ const CHAPTERS = [
       { type: "shooter", name: "Rent Invoice", color: [240, 240, 240] },
       { type: "chaser",  name: "Tube Rat",     color: [110, 85, 60] },
     ],
-    boss: { name: "OLD AGE", hp: 240, size: 88, color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50 },
+    boss: { name: "OLD AGE", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50 },
     areas: [
       {
         name: "The Faltering Fullback", feel: "treehouse pub - mini-arenas, narrow walkways", enemyBudget: 8,

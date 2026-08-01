@@ -33,6 +33,18 @@ const G = {
   SPR: {},
 };
 
+// How tall a person stands on the field, in pixels. Set against the painted
+// furniture in Gonzo's: at 72 you read as someone who could sit in one of
+// those chairs. EVERYTHING that stands in a room is sized from this, so
+// changing this one number rescales the whole cast together.
+// (Screen furniture - portraits, character select, the title line-up - has
+// its own sizes and is deliberately not affected.)
+G.CHAR_H = 72;
+
+// Field size as a multiple of a person. G.charH() is one person tall,
+// G.charH(2) is a boss twice their height, G.charH(0.62) is a scrawny runner.
+G.charH = (mult = 1) => Math.round(G.CHAR_H * mult);
+
 // Base stats every character starts with. Identical across all ten,
 // per the design rule: depth comes from companions, not stat trees.
 // NUMBERS ARE PLACEHOLDER BALANCE — tune in playtesting.

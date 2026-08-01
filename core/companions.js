@@ -36,9 +36,9 @@ COMPANIONS.spawnFollowers = (player) => {
 
 COMPANIONS.addFollower = (player, id, spawnAt) => {
   const i = G.followers.length;
-  const start = spawnAt || player.pos.add(-(i + 1) * 32, 16);
+  const start = spawnAt || player.pos.add(-(i + 1) * G.charH(0.76), G.charH(0.38));
   const f = add([
-    ...ART.charComps(id, 36),
+    ...ART.charComps(id, G.charH(0.86)),   // a touch smaller than you, so you read as the lead
     pos(start),
     opacity(1),
     z(48),

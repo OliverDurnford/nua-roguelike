@@ -77,10 +77,10 @@ ENEMIES.shootAt = (from, to, speed) => {
   const dir = to.sub(from).unit();
   SFX.play("eshoot");
   add([
-    circle(6),
+    circle(G.charH(0.14)),
     color(255, 120, 90),
     outline(2, rgb(120, 40, 30)),
-    pos(from.add(dir.scale(20))),
+    pos(from.add(dir.scale(G.charH(0.48)))),
     anchor("center"),
     area({ scale: 0.8 }),
     opacity(1),
@@ -132,7 +132,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
   const def = chapter.boss;
   SFX.play("roar");
   const comps = opts.finale
-    ? ART.charComps(G.run.charId, 96, true)             // elderly version of YOUR character
+    ? ART.charComps(G.run.charId, G.charH(2.3), true)   // elderly version of YOUR character
     : [sprite("boss-" + chapter.num), anchor("center")];
 
   const b = add([

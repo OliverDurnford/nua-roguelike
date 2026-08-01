@@ -186,7 +186,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     const compId = G.run.plan[chapter];
     if (compId && !G.run.companions.includes(compId)) {
       const cObj = add([
-        ...ART.charComps(compId, 40),
+        ...ART.charComps(compId, G.charH(0.95)),
         pos(m.companionSpawn),
         area({ scale: 0.9 }), z(44), opacity(1),
         "companionPickup", { baseY: m.companionSpawn.y, t: rand(0, 5) },
@@ -433,7 +433,7 @@ FINALE.setup = (m) => {
   const base = m.bossSpawn.add(0, 110);
   caged.forEach((c, i) => {
     const p = base.add((i - 2) * 110, Math.abs(i - 2) * 26);
-    add([...ART.charComps(c.id, 38), pos(p), z(20), opacity(0.55), "cagedFriend", { charId: c.id }]);
+    add([...ART.charComps(c.id, G.charH(0.9)), pos(p), z(20), opacity(0.55), "cagedFriend", { charId: c.id }]);
     // cage bars (obstacles the player has to fight around)
     add([
       rect(56, 56), pos(p), anchor("center"), color(40, 40, 48), opacity(0.35),

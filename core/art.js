@@ -261,7 +261,14 @@ ART.init = () => {
     G.SPR["ch-" + c.id + "-old"] = { name: "ch-" + c.id + "-old", h: c.height };
   }
 
-  const SIZES = { chaser: 34, runner: 26, brute: 48, shooter: 32 };
+  // Sized against a person (G.CHAR_H) so the whole room stays in proportion:
+  // a runner is a scrawny thing, a brute is bigger than you are.
+  const SIZES = {
+    chaser:  G.charH(0.81),
+    runner:  G.charH(0.62),
+    brute:   G.charH(1.14),
+    shooter: G.charH(0.76),
+  };
   for (const ch of CHAPTERS) {
     ch.enemySet.forEach((en, i) => {
       const key = "en-" + ch.num + "-" + i;
