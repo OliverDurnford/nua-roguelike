@@ -141,19 +141,25 @@ nua-roguelike/
     └── ending.js         message, stats, What You Missed
 ```
 
-**How big everyone is** is one number: `G.CHAR_H` at the top of
-`core/boot.js`, currently 72. That is how tall a person stands on the
-field, set against the chairs and tables in Gonzo's. Everything else in
-the room is worked out from it — companions, all four enemy types, the
-bosses, even the size of what you throw — so changing that one number
-rescales the whole cast together and keeps them in proportion. Portraits,
-character select and the title line-up are screen furniture and are
-deliberately left alone.
+**How big everyone is** comes from two numbers.
 
-If you push it much higher, re-check the enemy spawn points in
+`G.CHAR_H` at the top of `core/boot.js`, currently 72, is how tall a
+person stands on the field by default. Everything else in the room is
+worked out from it — companions, all four enemy types, the bosses, even
+the size of what you throw — so changing that one number rescales the
+whole cast together and keeps them in proportion. Portraits, character
+select and the title line-up are screen furniture and are deliberately
+left alone.
+
+`charScale` on a level then nudges that for one room, because every
+painted venue is drawn at its own scale. Gonzo's runs at **1.3**, so a
+person stands 94px in there and 72px everywhere else. It's the second
+number in `data/level-gonzos.js`. Each new painted venue gets its own.
+
+If you push either much higher, re-check the enemy spawn points in
 `data/level-gonzos.js`: they are held clear of the walls by half the width
-of the widest enemy, and a big enough cast would start arriving inside the
-scenery.
+of the widest enemy (the brute, who is the tightest fit in the room), and
+a big enough cast would start arriving inside the scenery.
 
 The maps in `data/chapters.js` are text drawings — `=` wall, `o` obstacle,
 `E` enemy spawn, `P` player start, `X` exit, `C` companion, `B` boss.

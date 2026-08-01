@@ -22,6 +22,9 @@ ENEMIES.spawn = (def, p) => {
   const e = add([
     sprite(def.spr),
     anchor("center"),
+    // The sprite bitmap is drawn once at the base size, so the room's
+    // scale is applied here rather than baked in. area() follows it.
+    scale(G.areaScale),
     pos(p),
     area({ scale: 0.8 }),
     body(),
@@ -131,9 +134,11 @@ ENEMIES.hit = (e, dmg, critChance) => {
 ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
   const def = chapter.boss;
   SFX.play("roar");
+  // charComps sizes itself (and already follows the room), a plain boss
+  // sprite does not, so that one gets the room's scale bolted on.
   const comps = opts.finale
     ? ART.charComps(G.run.charId, G.charH(2.3), true)   // elderly version of YOUR character
-    : [sprite("boss-" + chapter.num), anchor("center")];
+    : [sprite("boss-" + chapter.num), anchor("center"), scale(G.areaScale)];
 
   const b = add([
     ...comps,

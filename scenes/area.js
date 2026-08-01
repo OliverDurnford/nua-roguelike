@@ -162,6 +162,10 @@ scene("area", ({ chapter, area: areaNum }) => {
   G.run.chapter = chapter;
   G.run.area = areaNum;
 
+  // How big people stand in THIS room. Must be set before anything is
+  // added, because every sprite reads it on the way in.
+  G.areaScale = (a.plate && a.plate.charScale) || a.charScale || 1;
+
   const m = a.plate ? MAPS.buildPlate(a.plate) : MAPS.build(a.map, a.palette);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
   G.areaWater = !!a.water;   // lets Ana's ocean lines trigger near water

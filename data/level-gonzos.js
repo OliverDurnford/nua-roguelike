@@ -30,6 +30,12 @@ const GONZOS_PLATE = {
   rows: 18,
   unit: 48,          // world pixels per grid unit -> room is 1536 x 864
 
+  // Everyone stands 30% taller in here than the game's default, because
+  // this room's furniture is painted bigger than the placeholder levels.
+  // Multiplies G.CHAR_H, so a person is 94px on this floor. Each painted
+  // venue gets its own number.
+  charScale: 1.3,
+
   solid: [
     // ---- sealed back of house (you can see it, you can't reach it) ----
     [0,     0,     9.55,  7.65],   // commercial kitchen
@@ -79,8 +85,8 @@ const GONZOS_PLATE = {
   // widest enemy (the brute), so nothing ever arrives inside the scenery.
   // If G.CHAR_H goes up, check them again.
   enemySpawns: [
-    [19.9, 5.4], [20.5, 5.4], [19.9, 6.5], [20.5, 6.5],
-    [10.6, 17.0], [11.5, 17.0], [12.4, 17.0], [13.2, 17.0],
+    [19.95, 5.6], [20.25, 6.5], [19.95, 7.4], [20.25, 8.3],
+    [10.6, 16.8], [11.5, 16.8], [12.4, 16.8], [13.2, 16.8],
   ],
 
   // Way out, bottom left, past the toilets. Sits flush with the bottom

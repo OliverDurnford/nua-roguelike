@@ -41,9 +41,17 @@ const G = {
 // its own sizes and is deliberately not affected.)
 G.CHAR_H = 72;
 
+// Per-area nudge on top of that, because every painted venue is drawn at
+// its own scale. Set from the area's charScale when a room loads, back to
+// 1 everywhere else. Gonzo's runs at 1.3.
+G.areaScale = 1;
+
 // Field size as a multiple of a person. G.charH() is one person tall,
 // G.charH(2) is a boss twice their height, G.charH(0.62) is a scrawny runner.
-G.charH = (mult = 1) => Math.round(G.CHAR_H * mult);
+// Only sizes that go through here follow the room. Pass ART.charComps a
+// plain number instead and it stays put - that is how the portraits,
+// character select and title line-up keep their own sizes.
+G.charH = (mult = 1) => Math.round(G.CHAR_H * mult * G.areaScale);
 
 // Base stats every character starts with. Identical across all ten,
 // per the design rule: depth comes from companions, not stat trees.
