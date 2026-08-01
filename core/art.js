@@ -280,6 +280,9 @@ ART.init = () => {
     });
   }
 
+  // Painted room backgrounds (core/plates-real.js), one per venue
+  for (const k in PLATES) loadSprite("plate-" + k, PLATES[k]);
+
   loadSprite("heart", ART.genHeart());
   loadSprite("heart-empty", ART.genHeart("#2c2d3a", "#565a70"));
   loadSprite("ball", ART.genBall());

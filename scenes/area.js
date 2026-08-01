@@ -83,6 +83,75 @@ MAPS.build = (rows, pal) => {
   return out;
 };
 
+// ---------- plate builder ----------
+// For areas that use a painted background instead of an ASCII map
+// (see data/level-gonzos.js). Returns exactly the same shape as
+// MAPS.build, so everything downstream works without knowing which
+// kind of area it is in.
+MAPS.buildPlate = (plate) => {
+  const U = plate.unit;
+  const W = plate.cols * U;
+  const H = plate.rows * U;
+
+  add([sprite(plate.sprite), pos(0, 0), z(0)]);
+
+  // Collision blocks. Invisible in play; press F2 to see them.
+  for (const [x1, y1, x2, y2] of plate.solid) {
+    add([
+      rect((x2 - x1) * U, (y2 - y1) * U), pos(x1 * U, y1 * U),
+      color(255, 60, 90), opacity(0),
+      area(), body({ isStatic: true }), z(10), "solid", "plateSolid",
+    ]);
+  }
+
+  const out = {
+    enemySpawns: plate.enemySpawns.map(([x, y]) => vec2(x * U, y * U)),
+    exits: [],
+    playerSpawn: vec2(plate.playerSpawn[0] * U, plate.playerSpawn[1] * U),
+    companionSpawn: plate.companionSpawn
+      ? vec2(plate.companionSpawn[0] * U, plate.companionSpawn[1] * U)
+      : null,
+    bossSpawn: plate.bossSpawn
+      ? vec2(plate.bossSpawn[0] * U, plate.bossSpawn[1] * U)
+      : null,
+    w: W, h: H,
+  };
+
+  if (plate.exit) {
+    const [x1, y1, x2, y2] = plate.exit;
+    const dw = (x2 - x1) * U, dh = (y2 - y1) * U;
+    const mid = vec2((x1 + x2) / 2 * U, (y1 + y2) / 2 * U);
+
+    // A flat coloured block would look cheap on top of painted artwork,
+    // so the door is a lit threshold: soft glow, bar, label above it.
+    const glow = add([
+      sprite("glow"), anchor("center"), pos(mid),
+      scale(dw / 62, dh / 40), color(200, 90, 80), opacity(0.3), z(9),
+    ]);
+    const door = add([
+      rect(dw, dh, { radius: 4 }), pos(x1 * U, y1 * U),
+      color(180, 60, 60), outline(3, rgb(20, 20, 25)), opacity(0.85),
+      area(), body({ isStatic: true }), z(10),
+      "door", { unlocked: false },
+    ]);
+    const lbl = add([
+      text("WAY OUT", { size: 11 }), anchor("center"),
+      pos(mid.x, y1 * U - 13),
+      color(230, 200, 190), opacity(0.75), z(11),
+    ]);
+    // once it opens, the glow breathes so your eye finds it across the room
+    glow.onUpdate(() => {
+      if (!door.unlocked) return;
+      glow.color = rgb(90, 210, 120);
+      glow.opacity = 0.34 + Math.sin(time() * 3) * 0.16;
+      lbl.color = rgb(150, 235, 170);
+    });
+    out.exits.push(door);
+  }
+
+  return out;
+};
+
 // ---------- the scene ----------
 // NOTE: the second argument is renamed to areaNum inside the scene -
 // calling it "area" would shadow Kaboom's area() component function.
@@ -93,7 +162,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   G.run.chapter = chapter;
   G.run.area = areaNum;
 
-  const m = MAPS.build(a.map, a.palette);
+  const m = a.plate ? MAPS.buildPlate(a.plate) : MAPS.build(a.map, a.palette);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
   G.areaWater = !!a.water;   // lets Ana's ocean lines trigger near water
 
@@ -332,6 +401,22 @@ scene("area", ({ chapter, area: areaNum }) => {
   G.devSkip = () => {
     if (!exiting) { exiting = true; G.advance(); }
   };
+
+  // --- F2: show the collision blocks over the artwork ---
+  // Only useful on plate areas, where the walls are invisible and
+  // hand-measured against a painting. Off by default.
+  let showBlocks = false;
+  onKeyPress("f2", () => {
+    showBlocks = !showBlocks;
+    for (const b of get("plateSolid")) b.opacity = showBlocks ? 0.35 : 0;
+  });
+  onDraw(() => {
+    if (!showBlocks) return;
+    drawCircle({ pos: m.playerSpawn, radius: 14, color: rgb(90, 220, 255), opacity: 0.6 });
+    for (const p of m.enemySpawns) {
+      drawCircle({ pos: p, radius: 12, color: rgb(255, 210, 80), opacity: 0.6 });
+    }
+  });
 });
 
 // ============================================================

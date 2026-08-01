@@ -54,6 +54,9 @@ While playing:
 - `m` — fill the special meter
 - `g` — god mode on/off
 - `]` — skip to the next area
+- `F2` — show the invisible walls on a painted level (Gonzo's). Red blocks
+  are what you bump into, the yellow dots are where enemies come in, the
+  blue dot is where you start. Use it if something feels wrong to walk past
 
 From the browser console (right-click → Inspect → Console):
 - `dev.area(3, 5)` — jump straight to the Chapter 3 boss
@@ -68,6 +71,11 @@ From the browser console (right-click → Inspect → Console):
 **Real and staying:**
 - The whole game structure (all 25 areas, bosses, companions, specials)
 - Ollie and Annie sprites (embedded, shrunk to game size)
+- **Gonzo's (Chapter 1, Area 1) is the first finished level.** It uses the
+  painted background instead of an ASCII grid: you spawn on the Persian
+  rug under the mirrorball, enemies come in from the stairs door beside
+  the bar and from the corridor at the bottom, and the way out is bottom
+  left past the toilets
 - Companion passives matching the roster (Lucy +2 HP, Cal +25% speed, etc.)
 - Companions trail behind you on the field in a chain (gold glow marks
   the selected one). Cosmetic only - they can't be hurt or block shots
@@ -86,8 +94,9 @@ From the browser console (right-click → Inspect → Console):
 - All 8 other character sprites (generated colour figures for now)
 - All enemy designs — named placeholders ("Seagull", "Mercy Bouncer"...)
   using 4 basic behaviours. Real enemy design is its own session
-- All map layouts — correct shapes and feel per LEVEL_DESIGN.md, but drawn
-  as simple ASCII grids. Easy to redraw (see section 5)
+- Map layouts for 24 of the 25 areas — correct shapes and feel per
+  LEVEL_DESIGN.md, but drawn as simple ASCII grids. Easy to redraw
+  (see section 5). Gonzo's is the exception: it is the real painted level
 - Special attack cutscene frames — currently a text banner. Real illustrated
   frames come from the art sessions
 - Chat-up lines, Josh's non-sequiturs, Ana's Spanish line — all marked
@@ -113,10 +122,12 @@ nua-roguelike/
 ├── game.js               starts the game + dev jump helpers
 ├── data/
 │   ├── characters.js     ← all 10 friends: passives, specials, lines
-│   └── chapters.js       ← every chapter, area map, enemy set, boss
+│   ├── chapters.js       ← every chapter, area map, enemy set, boss
+│   └── level-gonzos.js   ← Gonzo's: walls, spawns and exit, in plain numbers
 ├── core/
 │   ├── boot.js           engine start, shared state, base stats
 │   ├── sprites-real.js   Ollie + Annie sprites (embedded as data)
+│   ├── plates-real.js    painted level backgrounds (embedded as data)
 │   ├── art.js            generates the placeholder sprites
 │   ├── player.js         movement, aiming, auto-attack, damage
 │   ├── enemies.js        enemy behaviours + boss patterns
@@ -133,6 +144,15 @@ nua-roguelike/
 The maps in `data/chapters.js` are text drawings — `=` wall, `o` obstacle,
 `E` enemy spawn, `P` player start, `X` exit, `C` companion, `B` boss.
 Change the text, refresh the browser, the level changes.
+
+**Painted levels work differently.** Gonzo's has no text drawing. The
+picture is the level, and `data/level-gonzos.js` lists where the walls and
+furniture are as a set of rectangles. Picture the artwork cut into 32
+columns and 18 rows, then read off column and row: `[21.2, 2.9, 29.4, 4.6]`
+is the banquette along the top. Change a number, refresh, press `F2` to see
+where the block actually landed. Every other venue can be added the same
+way: drop the base64 picture into `core/plates-real.js`, copy
+`level-gonzos.js`, point the area at it in `chapters.js`.
 
 ---
 

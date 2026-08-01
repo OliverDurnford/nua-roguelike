@@ -11,17 +11,23 @@
   </style>
 </head>
 <body>
-  <!-- Keeps the game loop alive when the page is hidden (browsers stop
-       requestAnimationFrame for hidden tabs). No effect when visible -
-       this exists so automated testing can drive the game off-screen. -->
+  <!-- TESTING ONLY. Add ?headless to the URL to keep the game loop
+       running while the page is hidden, so Claude can play and
+       screenshot the game off-screen.
+
+       Two things have to be faked, not one: browsers stop
+       requestAnimationFrame for hidden tabs, AND Kaboom skips the
+       body of every frame unless document.visibilityState is
+       "visible". Patching only the first gives you a black screen.
+
+       Without ?headless nothing here runs, so real players still get
+       the normal behaviour of the game pausing in a background tab. -->
   <script>
-    (() => {
-      const raf = window.requestAnimationFrame.bind(window);
-      window.requestAnimationFrame = (cb) =>
-        document.visibilityState === "hidden"
-          ? setTimeout(() => cb(performance.now()), 33)
-          : raf(cb);
-    })();
+    if (location.search.includes("headless")) {
+      Object.defineProperty(document, "visibilityState", { get: () => "visible", configurable: true });
+      Object.defineProperty(document, "hidden", { get: () => false, configurable: true });
+      window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16);
+    }
   </script>
 
   <!-- Engine: Kaboom.js, pinned version, loaded from CDN (needs internet) -->
@@ -33,7 +39,9 @@
 
   <!-- Data: characters, chapters, maps. Edit these to change the game's content. -->
   <script src="core/sprites-real.js"></script>
+  <script src="core/plates-real.js"></script>
   <script src="data/characters.js"></script>
+  <script src="data/level-gonzos.js"></script>
   <script src="data/chapters.js"></script>
 
   <!-- Core systems -->

@@ -56,23 +56,10 @@ const CHAPTERS = [
     boss: { name: "THE OBNOXIOUS DJ", hp: 90, size: 84, color: [160, 70, 220], patterns: ["radial", "aimed", "spawn"], speed: 38 },
     areas: [
       {
-        name: "Gozos", feel: "compact, cluttered, weird", enemyBudget: 5,
-        palette: { floor: [70, 40, 38], wall: [38, 22, 20], accent: [200, 120, 60] },
-        map: [
-          "======================",
-          "=P...o..o.....o......=",
-          "=....o........o...E..=",
-          "=..........o.........=",
-          "=..oo...E......oo....=",
-          "=........o...........=",
-          "=..E.....o....E....o.=",
-          "=....o........o......=",
-          "=.o......E.......o...=",
-          "=....oo.......o......X",
-          "=..E......o.......E..=",
-          "=......o.......o.....=",
-          "======================",
-        ],
+        // Real painted level, not an ASCII placeholder. Geometry and
+        // spawn points live in data/level-gonzos.js.
+        name: "Gonzo's", feel: "compact, cluttered, weird", enemyBudget: 5,
+        plate: GONZOS_PLATE,
       },
       {
         name: "Propaganda", feel: "big, empty, sparse", enemyBudget: 7,
