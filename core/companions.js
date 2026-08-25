@@ -57,6 +57,8 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
       const sp = Math.min(d.len() * 4, 460);
       f.pos = f.pos.add(d.unit().scale(sp * dt()));
       if (ART.hasAnims(f.charId)) {
+        if (d.x < -6) f.flipX = true;
+        else if (d.x > 6) f.flipX = false;
         if (f.curAnim() !== "walk") f.play("walk");
       } else {
         f.bobT += dt() * 12;

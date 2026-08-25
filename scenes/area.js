@@ -255,6 +255,7 @@ scene("area", ({ chapter, area: areaNum }) => {
 
     G.onBossDeath = () => {
       G.onBossDeath = null;
+      if (dead) return;   // a last bullet in flight can land after you've dropped
       if (ART.hasAnims(G.run.charId)) { player.play("victory"); player.actionT = 1.6; }
       if (a.finale) {
         FINALE.win(player);
@@ -355,7 +356,7 @@ scene("area", ({ chapter, area: areaNum }) => {
 
   // --- death ---
   const onDeath = () => {
-    if (dead) return;
+    if (dead || exiting) return;   // can't die into the win you already earned
     dead = true;
     G.paused = true;
     G.run.deaths++;
