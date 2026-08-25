@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <title>Soundtrack audition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <style>
+    :root { --gold: #e8c169; --panel: rgba(255,255,255,.05); --line: rgba(255,255,255,.12); }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: #0c0c10; color: #e9e9ee;
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex; justify-content: center; padding: 40px 20px;
+    }
+    .wrap { width: 100%; max-width: 560px; }
+    h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: .2px; }
+    .sub { color: #9a9aa8; margin: 0 0 28px; font-size: 14px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+    button {
+      font: inherit; font-weight: 600; color: #12121a; background: var(--gold);
+      border: 0; border-radius: 10px; padding: 13px 30px; cursor: pointer;
+      transition: filter .15s, transform .08s;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    button.ghost { background: transparent; color: #e9e9ee; border: 1px solid var(--line); }
+    .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    label.slider { display: block; margin-top: 20px; font-size: 13px; color: #9a9aa8; }
+    label.slider b { color: var(--gold); font-variant-numeric: tabular-nums; }
+    input[type=range] { width: 100%; margin-top: 8px; accent-color: var(--gold); }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.3px; color: #9a9aa8; margin: 0 0 14px; font-weight: 600; }
+    .ch { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .ch:last-child { border-bottom: 0; }
+    .ch .nm { flex: 1; font-weight: 600; }
+    .ch .desc { color: #82828f; font-size: 13px; font-weight: 400; }
+    .ch button { padding: 6px 14px; font-size: 13px; border-radius: 7px; }
+    .off { opacity: .38; }
+    ol { margin: 0; padding-left: 20px; color: #b9b9c6; font-size: 14px; }
+    ol li { margin-bottom: 7px; }
+    ol li:last-child { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Soundtrack audition</h1>
+    <p class="sub">White Noise by Disclosure. Second pass, transcribed from the audio: 120bpm, F minor, four-to-the-floor.</p>
+
+    <div class="panel">
+      <div class="row">
+        <button id="go">Play</button>
+        <button id="stop" class="ghost">Stop</button>
+      </div>
+      <label class="slider">Tempo <b id="bpmv">122</b> bpm
+        <input type="range" id="bpm" min="90" max="150" value="122">
+      </label>
+      <label class="slider">Shuffle <b id="swv">0.16</b>
+        <input type="range" id="sw" min="0" max="35" value="16">
+      </label>
+      <label class="slider">Volume <b id="volv">30</b>
+        <input type="range" id="vol" min="0" max="70" value="30">
+      </label>
+    </div>
+
+    <div class="panel">
+      <h2>Solo the parts</h2>
+      <div id="chans"></div>
+    </div>
+
+    <div class="panel">
+      <h2>What to listen for</h2>
+      <ol>
+        <li><b>Kick, perc and bass only.</b> Groove and chord movement. These are measured off the record, so if this is wrong the analysis is wrong and I need to know.</li>
+        <li><b>Add the stabs.</b> Offbeat chords. Right push against the kick?</li>
+        <li><b>Add the lead.</b> Least certain part. On a mix this dense it may be tracking the synth rather than the vocal.</li>
+      </ol>
+    </div>
+  </div>
+
+  <script src="core/sfx.js"></script>
+  <script src="core/music.js"></script>
+  <script src="data/song-whitenoise.js"></script>
+  <script>
+    const song = SONG_WHITENOISE;
+    MUSIC.compile(song);
+
+    const DESC = {
+      lead: "the tune on top",
+      stabs: "offbeat chord stabs",
+      bass: "the bassline",
+      kick: "four-to-the-floor",
+      perc: "clap and hats",
+    };
+    const box = document.getElementById("chans");
+    song.channels.forEach((ch, i) => {
+      const row = document.createElement("div");
+      row.className = "ch";
+      row.innerHTML = `<span class="nm">${ch.id} <span class="desc">${DESC[ch.id] || ""}</span></span>`;
+      const b = document.createElement("button");
+      b.className = "ghost";
+      b.textContent = "On";
+      b.onclick = () => {
+        MUSIC.mutes[i] = !MUSIC.mutes[i];
+        b.textContent = MUSIC.mutes[i] ? "Off" : "On";
+        row.classList.toggle("off", !!MUSIC.mutes[i]);
+      };
+      row.appendChild(b);
+      box.appendChild(row);
+    });
+
+    document.getElementById("go").onclick = () => MUSIC.play(song);
+    document.getElementById("stop").onclick = () => MUSIC.stop();
+
+    const bind = (id, out, init, fn) => {
+      const el = document.getElementById(id), o = document.getElementById(out);
+      el.value = init;                 // start from the song, not a hardcoded default
+      el.oninput = () => fn(+el.value, o);
+      el.oninput();
+    };
+    bind("bpm", "bpmv", song.bpm,         (v, o) => { song.bpm = v; o.textContent = v; });
+    bind("sw",  "swv",  song.swing * 100, (v, o) => { song.swing = v / 100; o.textContent = (v / 100).toFixed(2); });
+    bind("vol", "volv", MUSIC.volume * 100, (v, o) => { MUSIC.setVolume(v / 100); o.textContent = v; });
+  </script>
+</body>
+</html>
