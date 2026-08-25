@@ -106,6 +106,7 @@ COMPANIONS.recruit = (id) => {
   const c = G.char(id);
   G.run.companions.push(id);
   G.run.selected = G.run.companions.length - 1;
+  SAVE.write("area");   // re-checkpoint on the spot: a found friend is never lost
 
   G.paused = true;
   SFX.play("recruit");

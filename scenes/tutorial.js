@@ -7,6 +7,7 @@
 
 scene("tutorial", () => {
   G.paused = false;
+  SAVE.write("tutorial");   // checkpoint: a quit here resumes into the park
   G.areaScale = 1;   // the park is an ASCII map, so nobody is rescaled here
   const m = MAPS.build(PARK_MAP, PARK_PALETTE);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };

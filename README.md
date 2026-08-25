@@ -27,6 +27,12 @@ Two options:
 Best on desktop in a normal browser window. On a phone, turn it sideways
 (landscape) — portrait works but everything is small.
 
+**Saving:** the game checkpoints itself at the door of every area, and
+again the moment a friend joins you. Close the tab whenever; the title
+screen offers "carry on" next visit, with "start a new game" underneath.
+Quit mid-fight and you restart that room as you walked into it.
+Finishing the game clears the save.
+
 ---
 
 ## 2. CONTROLS
@@ -63,6 +69,7 @@ From the browser console (right-click → Inspect → Console):
 - `dev.area(5, 5)` — jump to the finale
 - `dev.tutorial()` — jump to Victoria Park
 - `dev.ending()` — jump to the ending screen
+- `dev.wipe()` — forget the saved run and reload
 
 ---
 
@@ -87,6 +94,8 @@ From the browser console (right-click → Inspect → Console):
 - Pair interactions (Cal/Sam/Lucy "milky lady", Josh's lines, "Silly
   boys!", Ollie+Lucy hug hearts, Josh+Sam's rare easy-to-miss kiss)
 - Door-locks-until-room-clear, randomised enemies and companions per run
+- Saving: a checkpoint at every area door plus on recruits; carry on /
+  start a new game from the title (`core/save.js`)
 
 **Placeholder — needs your input or future sessions:**
 - Game title: "TEN YEARS" — pick the real one
@@ -126,6 +135,7 @@ nua-roguelike/
 │   └── level-gonzos.js   ← Gonzo's: walls, spawns and exit, in plain numbers
 ├── core/
 │   ├── boot.js           engine start, shared state, base stats
+│   ├── save.js           the run checkpoint (remembered between visits)
 │   ├── sprites-real.js   Ollie + Annie sprites (embedded as data)
 │   ├── plates-real.js    painted level backgrounds (embedded as data)
 │   ├── art.js            generates the placeholder sprites

@@ -94,15 +94,25 @@ scene("title", () => {
     });
   });
 
-  // pulsing start prompt in a chip
-  const chipW = 300;
+  // ----- start / carry on -----
+  // With a saved run waiting, the chip offers to carry it on and a
+  // quieter chip underneath starts over. No save: one chip, any key
+  // or tap starts, as before.
+  const saved = SAVE.read();
+  const chipY = G.H * 0.585;
+  const contLabel = saved
+    ? "carry on as " + G.char(saved.run.charId).name +
+      (saved.scene === "tutorial" ? "  ·  victoria park" : "  ·  chapter " + saved.run.chapter)
+    : "press any key  /  tap to start";
+
+  const chipW = saved ? 340 : 300;
   const chip = add([
-    rect(chipW, 40, { radius: 20 }), pos(G.W / 2, G.H * 0.585), anchor("center"),
+    rect(chipW, 40, { radius: 20 }), pos(G.W / 2, chipY), anchor("center"),
     color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(10),
   ]);
   const hint = add([
-    text("press any key  /  tap to start", { size: 16 }),
-    pos(G.W / 2, G.H * 0.585), anchor("center"),
+    text(contLabel, { size: 16 }),
+    pos(G.W / 2, chipY), anchor("center"),
     color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0), z(11),
   ]);
   let ht = -1.3;
@@ -114,8 +124,41 @@ scene("title", () => {
     chip.opacity = base * 0.55;
   });
 
+  // the quieter option underneath, only when there is a run to set aside
+  let newChip = null;
+  if (saved) {
+    newChip = add([
+      rect(200, 30, { radius: 15 }), pos(G.W / 2, chipY + 48), anchor("center"),
+      color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(10), area(), "newgame",
+    ]);
+    const newTxt = add([
+      text("start a new game", { size: 12 }),
+      pos(G.W / 2, chipY + 48), anchor("center"),
+      color(178, 186, 208), opacity(0), z(11),
+    ]);
+    UI.fadeObj(newChip, 0.4, 0.8, 1.15);
+    UI.fadeObj(newTxt, 0.85, 0.8, 1.15);
+  }
+
   UI.sceneFade();
-  const start = () => { SFX.play("uiconfirm"); go("select"); };
-  onKeyPress(start);
-  onMousePress(start);
+  let going = false;
+  const begin = (fn) => {
+    if (going) return;
+    going = true;
+    SFX.play("uiconfirm");
+    fn();
+  };
+  const start = () => begin(() => (saved ? SAVE.resume(saved) : go("select")));
+  const fresh = () => begin(() => go("select"));
+
+  if (saved) {
+    // a tap counts as "start a new game" only if it lands on that chip
+    // (isHovering, which understands the letterboxed canvas); anywhere
+    // else on the screen carries the run on
+    onKeyPress((key) => { if (key === "n") fresh(); else start(); });
+    onMousePress(() => { if (newChip.isHovering()) fresh(); else start(); });
+  } else {
+    onKeyPress(start);
+    onMousePress(start);
+  }
 });

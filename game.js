@@ -23,6 +23,7 @@ window.dev = {
     go("ending");
   }),
   god: () => { G.godMode = !G.godMode; },
+  wipe: () => { SAVE.clear(); location.reload(); },
 };
 
 go("title");

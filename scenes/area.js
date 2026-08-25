@@ -161,6 +161,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   const a = ch.areas[areaNum - 1];
   G.run.chapter = chapter;
   G.run.area = areaNum;
+  SAVE.write("area");   // checkpoint: the run as it stood at this door
 
   // How big people stand in THIS room. Must be set before anything is
   // added, because every sprite reads it on the way in.
