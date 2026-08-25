@@ -362,23 +362,27 @@ scene("area", ({ chapter, area: areaNum }) => {
     // stagger, then flat on his back while the screen dims
     if (ART.hasAnims(G.run.charId)) player.play("ko");
 
+    // hold the screen for a beat first, so the KO stagger-and-flop lands
+    // in full light before the dim and the big red text move in
+    const koHold = ART.hasAnims(G.run.charId) ? 0.8 : 0;
+
     const dim = add([rect(G.W, G.H), color(0, 0, 0), opacity(0), fixed(), z(210)]);
-    UI.fadeObj(dim, 0.78, 0.6);
+    UI.fadeObj(dim, 0.78, 0.6, koHold);
     const vin = add([sprite("vignette"), pos(0, 0), scale(G.W / 480, G.H / 270), color(160, 20, 25), opacity(0), fixed(), z(210)]);
-    UI.fadeObj(vin, 0.85, 0.6);
+    UI.fadeObj(vin, 0.85, 0.6, koHold);
 
     const big = add([text("YOU DIED", { size: 46 }), pos(0, 0), anchor("center"), color(225, 72, 72), fixed(), z(211), opacity(1)]);
-    UI.slideIn(big, vec2(G.W / 2, G.H * 0.3), vec2(G.W / 2, G.H * 0.38), 0.55, 0.15);
+    UI.slideIn(big, vec2(G.W / 2, G.H * 0.3), vec2(G.W / 2, G.H * 0.38), 0.55, 0.15 + koHold);
     const subT = add([
       text("Chapter " + chapter + " starts again. Companions stay with you.", { size: 15, align: "center" }),
       pos(G.W / 2, G.H * 0.53), anchor("center"), color(200, 202, 214), fixed(), z(211), opacity(0),
     ]);
-    UI.fadeObj(subT, 1, 0.4, 0.7);
+    UI.fadeObj(subT, 1, 0.4, 0.7 + koHold);
     const hint = add([
       text("press ENTER  /  tap to retry", { size: 15 }),
       pos(G.W / 2, G.H * 0.62), anchor("center"), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(211), opacity(0),
     ]);
-    let htD = -1.0;
+    let htD = -1.0 - koHold;
     hint.onUpdate(() => {
       htD += dt();
       if (htD < 0) return;

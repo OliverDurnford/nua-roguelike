@@ -101,8 +101,9 @@ PLAYER.aimDir = (p, targets) => {
 PLAYER.fire = (p, dir, s) => {
   const c = G.playerChar();
   SFX.play("shoot");
-  // camera up, flash (Ollie), or the throw pair for everyone else
-  if (ART.hasAnims(c.id)) { p.play("attack"); p.actionT = 0.22; }
+  // camera up, flash (Ollie), or the throw pair for everyone else.
+  // Never stomps a longer pose still playing (hurt flinch, victory).
+  if (ART.hasAnims(c.id) && p.actionT <= 0.25) { p.play("attack"); p.actionT = 0.22; }
   add([
     rect(G.charH(0.26), G.charH(0.26), { radius: 3 }),
     color(c.weapon.color[0], c.weapon.color[1], c.weapon.color[2]),
