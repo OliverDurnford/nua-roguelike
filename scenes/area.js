@@ -255,6 +255,7 @@ scene("area", ({ chapter, area: areaNum }) => {
 
     G.onBossDeath = () => {
       G.onBossDeath = null;
+      if (ART.hasAnims(G.run.charId)) { player.play("victory"); player.actionT = 1.6; }
       if (a.finale) {
         FINALE.win(player);
       } else {
@@ -358,6 +359,8 @@ scene("area", ({ chapter, area: areaNum }) => {
     dead = true;
     G.paused = true;
     G.run.deaths++;
+    // stagger, then flat on his back while the screen dims
+    if (ART.hasAnims(G.run.charId)) player.play("ko");
 
     const dim = add([rect(G.W, G.H), color(0, 0, 0), opacity(0), fixed(), z(210)]);
     UI.fadeObj(dim, 0.78, 0.6);

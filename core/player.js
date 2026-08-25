@@ -20,7 +20,7 @@ PLAYER.make = (spawnPos) => {
     opacity(1),
     z(50),
     "player",
-    { iframes: 0, fireCd: 0, bobT: 0 },
+    { iframes: 0, fireCd: 0, bobT: 0, actionT: 0 },
   ]);
   G.playerObj = p;   // so companions can find the player on the field
 
@@ -38,8 +38,16 @@ PLAYER.make = (spawnPos) => {
     if (dir.len() > 1) dir = dir.unit();
     p.move(dir.scale(s.moveSpeed));
 
-    // little walk bob so movement reads even with a static sprite
-    if (dir.len() > 0.1) {
+    // real animation sheet: swap between the walk cycle and the idle
+    // breathe. actionT holds an attack / hurt pose for a beat first.
+    // Characters still on placeholder art keep the old rotation bob.
+    if (ART.hasAnims(c.id)) {
+      p.actionT = Math.max(0, p.actionT - dt());
+      if (p.actionT <= 0) {
+        const want = dir.len() > 0.1 ? "walk" : "idle";
+        if (p.curAnim() !== want) p.play(want);
+      }
+    } else if (dir.len() > 0.1) {
       p.bobT += dt() * 14;
       p.angle = Math.sin(p.bobT) * 4;
     } else {
@@ -93,6 +101,8 @@ PLAYER.aimDir = (p, targets) => {
 PLAYER.fire = (p, dir, s) => {
   const c = G.playerChar();
   SFX.play("shoot");
+  // camera up, flash (Ollie), or the throw pair for everyone else
+  if (ART.hasAnims(c.id)) { p.play("attack"); p.actionT = 0.22; }
   add([
     rect(G.charH(0.26), G.charH(0.26), { radius: 3 }),
     color(c.weapon.color[0], c.weapon.color[1], c.weapon.color[2]),
@@ -136,6 +146,7 @@ PLAYER.hurt = (p, dmg, onDeath) => {
 
   G.run.hp -= dmg;
   p.iframes = 1.0;
+  if (ART.hasAnims(G.run.charId)) { p.play("hurt"); p.actionT = 0.4; }
   shake(8);
   UI.flash([220, 50, 50], 0.12);
   SFX.play("hurt");

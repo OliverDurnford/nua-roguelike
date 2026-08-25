@@ -248,7 +248,12 @@ ART.genCrack = (seed) => {
 // ---------- load everything ----------
 ART.init = () => {
   for (const c of CHARACTERS) {
-    if (c.real && REAL_SPRITES[c.id]) {
+    if (typeof REAL_ANIMS !== "undefined" && REAL_ANIMS[c.id]) {
+      // animated sheet (core/sprites-anim.js): idle, walk, attack, hurt, ko, victory
+      const ra = REAL_ANIMS[c.id];
+      loadSprite("ch-" + c.id, ra.src, { sliceX: ra.sliceX, anims: ra.anims });
+      G.SPR["ch-" + c.id] = { name: "ch-" + c.id, h: ra.charH, anchorY: ra.anchorY, anims: ra.anims };
+    } else if (c.real && REAL_SPRITES[c.id]) {
       loadSprite("ch-" + c.id, REAL_SPRITES[c.id]);
       G.SPR["ch-" + c.id] = { name: "ch-" + c.id, h: 128 };
     } else {
@@ -308,8 +313,17 @@ ART.init = () => {
 // ---------- helpers used by scenes ----------
 
 // Components to draw a character at a given on-screen height.
+// Animated characters start on their idle loop and hang from the centre of
+// the BODY, not the padded sheet cell (charH / anchorY, see sprites-anim.js).
 ART.charComps = (id, hPx, old = false) => {
   const key = "ch-" + id + (old ? "-old" : "");
   const reg = G.SPR[key];
-  return [sprite(reg.name), scale(hPx / reg.h), anchor("center")];
+  return [
+    sprite(reg.name, reg.anims ? { anim: "idle" } : undefined),
+    scale(hPx / reg.h),
+    anchor(reg.anims ? vec2(0, reg.anchorY) : "center"),
+  ];
 };
+
+// True if this character has a real animation sheet loaded.
+ART.hasAnims = (id) => !!(G.SPR["ch-" + id] && G.SPR["ch-" + id].anims);

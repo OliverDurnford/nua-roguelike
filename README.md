@@ -33,6 +33,14 @@ screen offers "carry on" next visit, with "start a new game" underneath.
 Quit mid-fight and you restart that room as you walked into it.
 Finishing the game clears the save.
 
+**Long-term memory:** separately, the game permanently remembers every
+friend ever met and every character finished with, across all runs. The
+ending's "What You Missed" uses it: "you've met 7 of the group's 10 so
+far", "first run finished as Jess", and when the set is complete,
+"you've met all ten. the whole group, back together." This is the
+collect-them-all replay pull from the design docs (only four of nine
+friends appear per run).
+
 ---
 
 ## 2. CONTROLS
@@ -69,7 +77,7 @@ From the browser console (right-click → Inspect → Console):
 - `dev.area(5, 5)` — jump to the finale
 - `dev.tutorial()` — jump to Victoria Park
 - `dev.ending()` — jump to the ending screen
-- `dev.wipe()` — forget the saved run and reload
+- `dev.wipe()` — forget the saved run AND the long-term memory, reload
 
 ---
 
@@ -96,6 +104,8 @@ From the browser console (right-click → Inspect → Console):
 - Door-locks-until-room-clear, randomised enemies and companions per run
 - Saving: a checkpoint at every area door plus on recruits; carry on /
   start a new game from the title (`core/save.js`)
+- Long-term memory across runs: friends ever met, characters finished,
+  surfaced in the ending's "What You Missed" (`core/story.js`)
 
 **Placeholder — needs your input or future sessions:**
 - Game title: "TEN YEARS" — pick the real one
@@ -136,6 +146,7 @@ nua-roguelike/
 ├── core/
 │   ├── boot.js           engine start, shared state, base stats
 │   ├── save.js           the run checkpoint (remembered between visits)
+│   ├── story.js          permanent memory across runs (friends ever met)
 │   ├── sprites-real.js   Ollie + Annie sprites (embedded as data)
 │   ├── plates-real.js    painted level backgrounds (embedded as data)
 │   ├── art.js            generates the placeholder sprites

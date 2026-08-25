@@ -20,6 +20,11 @@ scene("ending", () => {
   w.onUpdate(() => { w.opacity -= dt() * 0.4; if (w.opacity <= 0) destroy(w); });
 
   const r = G.run;
+  // Record the completed run FIRST, so every line below (met counts,
+  // first-finish flag) already includes this run.
+  const win = STORY.finishRun(r.charId);
+  const met = STORY.met(r.charId);
+  const allMet = met.length >= CHARACTERS.length;
   const secs = (Date.now() - r.startTime) / 1000;
   const found = r.companions.map((id) => G.char(id).name);
   const missed = CHARACTERS
@@ -44,7 +49,16 @@ scene("ending", () => {
       txt: "WHAT YOU MISSED\nfound this run: " + (found.length ? found.join(", ") : "nobody") +
         "\nstill out there: " + missed.join(", "),
     },
-    { t: 9.0, s: 14, c: [150, 155, 170], y: 0.8, txt: "a different four friends appear every run. go again?" },
+    {
+      t: 9.0, s: 14, c: [150, 155, 170], y: 0.8,
+      // "first run finished as X" only means something from the second
+      // win onward; on the very first completion it goes without saying
+      txt: (win.firstAsChar && win.story.wins > 1
+        ? "first run finished as " + G.char(r.charId).name + "\n" : "") +
+        (allMet
+          ? "across your runs you've met all ten. the whole group, back together."
+          : "you've met " + met.length + " of the group's 10 so far.\na different four friends appear every run. go again?"),
+    },
     { t: 10.0, s: 16, c: [255, 240, 200], y: 0.88, txt: "press ENTER / tap - back to the title" },
   ];
 

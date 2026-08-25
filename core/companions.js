@@ -56,8 +56,14 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
       // proportional chase: snappy when far behind, settles when close
       const sp = Math.min(d.len() * 4, 460);
       f.pos = f.pos.add(d.unit().scale(sp * dt()));
-      f.bobT += dt() * 12;
-      f.angle = Math.sin(f.bobT) * 4;
+      if (ART.hasAnims(f.charId)) {
+        if (f.curAnim() !== "walk") f.play("walk");
+      } else {
+        f.bobT += dt() * 12;
+        f.angle = Math.sin(f.bobT) * 4;
+      }
+    } else if (ART.hasAnims(f.charId)) {
+      if (f.curAnim() !== "idle") f.play("idle");
     } else {
       f.angle = 0;
     }
@@ -107,6 +113,7 @@ COMPANIONS.recruit = (id) => {
   G.run.companions.push(id);
   G.run.selected = G.run.companions.length - 1;
   SAVE.write("area");   // re-checkpoint on the spot: a found friend is never lost
+  STORY.foundCompanion(id);   // and remember them across runs, forever
 
   G.paused = true;
   SFX.play("recruit");
