@@ -299,7 +299,12 @@ ART.init = () => {
   loadSprite("heart-empty", ART.genHeart("#2c2d3a", "#565a70"));
   loadSprite("ball", ART.genBall());
   loadSprite("car", ART.genCar());
-  for (let i = 0; i < 3; i++) loadSprite("crack" + i, ART.genCrack(i));
+  // Real Victoria Park fissures (core/cracks-real.js) when present
+  if (typeof REAL_CRACKS !== "undefined") {
+    REAL_CRACKS.forEach((d, i) => loadSprite("crack" + i, d));
+  } else {
+    for (let i = 0; i < 3; i++) loadSprite("crack" + i, ART.genCrack(i));
+  }
 
   // Illustrated special-attack cut-ins (core/splash-real.js), when present
   if (typeof REAL_SPLASH !== "undefined") {
