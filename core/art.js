@@ -344,7 +344,12 @@ ART.init = () => {
   loadSprite("heart", ART.genHeart());
   loadSprite("heart-empty", ART.genHeart("#2c2d3a", "#565a70"));
   loadSprite("ball", ART.genBall());
-  loadSprite("car", ART.genCar());
+  // Real prop art (core/props-real.js) when present
+  if (typeof REAL_PROPS !== "undefined" && REAL_PROPS.car) {
+    loadSprite("car", REAL_PROPS.car);
+  } else {
+    loadSprite("car", ART.genCar());
+  }
   // Real Victoria Park fissures (core/cracks-real.js) when present
   if (typeof REAL_CRACKS !== "undefined") {
     REAL_CRACKS.forEach((d, i) => loadSprite("crack" + i, d));
