@@ -1,7 +1,8 @@
 // ============================================================
 // UI — HUD, touch controls, and the visual-polish helpers.
-// Design language: translucent rounded panels, gold accents,
-// soft glows, smooth animated bars, cinematic vignette.
+// Design language: chunky pixel-art panels (ink outline, warm
+// wood-toned bevel, notched square corners) over the painted
+// venues, gold accents, segmented meter bars, cinematic vignette.
 // Everything is code-drawn - no asset files needed.
 // ============================================================
 
@@ -9,6 +10,10 @@ const UI = {};
 
 UI.GOLD = [255, 214, 92];
 UI.INK = [9, 10, 16];
+// panel palette sampled from the Gonzo's plate, 26 Aug 2026 art pass
+UI.PANEL_FILL = [36, 20, 18];    // #241412 warm near-black fill
+UI.PANEL_BEVEL = [90, 58, 40];   // #5a3a28 muted warm wood - top/left highlight
+UI.PANEL_SHADOW = [21, 10, 9];   // #150a09 deep inner shadow - bottom/right
 
 // ---------- motion helpers ----------
 
@@ -65,10 +70,69 @@ UI.vignette = (op = 0.5) => {
 
 // ---------- drawing helpers (used inside onDraw) ----------
 
-// translucent rounded panel with a hairline edge
+// Chunky pixel-art frame: 2px ink outline, a 1px bevel just inside it
+// (light on top/left, shadow on bottom/right), a flat fill, and a
+// notched corner pixel (the fill peeks through the ink's very corner)
+// so square panels chamfer like pixel art instead of reading as a
+// rounded web box. `p` is top-left unless opts.center is set.
+// Shared by every panel-ish drawer below - dPanel, portrait boxes,
+// the speech chip and the title banner all call this one helper.
+UI._frame = (p, w, h, opts = {}) => {
+  const outlineW = 2, bevelW = 1, notch = 2;
+  const op = opts.opacity !== undefined ? opts.opacity : 1;
+  const fillOp = (opts.fillOpacity !== undefined ? opts.fillOpacity : 0.94) * op;
+  const fillCol = opts.fill || UI.PANEL_FILL;
+  const light = opts.light || UI.PANEL_BEVEL;
+  const shadow = opts.shadow || UI.PANEL_SHADOW;
+  const tl = opts.center ? vec2(p.x - w / 2, p.y - h / 2) : p;
+
+  // ink base - its edges double as the outline once the fill covers the middle
+  drawRect({ pos: tl, width: w, height: h, color: rgb(UI.INK[0], UI.INK[1], UI.INK[2]), opacity: op });
+
+  const fx = tl.x + outlineW, fy = tl.y + outlineW, fw = w - outlineW * 2, fh = h - outlineW * 2;
+  if (fw > 0 && fh > 0) {
+    drawRect({ pos: vec2(fx, fy), width: fw, height: fh, color: rgb(fillCol[0], fillCol[1], fillCol[2]), opacity: fillOp });
+    // bevel: light top/left, shadow bottom/right, laid right on the fill's inner edge
+    drawRect({ pos: vec2(fx, fy), width: fw, height: bevelW, color: rgb(light[0], light[1], light[2]), opacity: fillOp });
+    drawRect({ pos: vec2(fx, fy), width: bevelW, height: fh, color: rgb(light[0], light[1], light[2]), opacity: fillOp });
+    drawRect({ pos: vec2(fx, fy + fh - bevelW), width: fw, height: bevelW, color: rgb(shadow[0], shadow[1], shadow[2]), opacity: fillOp });
+    drawRect({ pos: vec2(fx + fw - bevelW, fy), width: bevelW, height: fh, color: rgb(shadow[0], shadow[1], shadow[2]), opacity: fillOp });
+  }
+
+  // notch: skip the ink's very corner pixel by letting the fill colour
+  // show through instead, so each corner chamfers by one pixel
+  const corners = [
+    vec2(tl.x, tl.y), vec2(tl.x + w - notch, tl.y),
+    vec2(tl.x, tl.y + h - notch), vec2(tl.x + w - notch, tl.y + h - notch),
+  ];
+  corners.forEach((c) => {
+    drawRect({ pos: c, width: notch, height: notch, color: rgb(fillCol[0], fillCol[1], fillCol[2]), opacity: fillOp });
+  });
+
+  // optional short gold L-brackets at the four corners (titleCard banner)
+  if (opts.goldCorners) {
+    const armW = Math.min(14, Math.floor(Math.min(w, h) / 3)), armT = 2;
+    const g = UI.GOLD;
+    const drawL = (cornerX, cornerY, signX, signY) => {
+      const xThick = signX > 0 ? cornerX : cornerX - armW;
+      const yThin = signY > 0 ? cornerY : cornerY - armT;
+      const xThin = signX > 0 ? cornerX : cornerX - armT;
+      const yThick = signY > 0 ? cornerY : cornerY - armW;
+      drawRect({ pos: vec2(xThick, yThin), width: armW, height: armT, color: rgb(g[0], g[1], g[2]), opacity: op });
+      drawRect({ pos: vec2(xThin, yThick), width: armT, height: armW, color: rgb(g[0], g[1], g[2]), opacity: op });
+    };
+    drawL(tl.x, tl.y, 1, 1);
+    drawL(tl.x + w, tl.y, -1, 1);
+    drawL(tl.x, tl.y + h, 1, -1);
+    drawL(tl.x + w, tl.y + h, -1, -1);
+  }
+};
+
+// chunky pixel panel (was: translucent rounded panel with a hairline
+// edge). `r` is kept in the signature so every existing call site
+// still works, but corners are square pixel-art now, so it's ignored.
 UI.dPanel = (p, w, h, r = 12) => {
-  drawRect({ pos: p, width: w, height: h, radius: r, color: rgb(UI.INK[0], UI.INK[1], UI.INK[2]), opacity: 0.62 });
-  drawRect({ pos: p, width: w, height: h, radius: r, fill: false, outline: { width: 1, color: rgb(255, 255, 255) }, opacity: 0.1 });
+  UI._frame(p, w, h);
 };
 
 UI.dGlow = (p, size, col, op) => {
@@ -129,12 +193,13 @@ UI.speech = (ent, str, accent = [255, 255, 255]) => {
   ent._bubble = root;
   UI._bubbles.push(root);
 
-  const chip = root.add([
-    rect(w, h, { radius: 8 }), anchor("center"),
-    color(UI.INK[0], UI.INK[1], UI.INK[2]),
-    outline(1.5, rgb(accent[0], accent[1], accent[2])),
-    opacity(0),
-  ]);
+  // pixel frame chip: same helper as dPanel, with the speaker's accent
+  // colour standing in for the bevel's light edge so each character's
+  // lines still read as clearly attributed
+  const chip = root.add([pos(0, 0), opacity(0)]);
+  chip.onDraw(() => {
+    UI._frame(vec2(0, 0), w, h, { center: true, opacity: chip.opacity, light: accent });
+  });
   const tail = root.add([
     rect(9, 9), pos(0, h / 2 + 1), anchor("center"), rotate(45),
     color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0),
@@ -239,7 +304,16 @@ UI.titleCard = (chapterTitle, areaName, big) => {
     let lt = 0;
     const lineW = Math.min(330, chapterTitle.length * 16);
     line.onUpdate(() => { lt += dt(); line.width = lineW * UI.ease(lt / 0.6); });
-    items.push(t1, t2, line);
+
+    // solid pixel banner behind the text (was a soft glow) - gold corner
+    // brackets, same slide-in as the title, same fade-out below since
+    // it rides along in `items`
+    const bx0 = baseX - 18, by0 = baseY - 14, bw = lineW + 56, bh = 84;
+    const banner = add([pos(bx0, by0), opacity(0), fixed(), z(194)]);
+    banner.onDraw(() => { UI._frame(vec2(0, 0), bw, bh, { opacity: banner.opacity, goldCorners: true }); });
+    UI.slideIn(banner, vec2(bx0 - 46, by0), vec2(bx0, by0), 0.5);
+
+    items.push(t1, t2, line, banner);
   } else {
     const t = add([text(areaName, { size: 19 }), pos(baseX, baseY), fixed(), z(195), opacity(1)]);
     const line = add([rect(0, 3), pos(baseX, baseY + 26), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(195), opacity(1)]);
@@ -247,7 +321,13 @@ UI.titleCard = (chapterTitle, areaName, big) => {
     let lt = 0;
     const lineW = Math.min(260, areaName.length * 11);
     line.onUpdate(() => { lt += dt(); line.width = lineW * UI.ease(lt / 0.5); });
-    items.push(t, line);
+
+    const bx0 = baseX - 16, by0 = baseY - 12, bw = lineW + 48, bh = 48;
+    const banner = add([pos(bx0, by0), opacity(0), fixed(), z(194)]);
+    banner.onDraw(() => { UI._frame(vec2(0, 0), bw, bh, { opacity: banner.opacity, goldCorners: true }); });
+    UI.slideIn(banner, vec2(bx0 - 36, by0), vec2(bx0, by0), 0.45);
+
+    items.push(t, line, banner);
   }
 
   wait(2.8, () => {
@@ -303,16 +383,25 @@ UI.hud = () => {
       drawSprite({ sprite: filled ? "heart" : "heart-empty", pos: vec2(hx, 34), anchor: "center", scale: sc });
     }
 
-    // special meter - rounded track, gradient fill, shimmer when ready
+    // special meter - square pixel track, segmented block fill, shimmer when ready
     const bx = 26, by = 52, mh = 11;
-    drawRect({ pos: vec2(bx, by), width: mw, height: mh, radius: 5.5, color: rgb(30, 31, 42) });
+    drawRect({ pos: vec2(bx, by), width: mw, height: mh, color: rgb(30, 31, 42) });
     const fw = mw * hud.meterDisp;
-    if (fw > 8) {
-      drawSprite({
-        sprite: r.meter >= 1 ? "grad-gold" : "grad-violet",
-        pos: vec2(bx + 1, by + 1),
-        scale: vec2((fw - 2) / 64, (mh - 2) / 8),
-      });
+    if (fw > 4) {
+      // blocky fill: an 8px block every 9px (1px gap between), each block
+      // stamped with the full gradient sprite - simplest way to keep the
+      // segmented pixel-art read without slicing the gradient texture
+      const blockW = 8, period = 9, innerH = mh - 2;
+      const gradSpr = r.meter >= 1 ? "grad-gold" : "grad-violet";
+      for (let off = 0; off < fw; off += period) {
+        const w = Math.min(blockW, fw - off);
+        if (w <= 0) break;
+        drawSprite({
+          sprite: gradSpr,
+          pos: vec2(bx + 1 + off, by + 1),
+          scale: vec2(w / 64, innerH / 8),
+        });
+      }
     }
     if (r.meter >= 1) {
       // glow + travelling shimmer
@@ -348,14 +437,11 @@ UI.hud = () => {
       if (isSel) {
         UI.dGlow(vec2(cx2, cy2), 110 + hud.selPop * 30, UI.GOLD, 0.3);
       }
-      drawRect({
-        pos: vec2(x, P.y), width: P.w, height: P.w, radius: 9,
-        color: rgb(24, 25, 34), opacity: i < r.companions.length ? 0.95 : 0.45,
-      });
-      drawRect({
-        pos: vec2(x, P.y), width: P.w, height: P.w, radius: 9, fill: false,
-        outline: { width: isSel ? 2 : 1, color: isSel ? rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]) : rgb(255, 255, 255) },
-        opacity: isSel ? 0.95 : 0.14,
+      // same pixel frame as dPanel - selection reads through the glow
+      // above plus a gold bevel edge here instead of a whole-outline colour swap
+      UI._frame(vec2(x, P.y), P.w, P.w, {
+        opacity: i < r.companions.length ? 0.95 : 0.45,
+        light: isSel ? UI.GOLD : UI.PANEL_BEVEL,
       });
 
       if (i < r.companions.length) {
@@ -455,9 +541,22 @@ UI.mobileControls = () => {
 
   let stickId = null;
   let anchorPos = null;
-  const base = add([circle(54), pos(-999, -999), color(255, 255, 255), opacity(0.12), fixed(), z(185)]);
+  // pixel-frame touch stick: warm bevel-tone ring with an ink outline,
+  // gold knob so it reads with the same ink+accent language as the
+  // rest of the reskin - positions, radii and hit areas unchanged
+  const base = add([
+    circle(54), pos(-999, -999),
+    color(UI.PANEL_BEVEL[0], UI.PANEL_BEVEL[1], UI.PANEL_BEVEL[2]), opacity(0.22),
+    outline(2, rgb(UI.INK[0], UI.INK[1], UI.INK[2])),
+    fixed(), z(185),
+  ]);
   const baseRing = add([circle(54), pos(-999, -999), color(255, 255, 255), opacity(0), fixed(), z(185)]);
-  const knob = add([circle(24), pos(-999, -999), color(255, 255, 255), opacity(0.28), fixed(), z(186)]);
+  const knob = add([
+    circle(24), pos(-999, -999),
+    color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0.55),
+    outline(2, rgb(UI.INK[0], UI.INK[1], UI.INK[2])),
+    fixed(), z(186),
+  ]);
 
   const hide = () => {
     base.pos = vec2(-999, -999);

@@ -123,19 +123,65 @@ ART.genBoss = (color, size) => {
 };
 
 // ---------- pickups & props ----------
+// Crisp pixel heart, redrawn as a blocky bitmap rather than filled
+// arcs, since arcs anti-alias into a soft vector look at this size and
+// the reskin wants it reading as pixel art. Same 14x13 canvas and the
+// same (fill, stroke) signature as before: `stroke`, when passed,
+// becomes the outline colour (the empty heart needs a lighter rim so
+// it still reads against a dark HUD panel); left null, the outline is
+// UI ink and the fill gets its two-tone shading from the fixed danger
+// red used everywhere else in the reskin. Either way the fill is
+// shaded darker across the bottom-right for a chunky two-tone look.
 ART.genHeart = (fill = "#e0444f", stroke = null) => {
   const cv = document.createElement("canvas");
   cv.width = 14; cv.height = 13;
   const x = cv.getContext("2d");
-  const path = () => {
-    x.beginPath();
-    x.arc(4, 4, 3.4, 0, Math.PI * 2);
-    x.arc(10, 4, 3.4, 0, Math.PI * 2);
-    x.moveTo(0.8, 5.5); x.lineTo(13.2, 5.5); x.lineTo(7, 12.6); x.closePath();
+
+  const ink = "#090a10";       // UI.INK, hardcoded here - art.js loads before ui.js
+  const outlineCol = stroke || ink;
+  const darken = (hex, amt) => {
+    const n = parseInt(hex.slice(1), 16);
+    const r = Math.max(0, Math.floor(((n >> 16) & 255) * (1 - amt)));
+    const g = Math.max(0, Math.floor(((n >> 8) & 255) * (1 - amt)));
+    const b = Math.max(0, Math.floor((n & 255) * (1 - amt)));
+    return `rgb(${r},${g},${b})`;
   };
-  x.fillStyle = fill;
-  path(); x.fill();
-  if (stroke) { x.strokeStyle = stroke; x.lineWidth = 1; path(); x.stroke(); }
+  // the default red gets the exact hand-picked shade from the brief
+  // (matches UI danger red); any other fill colour is darkened in place
+  const dark = fill === "#e0444f" ? "#a8202e" : darken(fill, 0.3);
+
+  // heart silhouette as [start, end] column spans per row (14 wide, 13
+  // tall) - row 0 is two separate lobes, every other row is one span
+  const outerRows = [
+    [[1, 4], [9, 12]],
+    [[0, 13]], [[0, 13]], [[0, 13]], [[0, 13]],
+    [[1, 12]], [[1, 12]],
+    [[2, 11]], [[2, 11]],
+    [[3, 10]],
+    [[4, 9]],
+    [[5, 8]],
+    [[6, 7]],
+  ];
+
+  // outline pass: the full silhouette in the outline colour
+  x.fillStyle = outlineCol;
+  outerRows.forEach((spans, y) => {
+    spans.forEach(([s, e]) => x.fillRect(s, y, e - s + 1, 1));
+  });
+
+  // fill pass: each row inset by 1px so the outline reads as a clean
+  // 1px border; rows too narrow to inset (the top lobes, the bottom
+  // point) are left as outline only, which gives the heart its tip
+  for (let y = 1; y <= 11; y++) {
+    const [s, e] = outerRows[y][0];
+    const is = s + 1, ie = e - 1;
+    if (ie < is) continue;
+    for (let cx = is; cx <= ie; cx++) {
+      x.fillStyle = (cx >= 7 && y >= 6) ? dark : fill;
+      x.fillRect(cx, y, 1, 1);
+    }
+  }
+
   return cv.toDataURL();
 };
 
