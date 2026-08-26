@@ -22,7 +22,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "lucy", name: "Lucy", height: 34,
+    id: "lucy", name: "Lucy", height: 34, real: true,
     colors: { hair: [70, 45, 30], skin: [240, 205, 175], top: [200, 80, 90], bottom: [60, 60, 80] },
     weapon: { name: "Pasta", color: [240, 215, 130] },
     flavour: "The matriarch. Has everyone eaten? Is anyone cold?",
@@ -52,7 +52,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "josh", name: "Josh", height: 36,
+    id: "josh", name: "Josh", height: 36, real: true,
     colors: { hair: [40, 35, 30], skin: [225, 185, 150], top: [90, 90, 100], bottom: [50, 50, 60] },
     weapon: { name: "Chicken", color: [235, 200, 150] },
     flavour: "Keeps to himself. Says the weirdest stuff. Beloved.",
@@ -99,7 +99,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "ana", name: "Ana", height: 34,
+    id: "ana", name: "Ana", height: 34, real: true,
     colors: { hair: [40, 30, 25], skin: [225, 180, 145], top: [210, 60, 60], bottom: [45, 45, 60] },
     weapon: { name: "Sea shell", color: [240, 220, 200] },
     flavour: "Spanish passion. Matador energy.",
