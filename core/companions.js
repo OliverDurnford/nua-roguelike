@@ -242,7 +242,29 @@ COMPANIONS.trySpecial = () => {
     color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0), fixed(), z(201), "banner",
   ]);
   UI.fadeObj(glow, 0.38, 0.25, 0.05);
-  const por = add([...ART.charComps(c.id, 200), pos(0, 0), fixed(), z(202), opacity(1), "banner"]);
+
+  // speed-line burst behind illustrated cut-ins only, fanning from the portrait anchor
+  if (typeof REAL_SPLASH !== "undefined" && REAL_SPLASH[c.id]) {
+    for (let i = 0; i < 10; i++) {
+      const beam = add([
+        rect(0, 2), pos(G.W * 0.28, G.H * 0.49), anchor("left"), rotate(rand(-25, 25)),
+        color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0.18), fixed(), z(201), "banner",
+      ]);
+      let lt = 0;
+      beam.onUpdate(() => { lt += dt(); if (lt > 0) beam.width = G.W * 0.5 * UI.ease(lt / 0.25); });
+    }
+  }
+
+  let por;
+  if (typeof REAL_SPLASH !== "undefined" && REAL_SPLASH[c.id]) {
+    // Illustrated cut-in: fills the letterboxed band, anchored centre-left
+    por = add([
+      sprite("splash-" + c.id), anchor("center"), scale((G.H - barH * 2) * 0.96 / 512),
+      pos(0, 0), fixed(), z(202), opacity(1), "banner",
+    ]);
+  } else {
+    por = add([...ART.charComps(c.id, 200), pos(0, 0), fixed(), z(202), opacity(1), "banner"]);
+  }
   UI.slideIn(por, vec2(G.W * 0.12, G.H * 0.49), vec2(G.W * 0.28, G.H * 0.49), 0.3);
 
   const nameT = add([

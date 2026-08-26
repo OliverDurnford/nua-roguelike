@@ -301,6 +301,11 @@ ART.init = () => {
   loadSprite("car", ART.genCar());
   for (let i = 0; i < 3; i++) loadSprite("crack" + i, ART.genCrack(i));
 
+  // Illustrated special-attack cut-ins (core/splash-real.js), when present
+  if (typeof REAL_SPLASH !== "undefined") {
+    for (const k in REAL_SPLASH) loadSprite("splash-" + k, REAL_SPLASH[k]);
+  }
+
   // UI polish set
   loadSprite("glow", ART.genGlow());
   loadSprite("vignette", ART.genVignette());
