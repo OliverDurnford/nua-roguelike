@@ -21,12 +21,26 @@
        "visible". Patching only the first gives you a black screen.
 
        Without ?headless nothing here runs, so real players still get
-       the normal behaviour of the game pausing in a background tab. -->
+       the normal behaviour of the game pausing in a background tab.
+
+       The frame pump ticks from a Web Worker, not setTimeout: hidden
+       tabs throttle main-thread timers to about once a second, which
+       put the whole game into slow motion mid-test. Worker timers are
+       not throttled, so the loop holds 60fps off-screen. -->
   <script>
     if (location.search.includes("headless")) {
       Object.defineProperty(document, "visibilityState", { get: () => "visible", configurable: true });
       Object.defineProperty(document, "hidden", { get: () => false, configurable: true });
-      window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16);
+      const tick = new Worker(URL.createObjectURL(
+        new Blob(["setInterval(() => postMessage(0), 16)"], { type: "text/javascript" })
+      ));
+      let frameCbs = [];
+      tick.onmessage = () => {
+        const cbs = frameCbs;
+        frameCbs = [];
+        for (const cb of cbs) cb(performance.now());
+      };
+      window.requestAnimationFrame = (cb) => (frameCbs.push(cb), 0);
     }
   </script>
 
