@@ -268,7 +268,11 @@ scene("area", ({ chapter, area: areaNum }) => {
 
   // --- NPC easter egg (e.g. Megan Whiteside in Propaganda) ---
   if (a.npc) {
-    const npcPos = vec2(m.w * 0.5, m.h * 0.3);
+    // Plates can pin the NPC to measured clear floor; ASCII areas keep
+    // the old fixed fraction of the room.
+    const npcPos = (a.plate && a.plate.npcSpawn)
+      ? vec2(a.plate.npcSpawn[0] * a.plate.unit, a.plate.npcSpawn[1] * a.plate.unit)
+      : vec2(m.w * 0.5, m.h * 0.3);
     const npc = add([
       sprite(a.npc.spr), anchor("center"), pos(npcPos), z(44), opacity(1),
       { t: rand(0, 5), said: false },
