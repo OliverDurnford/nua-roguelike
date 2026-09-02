@@ -107,6 +107,12 @@ SOUNDTRACK.play = (track) => {
 
 SOUNDTRACK.stop = () => {
   if (!SOUNDTRACK._el) return;
+  // Cleared synchronously here, not inside the fade callback below: a
+  // play() landing while this fade-out is still running must see nothing
+  // requested and take over cleanly, rather than reading the just-stopped
+  // track as still "requested" and wrongly no-opping once this fade
+  // finishes and pauses it.
+  SOUNDTRACK._requested = null;
   SOUNDTRACK._rampTo(0, 0.4, () => {
     SOUNDTRACK._el.pause();
     SOUNDTRACK.current = null;
