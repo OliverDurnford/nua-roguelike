@@ -367,10 +367,17 @@ ART.init = () => {
     loadSprite("record", REAL_RECORD);
   }
 
+  // The title card that drops onto the sleeve (core/title-real.js)
+  if (typeof REAL_TITLE !== "undefined") {
+    loadSprite("title-card", REAL_TITLE);
+  }
+
   // UI polish set
   loadSprite("glow", ART.genGlow());
   loadSprite("vignette", ART.genVignette());
   loadSprite("bg-night", ART.genVGrad("#101322", "#1d1430"));
+  // clear-to-dark, for settling figures onto a busy background
+  loadSprite("grad-fade", ART.genVGrad("rgba(10,8,22,0)", "rgba(10,8,22,1)"));
   loadSprite("grad-gold", ART.genHGrad("#ffb13d", "#ffe27a"));
   loadSprite("grad-violet", ART.genHGrad("#5d4ae0", "#a08bff"));
   loadSprite("grad-red", ART.genHGrad("#a8202e", "#ff5a4e"));

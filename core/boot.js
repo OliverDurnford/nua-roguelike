@@ -8,7 +8,12 @@ kaboom({
   height: 540,
   letterbox: true,
   crisp: true,
-  background: [12, 12, 16],
+  // Cleared TRANSPARENT, not opaque. The page body behind is the same
+  // #0c0c10 the old opaque clear used, so every scene looks identical -
+  // but the title sequence can now put its <video> of the room behind the
+  // canvas and draw the album cover, the title and the ten friends on top
+  // of it. See core/titlevideo.js.
+  background: [12, 12, 16, 0],
   touchToMouse: true,
 });
 

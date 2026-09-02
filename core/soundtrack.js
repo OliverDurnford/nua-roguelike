@@ -90,7 +90,10 @@ SOUNDTRACK.syncMute = () => {
   if (a) a.muted = (typeof SFX !== "undefined" && SFX.muted);
 };
 
-SOUNDTRACK.play = (track) => {
+// `at` seeks the track before it starts, in seconds. The title sequence needs
+// it: the video was cut against an export whose audio sits 148ms behind this
+// m4a, so starting the song 148ms in is what puts the beat under the picture.
+SOUNDTRACK.play = (track, at = 0) => {
   if (!track) return;
   // Checks _requested, not current: see the note by _requested's
   // declaration above for why. This is what stops a second play() call
@@ -104,7 +107,10 @@ SOUNDTRACK.play = (track) => {
     SOUNDTRACK.current = track;
     SOUNDTRACK.token++;
     a.src = "music/" + track.file;
-    try { a.currentTime = 0; } catch (e) {}
+    // Seeking before the source has any metadata throws, so wait for it.
+    const seek = () => { try { a.currentTime = at; } catch (e) {} };
+    if (at && a.readyState < 1) a.addEventListener("loadedmetadata", seek, { once: true });
+    else seek();
     SOUNDTRACK.syncMute();
     a.volume = 0;
     // Browsers refuse audio before the first interaction, which is
@@ -217,8 +223,17 @@ SOUNDTRACK.playForArea = (chapter, areaNum, a) => {
 };
 
 // Named track by id, for the title screen.
-SOUNDTRACK.playById = (id) => {
+SOUNDTRACK.playById = (id, at = 0) => {
   if (typeof TRACKS === "undefined") return;
   const t = TRACKS.filter((x) => x.id === id)[0];
-  if (t) SOUNDTRACK.play(t);
+  if (t) SOUNDTRACK.play(t, at);
+};
+
+// Where the song has got to, in seconds, or null if nothing is sounding.
+// The title sequence cues its titles off this rather than off its own clock:
+// the beat is the thing the eye is being asked to feel, so the beat is the
+// clock that everything else follows.
+SOUNDTRACK.time = () => {
+  const a = SOUNDTRACK._el;
+  return a && !a.paused && a.currentTime > 0 ? a.currentTime : null;
 };
