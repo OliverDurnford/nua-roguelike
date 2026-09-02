@@ -7,7 +7,8 @@
 // areas: chapter-area keys like "1-3", or "title" for the title
 //        screen. An explicit key always beats the mood pool.
 //
-// Ollie assigns these. See docs/soundtrack-labelling.md.
+// Ollie assigns these. See ../docs/soundtrack-labelling.md (one level
+// above this repo's root, so it is not tracked in here).
 // ============================================================
 
 const TRACKS = [

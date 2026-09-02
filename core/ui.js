@@ -351,8 +351,6 @@ UI.hud = () => {
     selPop: 0,
     lastHp: null,
     hurtPulse: 0,
-    trackToken: -1,   // last SOUNDTRACK.token seen
-    trackT: 0,        // seconds since this track started
   }]);
 
   hud.onDraw(() => {
@@ -463,17 +461,22 @@ UI.hud = () => {
     }
 
     // ===== the record: announces each new song =====
-    // Its own timer, reset by SOUNDTRACK.token rather than the audio
+    // Timer and token both live on SOUNDTRACK, not this hud object: hud
+    // is rebuilt fresh on every scene change, but SOUNDTRACK persists, so
+    // a track that legitimately CONTINUES across an area boundary (play()
+    // correctly no-ops when asked to start the track already playing)
+    // does not get its reveal timer reset by the mere fact of a new area
+    // loading. Reset is keyed off SOUNDTRACK.token rather than the audio
     // element's currentTime, so a looping track does not re-trigger the
     // reveal and a paused tab does not drift.
     if (typeof SOUNDTRACK !== "undefined" && SOUNDTRACK.current) {
-      if (hud.trackToken !== SOUNDTRACK.token) {
-        hud.trackToken = SOUNDTRACK.token;
-        hud.trackT = 0;
+      if (SOUNDTRACK.hudToken !== SOUNDTRACK.token) {
+        SOUNDTRACK.hudToken = SOUNDTRACK.token;
+        SOUNDTRACK.hudT = 0;
       }
-      hud.trackT += dt();
+      SOUNDTRACK.hudT += dt();
 
-      const T = hud.trackT;
+      const T = SOUNDTRACK.hudT;
       const REVEAL = SOUNDTRACK.REVEAL_AT;   // 10s
       const OUT_AT = REVEAL + 4;             // linger 4s on the title
       const IN_DUR = 0.45, OUT_DUR = 0.5;

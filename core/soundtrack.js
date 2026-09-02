@@ -23,6 +23,19 @@ SOUNDTRACK.REVEAL_AT = 10;   // seconds before the HUD reveals the title
 SOUNDTRACK.current = null;   // the track actually audible right now
 SOUNDTRACK.token = 0;        // bumps on every track change; the HUD watches it
 
+// The record's reveal-timer state lives here, not on the per-scene hud
+// object in core/ui.js, because this object survives scene changes and
+// that one does not. Task 7's HUD rebuilds a fresh hud object on every
+// area, so if the timer lived there, a track that legitimately CONTINUES
+// across an area boundary (play() correctly no-ops when asked to start
+// the track already playing) would still see its brand-new hud reset the
+// clock to zero and slide the record back in showing "???" for a song
+// that has been playing for minutes. Keying the reset off SOUNDTRACK.token
+// instead of the hud object's own lifetime fixes that: the token only
+// changes when the track genuinely changes.
+SOUNDTRACK.hudT = 0;         // seconds since the record's reveal timer last reset
+SOUNDTRACK.hudToken = -1;    // last SOUNDTRACK.token the HUD has accounted for
+
 // _requested is set the instant play() is called, before any fade runs.
 // current only catches up once that fade finishes and the new source is
 // actually sounding, up to a second later. Keep both: if the guard below
@@ -38,6 +51,7 @@ SOUNDTRACK._requested = null;
 
 SOUNDTRACK._el = null;
 SOUNDTRACK._fade = null;
+SOUNDTRACK._retryWired = false;   // true while a one-shot retry pair is attached
 
 SOUNDTRACK._audio = () => {
   if (!SOUNDTRACK._el) {
@@ -93,11 +107,35 @@ SOUNDTRACK.play = (track) => {
     try { a.currentTime = 0; } catch (e) {}
     SOUNDTRACK.syncMute();
     a.volume = 0;
-    // Browsers refuse audio before the first interaction. By the time an
-    // area loads the player has clicked through the title, but a rejected
-    // promise here must not throw.
+    // Browsers refuse audio before the first interaction, which is
+    // exactly the state of a fresh page load: go("title") calls playById
+    // before the player has clicked or pressed anything, so this rejects.
+    // A rejected promise here must not throw, but swallowing it silently
+    // (the old behaviour) left the title screen mute forever with nothing
+    // to retry it. Instead, wait for the first interaction and try again.
     const p = a.play();
-    if (p && p.catch) p.catch(() => {});
+    if (p && p.catch) {
+      p.catch(() => {
+        // Guard so a second, still-blocked play() call (e.g. entering an
+        // area before the player has interacted at all) does not attach
+        // a second pair of listeners on top of this one.
+        if (SOUNDTRACK._retryWired) return;
+        SOUNDTRACK._retryWired = true;
+        // One shared handler for both event types: whichever fires first
+        // removes both listeners (itself included), so they cannot stack
+        // up, then retries. A retry that fails again just no-ops, same as
+        // above, rather than re-arming - by then a gesture has already
+        // happened, so a further rejection would not be this timing issue.
+        const retry = () => {
+          window.removeEventListener("pointerdown", retry);
+          window.removeEventListener("keydown", retry);
+          SOUNDTRACK._retryWired = false;
+          a.play().catch(() => {});
+        };
+        window.addEventListener("pointerdown", retry);
+        window.addEventListener("keydown", retry);
+      });
+    }
     SOUNDTRACK._rampTo(SOUNDTRACK.volume);
   };
 
@@ -130,12 +168,22 @@ SOUNDTRACK.forArea = (chapter, areaNum, a) => {
 
   const mood = a && a.boss ? "boss" : a && a.quiet ? "quiet" : "general";
   let pool = TRACKS.filter((t) => t.mood === mood && !(t.areas || []).length);
-  if (!pool.length) pool = TRACKS.filter((t) => !(t.areas || []).length);
+  // No track is labelled "quiet" yet, so this fallback is what quiet
+  // areas actually draw from. Excluding "boss" keeps White Noise reserved
+  // for boss arenas instead of it turning up in a quiet room too.
+  if (!pool.length) pool = TRACKS.filter((t) => !(t.areas || []).length && t.mood !== "boss");
   if (!pool.length) pool = TRACKS;
 
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
-  return pool[Math.abs(h) % pool.length];
+  // The keys are tiny and highly regular ("1-1", "1-2", ...), so the raw
+  // accumulator's low bits march in step with the area number, and % only
+  // reads the low bits. Avalanche them first or the same handful of songs
+  // repeats in alphabetical order and most of the soundtrack never plays.
+  h ^= h >>> 15; h = Math.imul(h, 2246822507);
+  h ^= h >>> 13; h = Math.imul(h, 3266489909);
+  h ^= h >>> 16;
+  return pool[(h >>> 0) % pool.length];
 };
 
 SOUNDTRACK.playForArea = (chapter, areaNum, a) => {

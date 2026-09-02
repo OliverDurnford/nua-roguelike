@@ -237,5 +237,6 @@ exists so automated testing can drive the game off-screen. Leave it in.
 - Death restarts the current chapter (companions kept). Friendly, not
   hardcore — flag if you want it harsher
 - Soundtrack: every track defaults to the shared "general" pool. Assigning
-  songs to specific levels is Ollie's call, see docs/soundtrack-labelling.md
-  and edit data/soundtrack.js to match
+  songs to specific levels is Ollie's call, see ../docs/soundtrack-labelling.md
+  (one level above this repo's root, not tracked in here) and edit
+  data/soundtrack.js to match
