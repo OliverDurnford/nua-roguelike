@@ -362,6 +362,11 @@ ART.init = () => {
     for (const k in REAL_SPLASH) loadSprite("splash-" + k, REAL_SPLASH[k]);
   }
 
+  // The spinning vinyl that announces a new song (core/record-real.js)
+  if (typeof REAL_RECORD !== "undefined") {
+    loadSprite("record", REAL_RECORD);
+  }
+
   // UI polish set
   loadSprite("glow", ART.genGlow());
   loadSprite("vignette", ART.genVignette());
