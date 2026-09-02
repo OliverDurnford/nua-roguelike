@@ -5,3 +5,6 @@ Thumbs.db
 .idea/
 .vscode/
 node_modules/
+
+# Local scratch for subagent-driven execution, not part of the game
+.superpowers/
