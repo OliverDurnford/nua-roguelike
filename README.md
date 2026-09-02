@@ -125,7 +125,9 @@ From the browser console (right-click → Inspect → Console):
 - Sound effects are IN (code-generated retro synth in `core/sfx.js`):
   shots, hits, hurt, pickups, recruit jingle, special riser, boss roar,
   Sam's fart, the car honk, menu blips. Press N to mute (remembered).
-  The 8-bit soundtrack (real songs) is still its own session
+  The real-song soundtrack is IN too: 34 tracks in `music/`, played by
+  `core/soundtrack.js`, with the spinning record in the HUD naming each
+  one 10 seconds after it starts. N mutes both.
 - Megan Whiteside NPC stands in Propaganda with a PLACEHOLDER greeting
 - New easter egg dialogue: Lucy's Geordie lines, Jess's blunt one-liners,
   Ana's ocean lines near water, Adam's "Watch this.", the Sam+Josh

@@ -1,8 +1,9 @@
 // ============================================================
 // SFX: code-generated retro sound effects via WebAudio.
 // No audio files: every sound is a little synth recipe below.
-// The real 8-bit soundtrack is a separate session - this is
-// just the bleeps and bloops that make combat feel alive.
+// The real songs live in core/soundtrack.js and are deliberately
+// kept out of this file's Web Audio graph. These are just the
+// bleeps and bloops that make combat feel alive.
 //
 // Press N in-game to mute/unmute (remembered between visits).
 // ============================================================
