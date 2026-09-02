@@ -157,9 +157,43 @@ SOUNDTRACK.stop = () => {
   });
 };
 
+// Where an area sits in the run, counting from 0. Used to deal songs out
+// in order rather than picking each one independently. Reads CHAPTERS at
+// call time, not load time, because data/chapters.js loads after this file.
+SOUNDTRACK._ordinal = (chapter, areaNum) => {
+  let n = 0;
+  if (typeof CHAPTERS !== "undefined" && CHAPTERS.length) {
+    for (let c = 0; c < chapter - 1 && c < CHAPTERS.length; c++) {
+      n += (CHAPTERS[c].areas || []).length;
+    }
+  } else {
+    n = (chapter - 1) * 5;
+  }
+  return n + (areaNum - 1);
+};
+
+// Shuffle a pool into a fixed order. Same seed every run, so replaying an
+// area always hears the same song. Change the seed to reshuffle the album.
+SOUNDTRACK._dealt = (pool) => {
+  const arr = pool.slice();
+  let s = 0x9e3779b9;
+  for (let i = arr.length - 1; i > 0; i--) {
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5; s |= 0;   // xorshift32
+    const j = Math.abs(s) % (i + 1);
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+};
+
 // Which song plays in a given room. An explicit area key always wins;
-// otherwise pick from the mood pool with a hash of the key, so replaying
-// the same area hears the same song but neighbouring areas differ.
+// otherwise deal from the mood pool.
+//
+// Songs are DEALT like a deck, not hashed per area. Hashing each area
+// independently collides by the birthday paradox: 23 areas drawing from
+// 32 tracks landed on only 14 distinct songs, one of them three times,
+// while a third of the soundtrack never played at all. Dealing gives
+// every area its own song until the pool runs out, which is rather the
+// point of a hand-picked soundtrack.
 SOUNDTRACK.forArea = (chapter, areaNum, a) => {
   if (typeof TRACKS === "undefined" || !TRACKS.length) return null;
   const key = chapter + "-" + areaNum;
@@ -174,16 +208,8 @@ SOUNDTRACK.forArea = (chapter, areaNum, a) => {
   if (!pool.length) pool = TRACKS.filter((t) => !(t.areas || []).length && t.mood !== "boss");
   if (!pool.length) pool = TRACKS;
 
-  let h = 0;
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
-  // The keys are tiny and highly regular ("1-1", "1-2", ...), so the raw
-  // accumulator's low bits march in step with the area number, and % only
-  // reads the low bits. Avalanche them first or the same handful of songs
-  // repeats in alphabetical order and most of the soundtrack never plays.
-  h ^= h >>> 15; h = Math.imul(h, 2246822507);
-  h ^= h >>> 13; h = Math.imul(h, 3266489909);
-  h ^= h >>> 16;
-  return pool[(h >>> 0) % pool.length];
+  const dealt = SOUNDTRACK._dealt(pool);
+  return dealt[SOUNDTRACK._ordinal(chapter, areaNum) % dealt.length];
 };
 
 SOUNDTRACK.playForArea = (chapter, areaNum, a) => {
