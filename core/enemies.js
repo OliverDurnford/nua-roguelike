@@ -1,5 +1,5 @@
 // ============================================================
-// ENEMIES — three basic behaviours plus bosses.
+// ENEMIES: three basic behaviours plus bosses.
 // Behaviours are PLACEHOLDER until the Enemy Design session:
 //   chaser  - walks at you
 //   runner  - fast, fragile, walks at you

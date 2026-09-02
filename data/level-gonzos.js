@@ -1,5 +1,5 @@
 // ============================================================
-// GONZO'S — Chapter 1, Area 1.
+// GONZO'S: Chapter 1, Area 1.
 //
 // This area does NOT use an ASCII map. It is a "plate" area:
 // one painted top-down background (core/plates-real.js) with a

@@ -1,5 +1,5 @@
 // ============================================================
-// ART — placeholder sprite generation.
+// ART: placeholder sprite generation.
 // Draws every character, enemy and boss onto small canvases at
 // boot and loads them as sprites. Real art replaces these later
 // by dropping PNGs into sprites/ and swapping the loadSprite

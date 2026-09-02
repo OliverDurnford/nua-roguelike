@@ -1,5 +1,5 @@
 // ============================================================
-// NORWICH MARKET — Chapter 2, Area 1.
+// NORWICH MARKET: Chapter 2, Area 1.
 //
 // Plate area, FIRST PASS geometry with a known caveat: the art's
 // aisles between stall rows painted narrower than a character, so

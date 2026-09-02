@@ -1,5 +1,5 @@
 // ============================================================
-// ENDING — fade in from white, Ollie's message, run stats,
+// ENDING: fade in from white, Ollie's message, run stats,
 // and the "What You Missed" replay hook (PROJECT_CONTEXT.md
 // locked decisions). The message text is a PLACEHOLDER:
 // Ollie writes the real one, nobody else.

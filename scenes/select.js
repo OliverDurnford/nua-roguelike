@@ -1,5 +1,5 @@
 // ============================================================
-// CHARACTER SELECT — all ten, selectable from the start.
+// CHARACTER SELECT: all ten, selectable from the start.
 // Cards slide in staggered, hover to lift, a gold glow tracks
 // the selection, details in a sleek bottom panel.
 // ============================================================

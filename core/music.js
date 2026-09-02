@@ -1,5 +1,5 @@
 // ============================================================
-// MUSIC — the chiptune sequencer.
+// MUSIC: the chiptune sequencer.
 //
 // Same idea as sfx.js: no audio files, everything is generated
 // from numbers. A song is a few lines of text per channel and

@@ -1,5 +1,5 @@
 // ============================================================
-// VICTORIA PARK, RUINED — Chapter 5, Area 5. The finale arena.
+// VICTORIA PARK, RUINED: Chapter 5, Area 5. The finale arena.
 //
 // Plate area, FIRST PASS geometry. The same park from the
 // tutorial, years on and broken: dead trees, the glowing rune

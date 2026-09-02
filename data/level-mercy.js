@@ -1,5 +1,5 @@
 // ============================================================
-// MERCY, FIRST ROOM — Chapter 1, Area 3.
+// MERCY, FIRST ROOM: Chapter 1, Area 3.
 //
 // This area does NOT use an ASCII map. It is a "plate" area:
 // one painted top-down background (core/plates-real.js) with a

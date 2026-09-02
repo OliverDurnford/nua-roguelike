@@ -1,5 +1,5 @@
 // ============================================================
-// TITLE — the first thing the friends see, so it gets the
+// TITLE: the first thing the friends see, so it gets the
 // cinematic treatment: gradient night sky, drifting dust,
 // glowing title, the whole group bobbing on the grass.
 // Game name is a WORKING TITLE - Ollie picks the real one.

@@ -1,5 +1,5 @@
 // ============================================================
-// STORY — the device's permanent memory, across every run.
+// STORY: the device's permanent memory, across every run.
 // Which friends have ever been met, which characters have
 // finished the game, how many runs have been completed.
 //

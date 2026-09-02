@@ -1,5 +1,5 @@
 // ============================================================
-// PLATES — full-room background artwork, embedded as base64 so
+// PLATES: full-room background artwork, embedded as base64 so
 // the game still works when index.html is opened straight off
 // the disk (file:// blocks loading images from separate files).
 //

@@ -1,5 +1,5 @@
 // ============================================================
-// THE MISCHIEF — Chapter 2, Area 3.
+// THE MISCHIEF: Chapter 2, Area 3.
 //
 // Plate area, FIRST PASS geometry. The pub is one tall image,
 // three rooms stacked: games room with the pool table at the top,

@@ -1,5 +1,5 @@
 // ============================================================
-// "White Noise" — chiptune arrangement (TEST TRACK)
+// "White Noise", chiptune arrangement (TEST TRACK)
 //
 // Disclosure ft. AlunaGeorge, 2013.
 //

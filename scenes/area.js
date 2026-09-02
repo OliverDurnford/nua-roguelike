@@ -1,5 +1,5 @@
 // ============================================================
-// AREA SCENE — runs every gameplay area in every chapter.
+// AREA SCENE: runs every gameplay area in every chapter.
 // Builds the map from its ASCII layout, spawns enemies at random
 // spawn points, locks the exit until the area is cleared, and
 // handles companion pickups, bosses, and the finale.
@@ -416,7 +416,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   UI.mobileControls();
   COMPANIONS.ambient();
   COMPANIONS.onAreaEnter();
-  UI.titleCard("CHAPTER " + chapter + " — " + ch.title, a.name, areaNum === 1);
+  UI.titleCard("CHAPTER " + chapter + ": " + ch.title, a.name, areaNum === 1);
   UI.sceneFade();
 
   G.devSkip = () => {
@@ -441,7 +441,7 @@ scene("area", ({ chapter, area: areaNum }) => {
 });
 
 // ============================================================
-// FINALE — Victoria Park, ruined. Five caged friends in front of
+// FINALE: Victoria Park, ruined. Five caged friends in front of
 // the boss. Win: cages open, friends gather, fade to white.
 // ============================================================
 const FINALE = {};

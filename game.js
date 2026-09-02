@@ -1,5 +1,5 @@
 // ============================================================
-// GAME — load the placeholder art, then start at the title.
+// GAME: load the placeholder art, then start at the title.
 // Dev helper: window.dev lets you jump anywhere from the browser
 // console, e.g.  dev.area(3, 5)  jumps to the Chapter 3 boss.
 // ============================================================

@@ -1,5 +1,5 @@
 // ============================================================
-// TUTORIAL — Victoria Park, intact and sunny.
+// TUTORIAL: Victoria Park, intact and sunny.
 // Teaches movement and throwing. Ball hits a bloke's car ("Oi!"),
 // cracks open, friends get pulled in one by one, player falls last.
 // Hard cut to Chapter 1. (Flow per LEVEL_DESIGN.md.)

@@ -1,5 +1,5 @@
 // ============================================================
-// COMPANIONS — recruitment, passives, the shared special meter,
+// COMPANIONS: recruitment, passives, the shared special meter,
 // and special attacks ("single cutscene frame -> gameplay effect"
 // per the design docs; the frame is a placeholder banner for now).
 // ============================================================

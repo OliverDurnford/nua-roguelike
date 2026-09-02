@@ -1,5 +1,5 @@
 // ============================================================
-// SFX — code-generated retro sound effects via WebAudio.
+// SFX: code-generated retro sound effects via WebAudio.
 // No audio files: every sound is a little synth recipe below.
 // The real 8-bit soundtrack is a separate session - this is
 // just the bleeps and bloops that make combat feel alive.

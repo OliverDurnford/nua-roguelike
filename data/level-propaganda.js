@@ -1,5 +1,5 @@
 // ============================================================
-// PROPAGANDA — Chapter 1, Area 2.
+// PROPAGANDA: Chapter 1, Area 2.
 //
 // Plate area: painted background (core/plates-real.js) with a
 // hand-measured collision layer. FIRST PASS geometry: the sealed

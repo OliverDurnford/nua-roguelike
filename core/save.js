@@ -1,5 +1,5 @@
 // ============================================================
-// SAVE — remembers the run between visits, so closing the tab
+// SAVE: remembers the run between visits, so closing the tab
 // (or a phone quietly killing the page) never loses progress.
 //
 // One checkpoint per area: walking into a room saves the run as

@@ -1,5 +1,5 @@
 // ============================================================
-// PLAYER — movement, aiming, auto-attack, getting hurt.
+// PLAYER: movement, aiming, auto-attack, getting hurt.
 // Combat rules per CHARACTER_ROSTER.md:
 //   - WASD / joystick to move
 //   - fires toward the mouse on desktop, auto-aims on mobile

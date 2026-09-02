@@ -1,5 +1,5 @@
 // ============================================================
-// CHARACTERS — all ten friends.
+// CHARACTERS: all ten friends.
 // Source of truth: CHARACTER_ROSTER.md. Numbers are placeholder balance.
 // colors drive the placeholder sprites until real art lands.
 // Height order (tallest first): Cal > Ollie > Sam > Ethan = Adam > Josh > girls.

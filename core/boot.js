@@ -1,5 +1,5 @@
 // ============================================================
-// BOOT — starts the engine and holds shared game state.
+// BOOT: starts the engine and holds shared game state.
 // Everything global lives on G so it's easy to find.
 // ============================================================
 
@@ -55,7 +55,7 @@ G.charH = (mult = 1) => Math.round(G.CHAR_H * mult * G.areaScale);
 
 // Base stats every character starts with. Identical across all ten,
 // per the design rule: depth comes from companions, not stat trees.
-// NUMBERS ARE PLACEHOLDER BALANCE — tune in playtesting.
+// NUMBERS ARE PLACEHOLDER BALANCE. Tune in playtesting.
 G.BASE_STATS = {
   moveSpeed: 175,
   maxHp: 6,

@@ -1,5 +1,5 @@
 // ============================================================
-// CHAPTERS — every chapter, area map, enemy set and boss.
+// CHAPTERS: every chapter, area map, enemy set and boss.
 // Source of truth: LEVEL_DESIGN.md.
 //
 // MAP LEGEND (each character is one 48px tile):

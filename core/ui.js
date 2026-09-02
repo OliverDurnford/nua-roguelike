@@ -1,5 +1,5 @@
 // ============================================================
-// UI — HUD, touch controls, and the visual-polish helpers.
+// UI: HUD, touch controls, and the visual-polish helpers.
 // Design language: chunky pixel-art panels (ink outline, warm
 // wood-toned bevel, notched square corners) over the painted
 // venues, gold accents, segmented meter bars, cinematic vignette.
