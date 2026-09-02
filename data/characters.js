@@ -37,7 +37,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "cal", name: "Cal", height: 46,
+    id: "cal", name: "Cal", height: 46, real: true,
     colors: { hair: [55, 40, 30], skin: [230, 190, 155], top: [70, 110, 80], bottom: [35, 35, 45] },
     weapon: { name: "Bike handlebars", color: [180, 185, 195] },
     flavour: "6ft 4\". Loves bikes. Will not agree with you.",
@@ -84,7 +84,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "sam", name: "Sam", height: 41,
+    id: "sam", name: "Sam", height: 41, real: true,
     colors: { hair: [200, 110, 50], skin: [240, 200, 165], top: [90, 140, 95], bottom: [55, 55, 70] },
     weapon: { name: "Plant", color: [110, 170, 90] },
     flavour: "Ginger, smiley, surprisingly aerodynamic.",
