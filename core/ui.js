@@ -351,6 +351,8 @@ UI.hud = () => {
     selPop: 0,
     lastHp: null,
     hurtPulse: 0,
+    trackToken: -1,   // last SOUNDTRACK.token seen
+    trackT: 0,        // seconds since this track started
   }]);
 
   hud.onDraw(() => {
@@ -457,6 +459,56 @@ UI.hud = () => {
         drawText({ text: String(i + 1), size: 9, pos: vec2(x + 5, P.y + 4), color: rgb(150, 152, 168) });
       } else {
         drawText({ text: "·", size: 18, pos: vec2(cx2, cy2), anchor: "center", color: rgb(110, 112, 130), opacity: 0.5 });
+      }
+    }
+
+    // ===== the record: announces each new song =====
+    // Its own timer, reset by SOUNDTRACK.token rather than the audio
+    // element's currentTime, so a looping track does not re-trigger the
+    // reveal and a paused tab does not drift.
+    if (typeof SOUNDTRACK !== "undefined" && SOUNDTRACK.current) {
+      if (hud.trackToken !== SOUNDTRACK.token) {
+        hud.trackToken = SOUNDTRACK.token;
+        hud.trackT = 0;
+      }
+      hud.trackT += dt();
+
+      const T = hud.trackT;
+      const REVEAL = SOUNDTRACK.REVEAL_AT;   // 10s
+      const OUT_AT = REVEAL + 4;             // linger 4s on the title
+      const IN_DUR = 0.45, OUT_DUR = 0.5;
+
+      if (T < OUT_AT + OUT_DUR) {
+        const ease = (x) => 1 - Math.pow(1 - x, 3);
+        const inK = ease(Math.min(1, T / IN_DUR));
+        const outK = ease(Math.max(0, Math.min(1, (T - OUT_AT) / OUT_DUR)));
+        // slides in from off the right edge, and back out the same way
+        const slide = (1 - inK) * 110 + outK * 110;
+        const alpha = Math.min(inK, 1 - outK);
+
+        const cx = 920 + slide, cy = 112;
+        drawSprite({
+          sprite: "record",
+          pos: vec2(cx, cy),
+          anchor: "center",
+          angle: time() * 150,      // about 0.4 turns a second
+          width: 44, height: 44,
+          opacity: alpha,
+        });
+
+        // "???" until the reveal, then the title, with a brief pop
+        const revealed = T >= REVEAL;
+        const pop = revealed ? Math.max(0, 1 - (T - REVEAL) / 0.35) : 0;
+        drawText({
+          text: revealed ? SOUNDTRACK.current.title : "???",
+          size: 12 + pop * 4,
+          pos: vec2(cx - 34, cy),
+          anchor: "right",
+          color: revealed
+            ? rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2])
+            : rgb(150, 152, 168),
+          opacity: alpha,
+        });
       }
     }
 
