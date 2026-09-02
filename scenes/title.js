@@ -6,6 +6,7 @@
 // ============================================================
 
 scene("title", () => {
+  SOUNDTRACK.playById("dare-8-bit");
   G.paused = false;
   G.run = null;
 

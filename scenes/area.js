@@ -167,6 +167,10 @@ scene("area", ({ chapter, area: areaNum }) => {
   // added, because every sprite reads it on the way in.
   G.areaScale = (a.plate && a.plate.charScale) || a.charScale || 1;
 
+  // The song for this room. No-op if the same track is already playing,
+  // so walking between rooms on the same track does not restart it.
+  SOUNDTRACK.playForArea(chapter, areaNum, a);
+
   const m = a.plate ? MAPS.buildPlate(a.plate) : MAPS.build(a.map, a.palette);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
   G.areaWater = !!a.water;   // lets Ana's ocean lines trigger near water

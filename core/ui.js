@@ -519,9 +519,11 @@ UI.wireControls = () => {
     }
   });
 
-  // sound on/off, remembered between visits
+  // sound on/off, remembered between visits. The music is a plain audio
+  // element outside the Web Audio graph, so it needs muting separately.
   onKeyPress("n", () => {
     const on = SFX.toggle();
+    SOUNDTRACK.syncMute();
     UI.subtitleSeq([on ? "sound ON" : "sound OFF"]);
     if (on) SFX.play("uiconfirm");
   });
