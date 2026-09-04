@@ -7,7 +7,7 @@
 // rather than appearing later. Then, on three beats: the top of
 // the title whips in from the right, "10 YEARS" from the left,
 // and the ten of them come up off the bottom of the sleeve one
-// after another in a wave.
+// after another in a wave that fills the third drop.
 //
 // The room is a <video> behind a transparent canvas (see
 // core/titlevideo.js). Everything below is drawn on top of it.
@@ -23,12 +23,13 @@ const TSEQ = {
   PARK: 5.500,        // the camera stops moving
   TOP_AT: 6.458,      // 01:00:06:11 - "NOW THAT'S WHAT I CALL" lands, from the right
   BOTTOM_AT: 6.958,   // 01:00:06:23 - "10 YEARS" lands, from the left, one beat later
-  WAVE_AT: 7.962,     // 01:00:07:23 - the band comes in; the first of the ten lands
+  WAVE_FROM: 7.458,   // 01:00:07:11 - the third drop begins; the first of the ten starts to rise
+  WAVE_TO: 7.958,     // 01:00:07:23 - the band comes in; the last of the ten lands
   END: 8.000,         // last frame; the video holds here for good
 
   SLIDE: 0.16,        // how long each title piece takes to whip in, ending on its beat
-  WAVE_STEP: 0.125,   // a sixteenth at 120bpm: one of the ten lands every step
-  WAVE_RISE: 0.26,    // how long each of them takes to come up
+  WAVE_RISE: 0.16,    // how long each of the ten takes to come up. The gap between them
+                      // is whatever fits the rest of the ten into WAVE_FROM..WAVE_TO
 
   MUSIC_LEAD: 0.148,  // how far ahead of the video the game's m4a sits
 
@@ -112,6 +113,10 @@ scene("title", () => {
   // charComps centres a character on its pos either way (a still sprite on the
   // image, an animated one on the body), so a standing figure's feet are half
   // its height below pos.
+  // The wave runs left to right and fills the third drop exactly: the first
+  // starts moving on WAVE_FROM, the last lands on WAVE_TO, the rest are spaced
+  // evenly between.
+  const waveStep = (TSEQ.WAVE_TO - TSEQ.WAVE_FROM - TSEQ.WAVE_RISE) / (ORDER.length - 1);
   const cast = ORDER.map((id, i) => {
     const off = i - (ORDER.length - 1) / 2;
     const front = 1 - Math.abs(off) / ((ORDER.length - 1) / 2);   // 1 in the middle, 0 at the ends
@@ -121,12 +126,11 @@ scene("title", () => {
       pos(SL.w * (0.5 + off * TSEQ.CAST_STEP), feet),
       opacity(0),
       z(1 + 0.9 * front),                                          // stays under the title at z 2
-      // the wave runs left to right: each lands one step after the last
-      { restY: feet - h * 0.5, bob: i * 0.61, at: TSEQ.WAVE_AT + i * TSEQ.WAVE_STEP, up: false },
+      { restY: feet - h * 0.5, bob: i * 0.61, step: i, at: TSEQ.WAVE_FROM + TSEQ.WAVE_RISE + i * waveStep, up: false },
     ]);
   });
   const riseBy = castH * 1.25;                  // start fully below the sleeve's bottom edge
-  const waveDone = cast[cast.length - 1].at;
+  const waveDone = TSEQ.WAVE_TO;
 
   // Nothing else goes on the cover. It is a record sleeve, so it gets to be
   // one: the prompt and the save chip sit on the carpet underneath, on a soft
@@ -198,7 +202,8 @@ scene("title", () => {
   // timer, so a landing frame is a beat frame whatever the frame rate is
   // doing. The two title pieces accelerate in and stop dead, no settle, no
   // bounce: the hit is the beat. The ten ease up one after another, which is
-  // the gamey bit, a wave running left to right off the third drop.
+  // the gamey bit, a wave running left to right across the third drop and
+  // finishing dead on the band coming in.
   const easeIn = (k) => { k = Math.min(1, Math.max(0, k)); return k * k; };
   const easeOut = (k) => { k = Math.min(1, Math.max(0, k)); return 1 - (1 - k) * (1 - k) * (1 - k); };
   const fromRight = SL.w * 1.6;                 // piece centred here is clear of the sleeve
@@ -233,10 +238,12 @@ scene("title", () => {
       c.pos.y = c.restY + riseBy * (1 - kk);
       if (kk >= 1 && !c.up) {
         c.up = true;
-        if (!silent) SFX.play("uitick");
+        // a blip per landing, each a step higher than the last, so the ten
+        // read as one rising roll into the downbeat rather than ten ticks
+        if (!silent) SFX.tone({ type: "square", from: 520 + c.step * 95, dur: 0.05, vol: 0.22 });
       }
     });
-    castFade.opacity = 0.78 * easeOut((t - (TSEQ.WAVE_AT - TSEQ.WAVE_RISE)) / (TSEQ.WAVE_RISE * 2));
+    castFade.opacity = 0.78 * easeOut((t - TSEQ.WAVE_FROM) / (TSEQ.WAVE_TO - TSEQ.WAVE_FROM));
     if (t >= waveDone && !waveLanded) {
       waveLanded = true;
       // and then they breathe
