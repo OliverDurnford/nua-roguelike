@@ -47,13 +47,14 @@ const CHAPTERS = [
   {
     num: 1, title: "FRESHERS", era: "First year at NUA Norwich",
     enemySet: [
-      // PLACEHOLDER enemies - real enemy design happens in its own session
-      { type: "runner",  name: "Seagull",            color: [225, 225, 230] },
-      { type: "chaser",  name: "Aggressive Fresher", color: [235, 150, 60] },
-      { type: "brute",   name: "Mercy Bouncer",      color: [50, 50, 60] },
-      { type: "shooter", name: "Spilled Trebles",    color: [120, 220, 120] },
+      // Enemy LOOKS are real where core/enemies-real.js has the id (4 Sep 2026 art
+      // pass); behaviours stay the four placeholder types until the enemy design session
+      { type: "runner",  name: "Seagull", id: "seagull",            color: [225, 225, 230] },
+      { type: "chaser",  name: "Aggressive Fresher", id: "fresher", color: [235, 150, 60] },
+      { type: "brute",   name: "Mercy Bouncer", id: "bouncer",      color: [50, 50, 60] },
+      { type: "shooter", name: "Spilled Trebles", id: "trebles",    color: [120, 220, 120] },
     ],
-    boss: { name: "THE OBNOXIOUS DJ", hp: 90, size: G.charH(2), color: [160, 70, 220], patterns: ["radial", "aimed", "spawn"], speed: 38 },
+    boss: { name: "THE OBNOXIOUS DJ", id: "dj", hp: 90, size: G.charH(2), color: [160, 70, 220], patterns: ["radial", "aimed", "spawn"], speed: 38 },
     areas: [
       {
         // Real painted level, not an ASCII placeholder. Geometry and
@@ -94,12 +95,12 @@ const CHAPTERS = [
   {
     num: 2, title: "CROSS-COURSE COLLABORATION", era: "Film x Photography x Fashion",
     enemySet: [
-      { type: "runner",  name: "Deadline",        color: [220, 60, 60] },
-      { type: "shooter", name: "Overdue Book",    color: [150, 110, 70] },
-      { type: "brute",   name: "Noise Complaint", color: [120, 80, 160] },
-      { type: "chaser",  name: "Harsh Crit",      color: [120, 120, 130] },
+      { type: "runner",  name: "Deadline", id: "deadline",        color: [220, 60, 60] },
+      { type: "shooter", name: "Overdue Book", id: "book",    color: [150, 110, 70] },
+      { type: "brute",   name: "Noise Complaint", id: "neighbour", color: [120, 80, 160] },
+      { type: "chaser",  name: "Harsh Crit", id: "critic",      color: [120, 120, 130] },
     ],
-    boss: { name: "BIG DICK DEAN", hp: 120, size: G.charH(2), color: [120, 30, 40], patterns: ["charge", "aimed", "spawn"], speed: 55 },
+    boss: { name: "BIG DICK DEAN", id: "dean", hp: 120, size: G.charH(2), color: [120, 30, 40], patterns: ["charge", "aimed", "spawn"], speed: 55 },
     areas: [
       {
         // Real painted level; geometry in data/level-market.js.
@@ -156,12 +157,12 @@ const CHAPTERS = [
   {
     num: 3, title: "GRADUATION", era: "Finals and the ceremony",
     enemySet: [
-      { type: "chaser",  name: "All-Nighter",      color: [40, 45, 90] },
-      { type: "brute",   name: "Printer Jam",      color: [120, 120, 125] },
-      { type: "runner",  name: "Caffeine Shakes",  color: [140, 90, 50] },
-      { type: "shooter", name: "Hand-In Reminder", color: [220, 80, 80] },
+      { type: "chaser",  name: "All-Nighter", id: "allnighter",      color: [40, 45, 90] },
+      { type: "brute",   name: "Printer Jam", id: "printer",      color: [120, 120, 125] },
+      { type: "runner",  name: "Caffeine Shakes", id: "caffeine",  color: [140, 90, 50] },
+      { type: "shooter", name: "Hand-In Reminder", id: "reminder", color: [220, 80, 80] },
     ],
-    boss: { name: "BIG DICK DEAN: GRADUATION FORM", hp: 150, size: G.charH(2.1), color: [90, 20, 30], patterns: ["charge", "radial", "aimed"], speed: 70 },
+    boss: { name: "BIG DICK DEAN: GRADUATION FORM", id: "dean_grad", hp: 150, size: G.charH(2.1), color: [90, 20, 30], patterns: ["charge", "radial", "aimed"], speed: 70 },
     areas: [
       {
         name: "Playhouse Bar", feel: "PLACEHOLDER layout - spatial details TBD", enemyBudget: 6,
@@ -252,12 +253,12 @@ const CHAPTERS = [
   {
     num: 4, title: "EARLY LONDON", era: "The move, lockdown, first steps",
     enemySet: [
-      { type: "chaser",  name: "Covid Particle",  color: [110, 200, 90] },
-      { type: "shooter", name: "Estate Agent",    color: [70, 110, 190] },
-      { type: "brute",   name: "Moving Box",      color: [170, 130, 80] },
-      { type: "runner",  name: "Lockdown Jogger", color: [230, 230, 70] },
+      { type: "chaser",  name: "Covid Particle", id: "covid",  color: [110, 200, 90] },
+      { type: "shooter", name: "Estate Agent", id: "agent",    color: [70, 110, 190] },
+      { type: "brute",   name: "Moving Box", id: "box",      color: [170, 130, 80] },
+      { type: "runner",  name: "Lockdown Jogger", id: "jogger", color: [230, 230, 70] },
     ],
-    boss: { name: "THE COVID", hp: 190, size: G.charH(2.2), color: [80, 180, 70], patterns: ["spiral", "spawn", "radial"], speed: 42 },
+    boss: { name: "THE COVID", id: "covid_boss", hp: 190, size: G.charH(2.2), color: [80, 180, 70], patterns: ["spiral", "spawn", "radial"], speed: 42 },
     areas: [
       {
         name: "The Train Carriage", feel: "long, narrow, confined", enemyBudget: 7, sidescroll: true,
@@ -341,12 +342,12 @@ const CHAPTERS = [
   {
     num: 5, title: "LATER LONDON", era: "Present day - the group now",
     enemySet: [
-      { type: "runner",  name: "Pigeon",       color: [150, 150, 160] },
-      { type: "brute",   name: "Slow Tourist", color: [230, 140, 170] },
-      { type: "shooter", name: "Rent Invoice", color: [240, 240, 240] },
-      { type: "chaser",  name: "Tube Rat",     color: [110, 85, 60] },
+      { type: "runner",  name: "Pigeon", id: "pigeon",       color: [150, 150, 160] },
+      { type: "brute",   name: "Slow Tourist", id: "tourist", color: [230, 140, 170] },
+      { type: "shooter", name: "Rent Invoice", id: "invoice", color: [240, 240, 240] },
+      { type: "chaser",  name: "Tube Rat", id: "rat",     color: [110, 85, 60] },
     ],
-    boss: { name: "OLD AGE", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50 },
+    boss: { name: "OLD AGE", id: "oldage", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50 },
     areas: [
       {
         name: "The Faltering Fullback", feel: "treehouse pub - mini-arenas, narrow walkways", enemyBudget: 8,

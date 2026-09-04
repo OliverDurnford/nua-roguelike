@@ -17,16 +17,57 @@ const ENEMY_BASE = {
   shooter: { hp: 3, speed: 60, shoots: true, interval: 1.7, bulletSpeed: 175 },
 };
 
+// Components that draw an enemy or boss. Real art (core/enemies-real.js)
+// is a padded strip whose base figure must fit the def's size box, so it
+// is scaled by the figure's larger dimension and given a hitbox the size
+// of the figure (never wider than the placeholder square the level
+// reachability checks were run with). Placeholder art is a square bitmap
+// drawn at base size, so it only needs the room's scale.
+ENEMIES.comps = (def, sprName) => {
+  const real = def.real;
+  if (!real) return [sprite(sprName), anchor("center"), scale(G.areaScale), area({ scale: 0.8 })];
+  const k = (def.size / Math.max(real.figW, real.figH)) * G.areaScale;
+  return [
+    sprite(sprName, { anim: "idle" }),
+    anchor("center"),
+    scale(k),
+    // Kaboom centres a Rect shape by the anchor itself, so it starts at 0,0.
+    area({ shape: new Rect(vec2(0, 0), real.figW * 0.8, real.figH * 0.8) }),
+  ];
+};
+
+// Per-frame motion for real enemy art. Sheets with a "move" anim (walking
+// people, flapping birds, the scurrying rat) play it while moving; objects
+// squash and stretch as they hop; the virus pulses; anything else bobs.
+ENEMIES.animate = (e, moving, dir) => {
+  const real = e.real;
+  if (!real) return;
+  e.animT += dt();
+  if (dir && Math.abs(dir.x) > 0.1) e.flipX = dir.x < 0;
+  const m = real.motion;
+  if (real.anims && real.anims.move) {
+    const want = moving ? "move" : "idle";
+    if (e.curAnim() !== want) e.play(want);
+  } else if (m === "hop") {
+    const s = moving ? Math.sin(e.animT * 13) : 0;
+    e.scale = vec2(e.baseScale * (1 + 0.08 * s), e.baseScale * (1 - 0.08 * s));
+  } else if (m === "pulse") {
+    const s = Math.sin(e.animT * 5);
+    e.scale = vec2(e.baseScale * (1 + 0.05 * s), e.baseScale * (1 + 0.05 * s));
+    e.angle = Math.sin(e.animT * 2.5) * 6;
+  } else if (moving) {
+    e.angle = Math.sin(e.animT * 14) * 4;
+  } else {
+    e.angle = 0;
+  }
+};
+
 ENEMIES.spawn = (def, p) => {
   const base = ENEMY_BASE[def.type];
+  const comps = ENEMIES.comps(def, def.spr);
   const e = add([
-    sprite(def.spr),
-    anchor("center"),
-    // The sprite bitmap is drawn once at the base size, so the room's
-    // scale is applied here rather than baked in. area() follows it.
-    scale(G.areaScale),
+    ...comps,
     pos(p),
-    area({ scale: 0.8 }),
     body(),
     color(255, 255, 255),
     opacity(1),
@@ -35,8 +76,10 @@ ENEMIES.spawn = (def, p) => {
     {
       hp: base.hp, etype: def.type, ename: def.name,
       speed: base.speed, stun: 0, flashT: 0, shootT: rand(0.6, 2),
+      real: def.real || null, animT: rand(0, 6), baseScale: 1,
     },
   ]);
+  e.baseScale = e.scale.x;
 
   e.onUpdate(() => {
     if (G.paused) return;
@@ -60,17 +103,20 @@ ENEMIES.spawn = (def, p) => {
     const toP = pl.pos.sub(e.pos);
     const d = toP.len();
 
+    let vel = null;
     if (base.shoots) {
-      if (d > 330) e.move(toP.unit().scale(e.speed));
-      else if (d < 220) e.move(toP.unit().scale(-e.speed));
+      if (d > 330) vel = toP.unit().scale(e.speed);
+      else if (d < 220) vel = toP.unit().scale(-e.speed);
       e.shootT -= dt();
       if (e.shootT <= 0) {
         e.shootT = base.interval;
         ENEMIES.shootAt(e.pos, pl.pos, base.bulletSpeed);
       }
     } else {
-      e.move(toP.unit().scale(e.speed));
+      vel = toP.unit().scale(e.speed);
     }
+    if (vel) e.move(vel);
+    ENEMIES.animate(e, !!vel, vel);
   });
 
   return e;
@@ -137,13 +183,12 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
   // charComps sizes itself (and already follows the room), a plain boss
   // sprite does not, so that one gets the room's scale bolted on.
   const comps = opts.finale
-    ? ART.charComps(G.run.charId, G.charH(2.3), true)   // elderly version of YOUR character
-    : [sprite("boss-" + chapter.num), anchor("center"), scale(G.areaScale)];
+    ? [...ART.charComps(G.run.charId, G.charH(2.3), true), area({ scale: 0.8 })]   // elderly version of YOUR character
+    : ENEMIES.comps(def, "boss-" + chapter.num);
 
   const b = add([
     ...comps,
     pos(p),
-    area({ scale: 0.8 }),
     body({ isStatic: true }),
     color(255, 255, 255),
     opacity(1),
@@ -155,8 +200,10 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
       stun: 0, flashT: 0,
       patI: 0, patT: 2,
       charging: null, spiral: null, spiralT: 0,
+      real: opts.finale ? null : (def.real || null), animT: 0, baseScale: 1,
     },
   ]);
+  b.baseScale = b.scale.x;
 
   b.onUpdate(() => {
     if (G.paused) return;
@@ -180,6 +227,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
     if (b.charging) {
       b.pos = b.pos.add(b.charging.dir.scale(420 * dt()));
       b.charging.t -= dt();
+      ENEMIES.animate(b, true, b.charging.dir);
       if (b.charging.t <= 0) b.charging = null;
       return;
     }
@@ -200,7 +248,9 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
 
     // idle drift toward the player
     const toP = pl.pos.sub(b.pos);
-    if (toP.len() > 140) b.pos = b.pos.add(toP.unit().scale(def.speed * dt()));
+    const drifting = toP.len() > 140;
+    if (drifting) b.pos = b.pos.add(toP.unit().scale(def.speed * dt()));
+    ENEMIES.animate(b, drifting, drifting ? toP : null);
 
     // next pattern
     b.patT -= dt();
