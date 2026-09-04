@@ -4,9 +4,10 @@
 // The camera pushes in through a first year bedroom and lands on
 // a record sleeve on the carpet. The album cover is baked into
 // the video, so it is in the room from the very first frame
-// rather than appearing later. Then the title drops onto it and
-// the ten of them come up off the bottom of the sleeve, both on
-// the beat.
+// rather than appearing later. Then, on three beats: the top of
+// the title whips in from the right, "10 YEARS" from the left,
+// and the ten of them come up off the bottom of the sleeve one
+// after another in a wave.
 //
 // The room is a <video> behind a transparent canvas (see
 // core/titlevideo.js). Everything below is drawn on top of it.
@@ -18,13 +19,16 @@
 // ============================================================
 
 const TSEQ = {
-  // ---- the beat map. Ollie's marks, off the timeline. ----
-  PARK: 5.500,        // the camera stops moving. Frame 132
-  TITLE_AT: 6.458,    // 01:00:06:11 - the title LANDS. The hit is the beat
-  CAST_AT: 6.958,     // 01:00:06:23 - the ten land, one beat later
+  // ---- the beat map. Ollie's marks, off the timeline. Each is a LANDING. ----
+  PARK: 5.500,        // the camera stops moving
+  TOP_AT: 6.458,      // 01:00:06:11 - "NOW THAT'S WHAT I CALL" lands, from the right
+  BOTTOM_AT: 6.958,   // 01:00:06:23 - "10 YEARS" lands, from the left, one beat later
+  WAVE_AT: 7.962,     // 01:00:07:23 - the band comes in; the first of the ten lands
   END: 8.000,         // last frame; the video holds here for good
-  DROP: 0.14,         // how long the title takes to fall in, ending on TITLE_AT
-  RISE: 0.16,         // how long the ten take to come up, ending on CAST_AT
+
+  SLIDE: 0.16,        // how long each title piece takes to whip in, ending on its beat
+  WAVE_STEP: 0.125,   // a sixteenth at 120bpm: one of the ten lands every step
+  WAVE_RISE: 0.26,    // how long each of them takes to come up
 
   MUSIC_LEAD: 0.148,  // how far ahead of the video the game's m4a sits
 
@@ -59,7 +63,7 @@ scene("title", () => {
   let phase = replay ? "ready" : "armed";     // armed -> running -> ready
   let clock = replay ? TSEQ.END : 0;          // video time, seconds
 
-  if (replay) TITLEVIDEO.toEnd(TSEQ.END);   // settled below, once the pieces exist
+  if (replay) TITLEVIDEO.toEnd(TSEQ.END);
 
   // ---------- the cover ----------
   // The title and the ten are children of an invisible sleeve-shaped card, so
@@ -73,21 +77,24 @@ scene("title", () => {
     z(10),
   ]);
 
+  // The title in its two pieces. Both are the full title width, so they share
+  // one x and stack exactly as the artwork was drawn.
   const titleW = SL.w * TSEQ.TITLE_W;
-  const titleH = titleW * REAL_TITLE_SIZE.h / REAL_TITLE_SIZE.w;
+  const titleK = titleW / REAL_TITLE.w;
   const titleRest = SL.h * TSEQ.TITLE_TOP;
-  const titleCard = card.add([
-    sprite("title-card"),
-    pos(SL.w / 2, titleRest - titleH - 12),
-    anchor("top"),
-    scale(titleW / REAL_TITLE_SIZE.w),
-    opacity(0),
-    z(2),
+  const topH = REAL_TITLE.top.h * titleK;
+  const titleTop = card.add([
+    sprite("title-top"), pos(SL.w * 1.6, titleRest), anchor("top"),
+    scale(titleK), opacity(0), z(2),
+  ]);
+  const titleBottom = card.add([
+    sprite("title-bottom"), pos(-SL.w * 0.6, titleRest + topH), anchor("top"),
+    scale(titleK), opacity(0), z(2),
   ]);
 
-  // The bottom of the cover darkens under them. The sunburst is bright and
-  // busy right where ten people have to read, and a compilation cover would
-  // do exactly this anyway.
+  // The bottom of the cover darkens under the ten. The sunburst is bright and
+  // busy right where they have to read, and a compilation cover would do
+  // exactly this anyway.
   const fadeTop = SL.h * TSEQ.FADE_TOP;
   const castFade = card.add([
     sprite("grad-fade"),
@@ -97,10 +104,8 @@ scene("title", () => {
     z(0),
   ]);
 
-  // The ten of them, shoulder to shoulder across the bottom of the cover.
-  // They overlap on purpose: ten people across 478 pixels is a crowd on a
-  // compilation sleeve, not a line-up. Whoever is nearest the middle stands in
-  // front, the way a group actually arranges itself for a photograph.
+  // The ten of them across the bottom of the cover, whoever is nearest the
+  // middle standing in front, the way a group arranges itself for a photo.
   const ORDER = ["cal", "ollie", "sam", "ethan", "adam", "josh", "lucy", "annie", "ana", "jess"];
   const castH = SL.h * TSEQ.CAST_H;
   const feet = SL.h * TSEQ.CAST_FEET;
@@ -116,12 +121,12 @@ scene("title", () => {
       pos(SL.w * (0.5 + off * TSEQ.CAST_STEP), feet),
       opacity(0),
       z(1 + 0.9 * front),                                          // stays under the title at z 2
-      // lag: the ends land a frame or two after the middle, so the row
-      // ripples outward from the beat rather than arriving as one slab
-      { restY: feet - h * 0.5, bob: i * 0.61, lag: Math.abs(off) * 0.008 },
+      // the wave runs left to right: each lands one step after the last
+      { restY: feet - h * 0.5, bob: i * 0.61, at: TSEQ.WAVE_AT + i * TSEQ.WAVE_STEP, up: false },
     ]);
   });
-  const castLag = Math.max(...cast.map((c) => c.lag));
+  const riseBy = castH * 1.25;                  // start fully below the sleeve's bottom edge
+  const waveDone = cast[cast.length - 1].at;
 
   // Nothing else goes on the cover. It is a record sleeve, so it gets to be
   // one: the prompt and the save chip sit on the carpet underneath, on a soft
@@ -189,38 +194,51 @@ scene("title", () => {
   }
 
   // ---------- the cues ----------
-  // Both arrivals are placed straight off the clock rather than run on their
-  // own timers, so the landing frame is the beat frame whatever the frame rate
-  // is doing. They accelerate in and stop dead: a card dropped into a sleeve,
-  // not a fade, and nothing bounces afterwards. The hit is the beat.
+  // Everything is placed straight off the clock rather than run on its own
+  // timer, so a landing frame is a beat frame whatever the frame rate is
+  // doing. The two title pieces accelerate in and stop dead, no settle, no
+  // bounce: the hit is the beat. The ten ease up one after another, which is
+  // the gamey bit, a wave running left to right off the third drop.
   const easeIn = (k) => { k = Math.min(1, Math.max(0, k)); return k * k; };
-  const dropFrom = titleRest - titleH - 12;     // fully above the sleeve's top edge
-  const riseBy = castH * 1.25;                  // fully below its bottom edge
-  let titleLanded = false;
-  let castLanded = false;
+  const easeOut = (k) => { k = Math.min(1, Math.max(0, k)); return 1 - (1 - k) * (1 - k) * (1 - k); };
+  const fromRight = SL.w * 1.6;                 // piece centred here is clear of the sleeve
+  const fromLeft = -SL.w * 0.6;
+  let topLanded = false;
+  let bottomLanded = false;
+  let waveLanded = false;
 
-  // k runs 0 (still out of sight) to 1 (landed) across TSEQ.DROP seconds.
-  const placeTitle = (k, silent) => {
-    titleCard.opacity = k > 0 ? 1 : 0;
-    titleCard.pos.y = dropFrom + (titleRest - dropFrom) * easeIn(k);
-    if (k >= 1 && !titleLanded) {
-      titleLanded = true;
+  // k runs 0 (still out of sight) to 1 (landed) across TSEQ.SLIDE seconds.
+  const placeTop = (k, silent) => {
+    titleTop.opacity = k > 0 ? 1 : 0;
+    titleTop.pos.x = fromRight + (SL.w / 2 - fromRight) * easeIn(k);
+    if (k >= 1 && !topLanded) {
+      topLanded = true;
+      if (!silent) SFX.play("thwack");
+    }
+  };
+  const placeBottom = (k, silent) => {
+    titleBottom.opacity = k > 0 ? 1 : 0;
+    titleBottom.pos.x = fromLeft + (SL.w / 2 - fromLeft) * easeIn(k);
+    if (k >= 1 && !bottomLanded) {
+      bottomLanded = true;
       if (!silent) SFX.play("thwack");
     }
   };
 
-  // k is measured for the middle pair; the others trail by their lag.
-  const castDone = 1 + castLag / TSEQ.RISE;
-  const placeCast = (k, silent) => {
+  // t is the clock; each of the ten rises over WAVE_RISE to land at its own `at`.
+  const placeWave = (t, silent) => {
     cast.forEach((c) => {
-      const kk = easeIn(k - c.lag / TSEQ.RISE);
+      const kk = easeOut((t - (c.at - TSEQ.WAVE_RISE)) / TSEQ.WAVE_RISE);
       c.opacity = kk > 0 ? 1 : 0;
       c.pos.y = c.restY + riseBy * (1 - kk);
+      if (kk >= 1 && !c.up) {
+        c.up = true;
+        if (!silent) SFX.play("uitick");
+      }
     });
-    castFade.opacity = 0.78 * easeIn(k);
-    if (k >= castDone && !castLanded) {
-      castLanded = true;
-      if (!silent) SFX.play("thwack");
+    castFade.opacity = 0.78 * easeOut((t - (TSEQ.WAVE_AT - TSEQ.WAVE_RISE)) / (TSEQ.WAVE_RISE * 2));
+    if (t >= waveDone && !waveLanded) {
+      waveLanded = true;
       // and then they breathe
       cast.forEach((c) => c.onUpdate(() => {
         c.pos.y = c.restY + Math.sin(time() * 2 + c.bob) * 2;
@@ -236,8 +254,9 @@ scene("title", () => {
 
   // Everything already up, for a replay or a skip.
   const settle = () => {
-    placeTitle(1, true);
-    placeCast(castDone, true);
+    placeTop(1, true);
+    placeBottom(1, true);
+    placeWave(waveDone, true);
   };
 
   // ---------- driving it ----------
@@ -251,8 +270,9 @@ scene("title", () => {
     const song = SOUNDTRACK.time();
     clock = song === null ? video.currentTime : song - TSEQ.MUSIC_LEAD;
 
-    placeTitle((clock - (TSEQ.TITLE_AT - TSEQ.DROP)) / TSEQ.DROP);
-    placeCast((clock - (TSEQ.CAST_AT - TSEQ.RISE)) / TSEQ.RISE);
+    placeTop((clock - (TSEQ.TOP_AT - TSEQ.SLIDE)) / TSEQ.SLIDE);
+    placeBottom((clock - (TSEQ.BOTTOM_AT - TSEQ.SLIDE)) / TSEQ.SLIDE);
+    placeWave(clock);
   });
 
   const begin = () => {

@@ -367,9 +367,10 @@ ART.init = () => {
     loadSprite("record", REAL_RECORD);
   }
 
-  // The title card that drops onto the sleeve (core/title-real.js)
+  // The title, in the two pieces that land on the sleeve (core/title-real.js)
   if (typeof REAL_TITLE !== "undefined") {
-    loadSprite("title-card", REAL_TITLE);
+    loadSprite("title-top", REAL_TITLE.top.src);
+    loadSprite("title-bottom", REAL_TITLE.bottom.src);
   }
 
   // UI polish set
