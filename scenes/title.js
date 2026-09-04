@@ -24,7 +24,8 @@ const TSEQ = {
   TOP_AT: 6.458,      // 01:00:06:11 - "NOW THAT'S WHAT I CALL" lands, from the right
   BOTTOM_AT: 6.958,   // 01:00:06:23 - "10 YEARS" lands, from the left, one beat later
   WAVE_FROM: 7.458,   // 01:00:07:11 - the third drop begins; the first of the ten starts to rise
-  WAVE_TO: 7.958,     // 01:00:07:23 - the band comes in; the last of the ten lands
+  WAVE_TO: 7.833,     // 01:00:07:20 - the last of the ten lands, a sixteenth ahead of the band
+                      // coming in at 07:23. Landing ON it sounded like an overshoot (Ollie, 4 Sep)
   END: 8.000,         // last frame; the video holds here for good
 
   SLIDE: 0.16,        // how long each title piece takes to whip in, ending on its beat
