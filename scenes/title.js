@@ -133,9 +133,9 @@ scene("title", () => {
   const riseBy = castH * 1.25;                  // start fully below the sleeve's bottom edge
   const waveDone = TSEQ.WAVE_TO;
 
-  // Nothing else goes on the cover. It is a record sleeve, so it gets to be
-  // one: the prompt and the save chip sit on the carpet underneath, on a soft
-  // fade up off the bottom of the frame that also keeps them legible.
+  // With a run waiting, the "start a new game" chip sits on the carpet under
+  // the sleeve, on a soft fade up off the bottom of the frame that keeps it
+  // legible. Without one the carpet stays clean.
   const floorFade = add([
     sprite("grad-fade"),
     pos(0, G.H - 72),
@@ -170,18 +170,32 @@ scene("title", () => {
   // ---------- press start / carry on ----------
   // Same deal as before the sequence existed: with a run waiting, the big
   // prompt carries it on and a quieter chip underneath sets it aside.
+  //
+  // It sits ON the cover, in the band between the title and the ten, in the
+  // pale chrome of the lettering rather than gold: the cover is already
+  // yellow, and gold on it disappeared (Ollie, 4 Sep). An ink shadow one
+  // pixel-art step behind it keeps it legible over the sunburst.
   const startLabel = saved
     ? "carry on as " + G.char(saved.run.charId).name +
       (saved.scene === "tutorial" ? "  ·  victoria park" : "  ·  chapter " + saved.run.chapter)
     : "PRESS START";
-  const startText = add([
-    text(startLabel, { size: saved ? 16 : 24, letterSpacing: saved ? 0 : 5 }),
-    pos(G.W / 2, saved ? G.H - 33 : G.H - 25), anchor("center"),
-    color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0), z(21),
+  const titleFoot = titleRest + (REAL_TITLE.top.h + REAL_TITLE.bottom.h) * titleK;
+  const castTop = feet - castH;                       // the middle pair are the tallest
+  const startY = (titleFoot + castTop) / 2;
+  const startOpts = { size: saved ? 15 : 21, letterSpacing: saved ? 0 : 4 };
+  const startShadow = card.add([
+    text(startLabel, startOpts), pos(SL.w / 2 + 2, startY + 2), anchor("center"),
+    color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(3),
+  ]);
+  const startText = card.add([
+    text(startLabel, startOpts), pos(SL.w / 2, startY), anchor("center"),
+    color(236, 240, 255), opacity(0), z(3.1),
   ]);
   startText.onUpdate(() => {
     if (phase !== "ready") return;
-    startText.opacity = 0.8 + Math.sin(time() * 3.4) * 0.2;
+    const k = 0.8 + Math.sin(time() * 3.4) * 0.2;
+    startText.opacity = k;
+    startShadow.opacity = k * 0.85;
   });
 
   let newChip = null;
@@ -251,8 +265,8 @@ scene("title", () => {
       cast.forEach((c) => c.onUpdate(() => {
         c.pos.y = c.restY + Math.sin(time() * 2 + c.bob) * 2;
       }));
-      UI.fadeObj(floorFade, 0.85, 0.35, 0.15);
       if (newChip) {
+        UI.fadeObj(floorFade, 0.85, 0.35, 0.15);
         UI.fadeObj(newChip, 0.55, 0.3, 0.55);
         UI.fadeObj(newText, 0.9, 0.3, 0.55);
       }
