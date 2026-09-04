@@ -20,9 +20,11 @@
 const TSEQ = {
   // ---- the beat map. Ollie's marks, off the timeline. ----
   PARK: 5.500,        // the camera stops moving. Frame 132
-  TITLE_AT: 6.458,    // 01:00:06:11 - the title comes down
-  CAST_AT: 6.958,     // 01:00:06:23 - the ten come up, one beat later
+  TITLE_AT: 6.458,    // 01:00:06:11 - the title LANDS. The hit is the beat
+  CAST_AT: 6.958,     // 01:00:06:23 - the ten land, one beat later
   END: 8.000,         // last frame; the video holds here for good
+  DROP: 0.14,         // how long the title takes to fall in, ending on TITLE_AT
+  RISE: 0.16,         // how long the ten take to come up, ending on CAST_AT
 
   MUSIC_LEAD: 0.148,  // how far ahead of the video the game's m4a sits
 
@@ -35,10 +37,10 @@ const TSEQ = {
   // survives the sleeve rect being re-measured.
   TITLE_W: 0.72,      // title width, as a fraction of the sleeve
   TITLE_TOP: 0.04,    // its resting top edge, down from the sleeve's top
-  CAST_H: 0.38,       // how tall the middle of the ten stands
-  CAST_FEET: 0.945,   // where their feet land
-  CAST_STEP: 0.095,   // how far apart they stand. They overlap; that is the point
-  FADE_TOP: 0.48,     // where the cover starts darkening under them
+  CAST_H: 0.25,       // how tall the middle of the ten stands
+  CAST_FEET: 0.925,   // where their feet land
+  CAST_STEP: 0.097,   // how far apart they stand
+  FADE_TOP: 0.52,     // where the cover starts darkening under them
 };
 
 scene("title", () => {
@@ -57,7 +59,7 @@ scene("title", () => {
   let phase = replay ? "ready" : "armed";     // armed -> running -> ready
   let clock = replay ? TSEQ.END : 0;          // video time, seconds
 
-  if (replay) TITLEVIDEO.toEnd(TSEQ.END);
+  if (replay) TITLEVIDEO.toEnd(TSEQ.END);   // settled below, once the pieces exist
 
   // ---------- the cover ----------
   // The title and the ten are children of an invisible sleeve-shaped card, so
@@ -114,9 +116,12 @@ scene("title", () => {
       pos(SL.w * (0.5 + off * TSEQ.CAST_STEP), feet),
       opacity(0),
       z(1 + 0.9 * front),                                          // stays under the title at z 2
-      { restY: feet - h * 0.5, bob: i * 0.61 },
+      // lag: the ends land a frame or two after the middle, so the row
+      // ripples outward from the beat rather than arriving as one slab
+      { restY: feet - h * 0.5, bob: i * 0.61, lag: Math.abs(off) * 0.008 },
     ]);
   });
+  const castLag = Math.max(...cast.map((c) => c.lag));
 
   // Nothing else goes on the cover. It is a record sleeve, so it gets to be
   // one: the prompt and the save chip sit on the carpet underneath, on a soft
@@ -184,55 +189,55 @@ scene("title", () => {
   }
 
   // ---------- the cues ----------
-  let titleFired = false;
-  let castFired = false;
+  // Both arrivals are placed straight off the clock rather than run on their
+  // own timers, so the landing frame is the beat frame whatever the frame rate
+  // is doing. They accelerate in and stop dead: a card dropped into a sleeve,
+  // not a fade, and nothing bounces afterwards. The hit is the beat.
+  const easeIn = (k) => { k = Math.min(1, Math.max(0, k)); return k * k; };
+  const dropFrom = titleRest - titleH - 12;     // fully above the sleeve's top edge
+  const riseBy = castH * 1.25;                  // fully below its bottom edge
+  let titleLanded = false;
+  let castLanded = false;
 
-  const dropTitle = () => {
-    if (titleFired) return;
-    titleFired = true;
-    SFX.play("uiconfirm");
-    titleCard.opacity = 1;
-    // Down from above the sleeve's top edge, hard and fast, then a small
-    // settle. It is a record being dropped into a sleeve, not a fade.
-    UI.slideIn(titleCard, titleCard.pos, vec2(SL.w / 2, titleRest), 0.26, 0, false);
-    let t = 0;
-    titleCard.onUpdate(() => {
-      t += dt();
-      if (t < 0.26 || t > 0.62) return;
-      const k = (t - 0.26) / 0.36;
-      titleCard.pos.y = titleRest + Math.sin(k * Math.PI * 2) * 5 * (1 - k);
-    });
-  };
-
-  const raiseCast = () => {
-    if (castFired) return;
-    castFired = true;
-    SFX.play("uiconfirm");
-    cast.forEach((c, i) => {
-      c.opacity = 1;
-      UI.slideIn(c, vec2(c.pos.x, c.restY + castH * 1.15), vec2(c.pos.x, c.restY),
-                 0.34, i * 0.022, false);
-      // and then they breathe
-      c.onUpdate(() => {
-        if (c.pos.y > c.restY + 1) return;
-        c.pos.y = c.restY + Math.sin(time() * 2 + c.bob) * 2;
-      });
-    });
-    UI.fadeObj(castFade, 0.78, 0.3);
-    UI.fadeObj(floorFade, 0.85, 0.35, 0.15);
-    phase = "ready";
-    if (newChip) {
-      UI.fadeObj(newChip, 0.55, 0.3, 0.55);
-      UI.fadeObj(newText, 0.9, 0.3, 0.55);
+  // k runs 0 (still out of sight) to 1 (landed) across TSEQ.DROP seconds.
+  const placeTitle = (k, silent) => {
+    titleCard.opacity = k > 0 ? 1 : 0;
+    titleCard.pos.y = dropFrom + (titleRest - dropFrom) * easeIn(k);
+    if (k >= 1 && !titleLanded) {
+      titleLanded = true;
+      if (!silent) SFX.play("thwack");
     }
   };
 
-  // Everything already up, for a replay.
+  // k is measured for the middle pair; the others trail by their lag.
+  const castDone = 1 + castLag / TSEQ.RISE;
+  const placeCast = (k, silent) => {
+    cast.forEach((c) => {
+      const kk = easeIn(k - c.lag / TSEQ.RISE);
+      c.opacity = kk > 0 ? 1 : 0;
+      c.pos.y = c.restY + riseBy * (1 - kk);
+    });
+    castFade.opacity = 0.78 * easeIn(k);
+    if (k >= castDone && !castLanded) {
+      castLanded = true;
+      if (!silent) SFX.play("thwack");
+      // and then they breathe
+      cast.forEach((c) => c.onUpdate(() => {
+        c.pos.y = c.restY + Math.sin(time() * 2 + c.bob) * 2;
+      }));
+      UI.fadeObj(floorFade, 0.85, 0.35, 0.15);
+      if (newChip) {
+        UI.fadeObj(newChip, 0.55, 0.3, 0.55);
+        UI.fadeObj(newText, 0.9, 0.3, 0.55);
+      }
+      phase = "ready";
+    }
+  };
+
+  // Everything already up, for a replay or a skip.
   const settle = () => {
-    titleFired = true;
-    titleCard.opacity = 1;
-    titleCard.pos = vec2(SL.w / 2, titleRest);
-    raiseCast();
+    placeTitle(1, true);
+    placeCast(castDone, true);
   };
 
   // ---------- driving it ----------
@@ -246,8 +251,8 @@ scene("title", () => {
     const song = SOUNDTRACK.time();
     clock = song === null ? video.currentTime : song - TSEQ.MUSIC_LEAD;
 
-    if (clock >= TSEQ.TITLE_AT) dropTitle();
-    if (clock >= TSEQ.CAST_AT) raiseCast();
+    placeTitle((clock - (TSEQ.TITLE_AT - TSEQ.DROP)) / TSEQ.DROP);
+    placeCast((clock - (TSEQ.CAST_AT - TSEQ.RISE)) / TSEQ.RISE);
   });
 
   const begin = () => {
@@ -286,6 +291,8 @@ scene("title", () => {
     if (phase === "running") return skip();
     launch(() => (saved && !newGame ? SAVE.resume(saved) : go("select")));
   };
+
+  if (replay) settle();
 
   onKeyPress((key) => press(key === "n"));
   // isHovering understands the letterboxed canvas, so a tap only counts as
