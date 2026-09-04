@@ -200,6 +200,19 @@ ART.genGlow = () => {
   return cv.toDataURL();
 };
 
+// a five-pixel plus, the little stars scattered over the record cover
+ART.genPixStar = () => {
+  const cv = document.createElement("canvas");
+  cv.width = 5; cv.height = 5;
+  const x = cv.getContext("2d");
+  x.fillStyle = "rgba(255,255,255,0.85)";
+  x.fillRect(2, 0, 1, 5);
+  x.fillRect(0, 2, 5, 1);
+  x.fillStyle = "#ffffff";
+  x.fillRect(2, 2, 1, 1);
+  return cv.toDataURL();
+};
+
 ART.genVignette = () => {
   const w = 480, h = 270;
   const cv = document.createElement("canvas");
@@ -320,14 +333,33 @@ ART.init = () => {
     brute:   G.charH(1.14),
     shooter: G.charH(0.76),
   };
+  // Real enemy art (core/enemies-real.js) is keyed by the enemy's id in
+  // data/chapters.js. A real entry brings its own size (a multiple of a
+  // person, capping the sprite's LARGER dimension so wide things fit the
+  // same box as tall ones) and its motion kind (see ENEMIES.animate).
+  const realEnemy = (id) => (typeof REAL_ENEMIES !== "undefined" && id && REAL_ENEMIES[id]) || null;
   for (const ch of CHAPTERS) {
     ch.enemySet.forEach((en, i) => {
       const key = "en-" + ch.num + "-" + i;
-      loadSprite(key, ART.genEnemy(en.type, en.color, SIZES[en.type]));
+      const real = realEnemy(en.id);
+      if (real) {
+        loadSprite(key, real.src, { sliceX: real.sliceX, anims: real.anims });
+        en.real = real;
+        en.size = G.charH(real.size);
+      } else {
+        loadSprite(key, ART.genEnemy(en.type, en.color, SIZES[en.type]));
+        en.size = SIZES[en.type];
+      }
       en.spr = key;
-      en.size = SIZES[en.type];
     });
-    loadSprite("boss-" + ch.num, ART.genBoss(ch.boss.color, ch.boss.size));
+    const bossReal = realEnemy(ch.boss.id);
+    if (bossReal) {
+      loadSprite("boss-" + ch.num, bossReal.src, { sliceX: bossReal.sliceX, anims: bossReal.anims });
+      ch.boss.real = bossReal;
+      ch.boss.size = G.charH(bossReal.size);
+    } else {
+      loadSprite("boss-" + ch.num, ART.genBoss(ch.boss.color, ch.boss.size));
+    }
     // NPC easter eggs defined in area data (e.g. Megan Whiteside)
     ch.areas.forEach((a, ai) => {
       if (a.npc) {
@@ -376,6 +408,7 @@ ART.init = () => {
   // UI polish set
   loadSprite("glow", ART.genGlow());
   loadSprite("vignette", ART.genVignette());
+  loadSprite("pixstar", ART.genPixStar());
   loadSprite("bg-night", ART.genVGrad("#101322", "#1d1430"));
   // clear-to-dark, for settling figures onto a busy background
   loadSprite("grad-fade", ART.genVGrad("rgba(10,8,22,0)", "rgba(10,8,22,1)"));

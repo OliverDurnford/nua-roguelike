@@ -47,6 +47,11 @@ const TSEQ = {
   CAST_FEET: 0.925,   // where their feet land
   CAST_STEP: 0.097,   // how far apart they stand
   FADE_TOP: 0.52,     // where the cover starts darkening under them
+
+  // Where the sunburst's rays meet on the cover, as fractions of the sleeve.
+  // The moving light on the cover radiates from here.
+  RAY_X: 0.50,
+  RAY_Y: 0.33,
 };
 
 scene("title", () => {
@@ -132,6 +137,75 @@ scene("title", () => {
   });
   const riseBy = castH * 1.25;                  // start fully below the sleeve's bottom edge
   const waveDone = TSEQ.WAVE_TO;
+
+  // ---------- life on the cover ----------
+  // Three things the artwork already has, set moving, so the cover is never
+  // quite still once we have arrived on it: the sunburst breathing where its
+  // rays meet, the pixel stars twinkling, and streaks of light running out
+  // along the rays. All of it sits under the title and the ten, clipped to
+  // the sleeve, and comes up together once the camera has parked.
+  const RAY = vec2(SL.w * TSEQ.RAY_X, SL.h * TSEQ.RAY_Y);
+  let lifeK = 0;                                // 0 until the park, then up to 1
+
+  const glow = card.add([
+    sprite("glow"), pos(RAY), anchor("center"), scale(4.6),
+    color(255, 214, 120), opacity(0), z(0.4),
+  ]);
+  glow.onUpdate(() => {
+    glow.opacity = lifeK * (0.14 + Math.sin(time() * 1.1) * 0.06);
+    glow.scale = vec2(4.6 + Math.sin(time() * 1.1) * 0.25);
+  });
+
+  // the stars: a plus each, in the cover's own colours, twinkling out of step
+  // with one another and quietly moving house whenever one has faded right out
+  const STAR_COLOURS = [[255, 255, 255], [255, 255, 255], [255, 240, 180], [255, 226, 120],
+                        [120, 220, 205], [255, 150, 200]];
+  const starHome = () => vec2(rand(SL.w * 0.04, SL.w * 0.96), rand(SL.h * 0.04, SL.h * 0.96));
+  for (let i = 0; i < 16; i++) {
+    const col = STAR_COLOURS[i % STAR_COLOURS.length];
+    const st = card.add([
+      sprite("pixstar"), pos(starHome()), anchor("center"), scale(1),
+      color(col[0], col[1], col[2]), opacity(0), z(0.5),
+      { phase: rand(0, 6.28), speed: rand(1.4, 3.2), size: rand(0.9, 1.6), low: false },
+    ]);
+    st.onUpdate(() => {
+      const k = 0.5 + 0.5 * Math.sin(time() * st.speed + st.phase);   // 0..1
+      st.opacity = lifeK * (0.15 + 0.85 * k * k);
+      st.scale = vec2(st.size * (0.55 + 0.45 * k));
+      if (k < 0.03 && !st.low) { st.low = true; if (rand() < 0.5) st.pos = starHome(); }
+      if (k > 0.5) st.low = false;
+    });
+  }
+
+  // the streaks: short bright dashes born near the centre, flying outward
+  // along a ray and fading as they go, the way the cover's own streaks look
+  // like they were caught mid-flight
+  let streakT = 0;
+  const spawnStreak = () => {
+    const a = rand(-175, -5) * Math.PI / 180;      // the upper fan; the floor is dark
+    const speed = rand(150, 320);
+    const len = rand(14, 34);
+    const gold = rand() < 0.6;
+    const sk = card.add([
+      rect(len, 2), pos(RAY.add(vec2(Math.cos(a), Math.sin(a)).scale(rand(30, 70)))),
+      anchor("left"), rotate(a * 180 / Math.PI),
+      color(gold ? 255 : 240, gold ? 228 : 244, gold ? 150 : 255),
+      opacity(0), z(0.45),
+      { a, speed, t: 0, life: rand(0.5, 0.9) },
+    ]);
+    sk.onUpdate(() => {
+      sk.t += dt();
+      const k = sk.t / sk.life;
+      if (k >= 1) { destroy(sk); return; }
+      sk.pos = sk.pos.add(vec2(Math.cos(sk.a), Math.sin(sk.a)).scale(sk.speed * dt()));
+      sk.opacity = lifeK * 0.75 * Math.sin(k * Math.PI);
+    });
+  };
+  onUpdate(() => {
+    if (lifeK <= 0) return;
+    streakT += dt();
+    while (streakT > 0.16) { streakT -= 0.16; spawnStreak(); }
+  });
 
   // With a run waiting, the "start a new game" chip sits on the carpet under
   // the sleeve, on a soft fade up off the bottom of the frame that keeps it
@@ -279,6 +353,7 @@ scene("title", () => {
     placeTop(1, true);
     placeBottom(1, true);
     placeWave(waveDone, true);
+    lifeK = 1;
   };
 
   // ---------- driving it ----------
@@ -295,6 +370,7 @@ scene("title", () => {
     placeTop((clock - (TSEQ.TOP_AT - TSEQ.SLIDE)) / TSEQ.SLIDE);
     placeBottom((clock - (TSEQ.BOTTOM_AT - TSEQ.SLIDE)) / TSEQ.SLIDE);
     placeWave(clock);
+    lifeK = Math.min(1, Math.max(lifeK, (clock - TSEQ.PARK) / 0.8));
   });
 
   const begin = () => {
