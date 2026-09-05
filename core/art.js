@@ -319,10 +319,20 @@ ART.init = () => {
       loadSprite("ch-" + c.id, ART.genChar(c));
       G.SPR["ch-" + c.id] = { name: "ch-" + c.id, h: c.height };
     }
-    // old-age variant (used by the final boss) - always generated, even for
-    // characters with real sprites, so the boss reads as "placeholder elderly you"
-    loadSprite("ch-" + c.id + "-old", ART.genChar(c, { old: true }));
-    G.SPR["ch-" + c.id + "-old"] = { name: "ch-" + c.id + "-old", h: c.height };
+    // old-age variant (used by the final boss): the generated elderly version
+    // of the approved sprite when core/old-real.js has one, else the
+    // code-drawn grey-haired placeholder
+    if (typeof REAL_OLD !== "undefined" && REAL_OLD[c.id]) {
+      loadSprite("ch-" + c.id + "-old", REAL_OLD[c.id]);
+      G.SPR["ch-" + c.id + "-old"] = { name: "ch-" + c.id + "-old", h: 128 };
+    } else {
+      loadSprite("ch-" + c.id + "-old", ART.genChar(c, { old: true }));
+      G.SPR["ch-" + c.id + "-old"] = { name: "ch-" + c.id + "-old", h: c.height };
+    }
+    // the thrown projectile (core/weapons-real.js), when drawn
+    if (typeof REAL_WEAPONS !== "undefined" && REAL_WEAPONS[c.id]) {
+      loadSprite("wp-" + c.id, REAL_WEAPONS[c.id].src);
+    }
   }
 
   // Sized against a person (G.CHAR_H) so the whole room stays in proportion:

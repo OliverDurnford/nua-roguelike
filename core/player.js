@@ -110,10 +110,17 @@ PLAYER.fire = (p, dir, s) => {
     if (Math.abs(dir.x) > 0.05) { p.flipX = dir.x < 0; p.faceAimT = 0.5; }
     if (p.actionT <= 0.25) { p.play("attack"); p.actionT = 0.22; }
   }
+  // The real item sprite when the character has one (core/weapons-real.js),
+  // sized so its larger side is about a third of a person; else the old
+  // coloured square in the weapon colour.
+  const wp = (typeof REAL_WEAPONS !== "undefined") && REAL_WEAPONS[c.id];
+  const look = wp
+    ? [sprite("wp-" + c.id), scale(G.charH(0.36) / Math.max(wp.w, wp.h))]
+    : [rect(G.charH(0.26), G.charH(0.26), { radius: 3 }),
+       color(c.weapon.color[0], c.weapon.color[1], c.weapon.color[2]),
+       outline(1, rgb(20, 20, 25))];
   add([
-    rect(G.charH(0.26), G.charH(0.26), { radius: 3 }),
-    color(c.weapon.color[0], c.weapon.color[1], c.weapon.color[2]),
-    outline(1, rgb(20, 20, 25)),
+    ...look,
     pos(p.pos.add(dir.scale(G.charH(0.62)))),   // leaves the hand, not the chest
     anchor("center"),
     rotate(rand(0, 360)),
