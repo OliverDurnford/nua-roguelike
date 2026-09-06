@@ -110,7 +110,7 @@ ENEMIES.spawn = (def, p) => {
       e.shootT -= dt();
       if (e.shootT <= 0) {
         e.shootT = base.interval;
-        ENEMIES.shootAt(e.pos, pl.pos, base.bulletSpeed);
+        ENEMIES.shootAt(e.pos, pl.pos, base.bulletSpeed, def);
       }
     } else {
       vel = toP.unit().scale(e.speed);
@@ -122,13 +122,20 @@ ENEMIES.spawn = (def, p) => {
   return e;
 };
 
-ENEMIES.shootAt = (from, to, speed) => {
+// `who` is the shooter's def (an enemy or a boss); when its id has real
+// bullet art (core/ebullets-real.js) that item flies instead of the circle.
+// Boss bullets reuse the plain Dean's art for his graduation form.
+ENEMIES.shootAt = (from, to, speed, who) => {
   const dir = to.sub(from).unit();
   SFX.play("eshoot");
-  add([
-    circle(G.charH(0.14)),
-    color(255, 120, 90),
-    outline(2, rgb(120, 40, 30)),
+  let id = who && who.id;
+  if (id === "dean_grad") id = "dean";
+  const eb = id && (typeof REAL_EBULLETS !== "undefined") && REAL_EBULLETS[id];
+  const look = eb
+    ? [sprite("eb-" + id), scale(G.charH(0.3) / Math.max(eb.w, eb.h)), rotate(rand(0, 360))]
+    : [circle(G.charH(0.14)), color(255, 120, 90), outline(2, rgb(120, 40, 30))];
+  const b = add([
+    ...look,
     pos(from.add(dir.scale(G.charH(0.48)))),
     anchor("center"),
     area({ scale: 0.8 }),
@@ -138,6 +145,7 @@ ENEMIES.shootAt = (from, to, speed) => {
     z(40),
     "ebullet",
   ]);
+  if (eb) b.onUpdate(() => { b.angle += dt() * 240; });   // the item tumbles as it flies
 };
 
 // One entry point for everything taking damage from the player.
@@ -240,7 +248,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
         b.spiralT = 0.09;
         b.spiral.a += 0.55;
         const dir = vec2(Math.cos(b.spiral.a), Math.sin(b.spiral.a));
-        ENEMIES.shootAt(b.pos, b.pos.add(dir.scale(100)), 160);
+        ENEMIES.shootAt(b.pos, b.pos.add(dir.scale(100)), 160, chapter.boss);
       }
       if (b.spiral.t <= 0) b.spiral = null;
       return;
@@ -270,12 +278,12 @@ ENEMIES.runPattern = (pat, b, pl, chapter) => {
     const n = 12;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2;
-      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(a) * 100, Math.sin(a) * 100), 150);
+      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(a) * 100, Math.sin(a) * 100), 150, chapter.boss);
     }
   } else if (pat === "aimed") {
     for (const off of [-0.28, 0, 0.28]) {
       const base = Math.atan2(pl.pos.y - b.pos.y, pl.pos.x - b.pos.x) + off;
-      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(base) * 100, Math.sin(base) * 100), 200);
+      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(base) * 100, Math.sin(base) * 100), 200, chapter.boss);
     }
   } else if (pat === "charge") {
     b.charging = { dir: pl.pos.sub(b.pos).unit(), t: 0.65 };

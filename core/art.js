@@ -380,6 +380,11 @@ ART.init = () => {
     });
   }
 
+  // What the shooters and bosses fire (core/ebullets-real.js), when drawn
+  if (typeof REAL_EBULLETS !== "undefined") {
+    for (const k in REAL_EBULLETS) loadSprite("eb-" + k, REAL_EBULLETS[k].src);
+  }
+
   // Painted room backgrounds (core/plates-real.js), one per venue
   for (const k in PLATES) loadSprite("plate-" + k, PLATES[k]);
 
