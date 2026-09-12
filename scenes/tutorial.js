@@ -8,29 +8,53 @@
 scene("tutorial", () => {
   G.paused = false;
   SAVE.write("tutorial");   // checkpoint: a quit here resumes into the park
-  G.areaScale = 1;   // the park is an ASCII map, so nobody is rescaled here
-  const m = MAPS.build(PARK_MAP, PARK_PALETTE);
+  // The park is a painted plate, so everyone stands at its own ground
+  // scale. This has to be set before anything is added to the scene.
+  G.areaScale = PARK_PLATE.charScale;
+  const U = PARK_PLATE.unit;
+  const pt = ([x, y]) => vec2(x * U, y * U);   // grid units -> world pixels
+
+  const m = MAPS.buildPlate(PARK_PLATE);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
 
   const player = PLAYER.make(m.playerSpawn);
   const startPos = m.playerSpawn.clone();
 
   // --- the other nine friends, hanging out in the park ---
+  // The first one picks up the bat and stands on home plate. The other
+  // eight fill friendBox on a loose 4 x 2 grid: the two rows are offset
+  // half a cell sideways and everyone is jittered inside their own cell,
+  // so they read as a group standing about rather than a line up, and
+  // nobody ends up on top of anybody.
   const others = CHARACTERS.filter((c) => c.id !== G.run.charId);
   const batterChar = others[0];
-  const batterPos = m.playerSpawn.add(240, -120);
+  const batterPos = pt(PARK_PLATE.batter);
   const friends = [];
 
+  const [fx1, fy1, fx2, fy2] = PARK_PLATE.friendBox;
+  const FCOLS = 4, FROWS = 2;
+  const cellW = (fx2 - fx1) / FCOLS * U;
+  const cellH = (fy2 - fy1) / FROWS * U;
+  const cells = MAPS.shuffle([...Array(FCOLS * FROWS).keys()]);
+
   others.forEach((c, i) => {
-    const p = i === 0
-      ? batterPos
-      : m.playerSpawn.add(rand(-60, 320), rand(-260, -40));
+    let p = batterPos;
+    if (i > 0) {
+      const cell = cells[(i - 1) % cells.length];
+      const col = cell % FCOLS, row = Math.floor(cell / FCOLS);
+      p = vec2(
+        fx1 * U + (col + 0.5 + (row % 2 ? 0.25 : -0.25)) * cellW + rand(-cellW * 0.14, cellW * 0.14),
+        fy1 * U + (row + 0.5) * cellH + rand(-cellH * 0.1, cellH * 0.1),
+      );
+    }
     const f = add([...ART.charComps(c.id, G.charH(0.95)), pos(p), z(44), opacity(1), "friend", { charId: c.id }]);
     friends.push(f);
   });
 
-  // the bloke's car, parked by the right edge
-  const car = add([sprite("car"), pos(m.w - 130, m.playerSpawn.y - 60), anchor("center"), scale(1.6), z(20), opacity(1)]);
+  // The bloke's car is painted into the plate, so this is just an
+  // invisible marker sitting on the middle one: the ball flies to it and
+  // UI.speech hangs the "OI!!" off it (all it needs is a position).
+  const car = add([pos(pt(PARK_PLATE.carTarget)), z(20)]);
 
   // --- prompts (text in a translucent chip) ---
   const promptChip = add([
@@ -50,6 +74,8 @@ scene("tutorial", () => {
   let st = 0;            // 0 move, 1 throw, 2 ball in flight, 3+ cutscene
   let holdT = 0;
   let batterMark = null;
+  let ballFocus = null;  // where the ball is while it flies, for the camera
+  let cam = null;        // the camera's smoothed position
 
   // --- the throw ---
   const throwBall = () => {
@@ -59,6 +85,7 @@ scene("tutorial", () => {
     const ball = add([sprite("ball"), pos(player.pos), anchor("center"), scale(1.5), z(48), rotate(0), opacity(1), { phase: 0 }]);
     ball.onUpdate(() => {
       ball.angle += 600 * dt();
+      ballFocus = ball.pos.clone();
       if (ball.phase === 0) {
         const d = batterPos.sub(ball.pos);
         if (d.len() < 26) {
@@ -72,6 +99,7 @@ scene("tutorial", () => {
         if (d.len() < 30) {
           ball.phase = 2;
           destroy(ball);
+          ballFocus = null;   // the camera holds on the car for the "OI!!"
           shake(12);
           UI.speech(car, "OI!!", [255, 90, 90]);   // the bloke is NOT happy
           SFX.play("honk");
@@ -90,7 +118,8 @@ scene("tutorial", () => {
       wait(i * 0.18, () => {
         shake(8);
         if (i % 3 === 0) SFX.play("rumble");
-        const p = m.playerSpawn.add(rand(-200, 380), rand(-320, 120));
+        const [cx1, cy1, cx2, cy2] = PARK_PLATE.crackBox;
+        const p = vec2(rand(cx1, cx2) * U, rand(cy1, cy2) * U);
         cracks.push(p);
         add([sprite("crack" + (i % 3)), pos(p), anchor("center"), rotate(rand(0, 360)), scale(1.3), opacity(1), z(3)]);
       });
@@ -146,10 +175,16 @@ scene("tutorial", () => {
 
   // --- state machine ---
   onUpdate(() => {
-    // camera
-    const cx = m.w <= G.W ? m.w / 2 : G.clamp(player.pos.x, G.W / 2, m.w - G.W / 2);
-    const cy = m.h <= G.H ? m.h / 2 : G.clamp(player.pos.y, G.H / 2, m.h - G.H / 2);
-    camPos(cx, cy);
+    // camera: follows the player, but rides with the ball while it flies
+    // and holds on the car for the "OI!!", so the joke always lands in
+    // frame. The car park is a screen's width from the diamond, so
+    // without this the bloke shouted from off screen.
+    let focus = player.pos;
+    if (st === 2) focus = ballFocus || car.pos;
+    const cx = m.w <= G.W ? m.w / 2 : G.clamp(focus.x, G.W / 2, m.w - G.W / 2);
+    const cy = m.h <= G.H ? m.h / 2 : G.clamp(focus.y, G.H / 2, m.h - G.H / 2);
+    cam = cam ? cam.lerp(vec2(cx, cy), Math.min(1, dt() * 5)) : vec2(cx, cy);
+    camPos(cam);
 
     if (st === 0 && player.pos.dist(startPos) > 70) {
       st = 1;
@@ -178,6 +213,15 @@ scene("tutorial", () => {
   UI.vignette(0.36);
   UI.sceneFade();
   onKeyPress("]", () => go("area", { chapter: 1, area: 1 }));
+
+  // --- F2: show the collision blocks over the artwork ---
+  // Same dev aid as the plate areas in scenes/area.js: the park's walls
+  // are invisible and hand-measured against a painting. Off by default.
+  let showBlocks = false;
+  onKeyPress("f2", () => {
+    showBlocks = !showBlocks;
+    for (const b of get("plateSolid")) b.opacity = showBlocks ? 0.35 : 0;
+  });
 
   UI.titleCard("", "VICTORIA PARK", false);
 });
