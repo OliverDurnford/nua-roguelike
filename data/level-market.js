@@ -1,7 +1,8 @@
 // ============================================================
 // NORWICH MARKET: Chapter 2, Area 1.
 //
-// Plate area, FIRST PASS geometry with a known caveat: the art's
+// Plate area, geometry re-surveyed 12 Sep 2026 (aisles opened for
+// the brute) but the known caveat stands: the art's
 // aisles between stall rows painted narrower than a character, so
 // the solid blocks cover only the slim heart of each stall row and
 // people are scaled slightly small. Feet will brush tent edges.
@@ -24,21 +25,24 @@ const MARKET_PLATE = {
 
   solid: [
     // ---- city wall and the steps band along the top ----
-    [0,    0,   12.6, 2.6],
-    [15.0, 0,   34,   2.6],
+    // (held to 2.4 so the top aisle takes the widest enemy)
+    [0,    0,   12.6, 2.4],
+    [15.0, 0,   34,   2.4],
 
     // ---- side buildings ----
     [0,    2.6, 1.5,  18],     // left shopfronts
     [32.5, 2.6, 34,   18],     // right shopfronts
 
     // ---- stall rows, slim hearts only (counters and posts) ----
-    [2.2,  3.8, 12.3, 5.9],  [15.3, 3.8, 23.4, 5.9],  [27.4, 3.8, 32.5, 5.9],
+    [2.2,  4.0, 12.3, 5.9],  [15.3, 4.0, 23.4, 5.9],  [27.4, 4.0, 32.5, 5.9],
     [2.2,  7.8, 12.3, 9.9],  [15.3, 7.8, 23.4, 9.9],  [27.4, 7.8, 32.5, 9.9],
-    [2.2, 12.1, 12.3, 14.3], [15.3, 12.1, 23.4, 14.3], [27.4, 12.1, 32.5, 14.3],
+    [2.2, 12.1, 12.3, 14.1], [15.3, 12.1, 23.4, 14.1], [27.4, 12.1, 32.5, 14.1],
 
     // ---- bottom shopfronts, entrance gap in the middle ----
-    [1.5,  15.6, 14.9, 18],
-    [19.1, 15.6, 34,   18],
+    // (held down to 16.0 so the bottom aisle takes the widest enemy;
+    // feet brush the shopfront awnings)
+    [1.5,  16.0, 14.9, 18],
+    [19.1, 16.0, 34,   18],
     [14.9, 17.6, 19.1, 18],    // edge strip across the entrance mouth
   ],
 

@@ -1,7 +1,7 @@
 // ============================================================
 // THE MISCHIEF: Chapter 2, Area 3.
 //
-// Plate area, FIRST PASS geometry. The pub is one tall image,
+// Plate area, geometry re-surveyed 12 Sep 2026. The pub is one tall image,
 // three rooms stacked: games room with the pool table at the top,
 // the bar room in the middle, the chequered front room at the
 // bottom, stairs joining them. You come in the front door at the
@@ -69,9 +69,9 @@ const MISCHIEF_PLATE = {
   playerSpawn: [8.9, 24.3],
 
   enemySpawns: [
-    [4.6, 7.5], [9.8, 7.4], [11.9, 4.9],
+    [4.6, 7.2], [9.8, 7.4], [11.9, 4.9],
     [2.2, 10.2], [4.8, 15.8], [11.9, 10.5],
-    [4.7, 22.4], [9.9, 21.6],
+    [4.4, 22.4], [9.9, 21.6],
   ],
 
   // Way out through the corridor between the upstairs toilets.
