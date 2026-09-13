@@ -93,7 +93,13 @@ MAPS.buildPlate = (plate) => {
   const W = plate.cols * U;
   const H = plate.rows * U;
 
-  add([sprite(plate.sprite), pos(0, 0), z(0)]);
+  // The painting. Long plates come as two tiles side by side, because
+  // Kaboom refuses a texture wider than 2048 px; `x` is in grid units.
+  if (plate.tiles) {
+    for (const t of plate.tiles) add([sprite(t.sprite), pos(t.x * U, 0), z(0)]);
+  } else {
+    add([sprite(plate.sprite), pos(0, 0), z(0)]);
+  }
 
   // Collision blocks. Invisible in play; press F2 to see them.
   for (const [x1, y1, x2, y2] of plate.solid) {
