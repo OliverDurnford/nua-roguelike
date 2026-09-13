@@ -113,9 +113,13 @@ From the browser console (right-click → Inspect → Console):
 - All 8 other character sprites (generated colour figures for now)
 - All enemy designs — named placeholders ("Seagull", "Mercy Bouncer"...)
   using 4 basic behaviours. Real enemy design is its own session
-- Map layouts for 24 of the 25 areas — correct shapes and feel per
-  LEVEL_DESIGN.md, but drawn as simple ASCII grids. Easy to redraw
-  (see section 5). Gonzo's is the exception: it is the real painted level
+- Map layouts: every one of the 25 areas (and the tutorial) is now a
+  real painted level with measured walls (September 2026). Sixteen of
+  them were designed from online research of the real places and are
+  waiting on Ollie's review: the games night flat is a generic flat, and
+  the Cathedral has three blocks of chairs rather than four. The ASCII
+  grid system in section 5 still works and is the fallback if a plate
+  ever needs pulling
 - Special attack cutscene frames — currently a text banner. Real illustrated
   frames come from the art sessions
 - Chat-up lines, Josh's non-sequiturs, Ana's Spanish line — all marked
