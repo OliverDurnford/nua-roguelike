@@ -114,7 +114,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "jess", name: "Jess", height: 34,
+    id: "jess", name: "Jess", height: 34, real: true,  // DRAFT sprite, in for play-testing (16 Sep 2026), not yet approved
     colors: { hair: [180, 140, 80], skin: [240, 205, 175], top: [80, 120, 160], bottom: [50, 50, 65] },
     weapon: { name: "Passport", color: [120, 60, 80] },
     flavour: "Brutally honest. Has an army in Bali.",
@@ -129,7 +129,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "adam", name: "Adam", height: 39,
+    id: "adam", name: "Adam", height: 39, real: true,  // DRAFT sprite, in for play-testing (16 Sep 2026), not yet approved
     colors: { hair: [60, 45, 35], skin: [235, 195, 160], top: [200, 50, 50], bottom: [40, 40, 55] },
     weapon: { name: "Football", color: [230, 230, 230] },
     flavour: "Ka-chow.",
@@ -144,7 +144,7 @@ const CHARACTERS = [
     },
   },
   {
-    id: "ethan", name: "Ethan", height: 39,
+    id: "ethan", name: "Ethan", height: 39, real: true,  // DRAFT sprite, in for play-testing (16 Sep 2026), not yet approved
     colors: { hair: [50, 40, 35], skin: [230, 190, 155], top: [60, 60, 70], bottom: [35, 35, 45] },
     weapon: { name: "Shoes", color: [200, 170, 140] },
     flavour: "Understated. Until Tara arrives.",
