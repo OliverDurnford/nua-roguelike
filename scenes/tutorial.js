@@ -56,20 +56,12 @@ scene("tutorial", () => {
   // UI.speech hangs the "OI!!" off it (all it needs is a position).
   const car = add([pos(pt(PARK_PLATE.carTarget)), z(20)]);
 
-  // --- prompts (text in a translucent chip) ---
-  const promptChip = add([
-    rect(520, 38, { radius: 19 }), pos(G.W / 2, G.H - 58), anchor("center"),
-    color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0.6), fixed(), z(194),
-  ]);
-  let prompt = add([
-    text(isTouchscreen() ? "drag on the left side of the screen to move" : "move with WASD or the arrow keys", { size: 15 }),
-    pos(G.W / 2, G.H - 58), anchor("center"), color(255, 240, 200), fixed(), z(195), opacity(1),
-  ]);
-  const setPrompt = (s) => {
-    prompt.text = s;
-    promptChip.hidden = s === "";
-    promptChip.width = Math.max(200, 40 + s.length * 8.2);
-  };
+  // --- prompts (a paper chip along the bottom) ---
+  const prompt = UI.chipObj(
+    isTouchscreen() ? "drag on the left side of the screen to move" : "move with WASD or the arrow keys",
+    G.W / 2, G.H - 58, { z: 194 },
+  );
+  const setPrompt = (s) => prompt.set(s);
 
   let st = 0;            // 0 move, 1 throw, 2 ball in flight, 3+ cutscene
   let holdT = 0;
@@ -191,7 +183,7 @@ scene("tutorial", () => {
       setPrompt(isTouchscreen()
         ? "tap near the batter to throw them the ball"
         : "HOLD the mouse button to throw the ball to the batter");
-      batterMark = add([text("v", { size: 24 }), pos(batterPos.add(0, -52)), anchor("center"), color(255, 220, 120), z(60), opacity(1)]);
+      batterMark = add([text("v", { size: 16, font: UI.PX }), pos(batterPos.add(0, -52)), anchor("center"), color(255, 220, 120), z(60), opacity(1)]);
       batterMark.onUpdate(() => { batterMark.pos.y = batterPos.y - 52 + Math.sin(time() * 4) * 6; });
     }
 
@@ -223,5 +215,5 @@ scene("tutorial", () => {
     for (const b of get("plateSolid")) b.opacity = showBlocks ? 0.35 : 0;
   });
 
-  UI.titleCard("", "VICTORIA PARK", false);
+  UI.titleCard({ num: "00", name: "VICTORIA PARK", sub: "PRESENT DAY · 2026" });
 });

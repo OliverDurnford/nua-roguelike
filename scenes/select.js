@@ -1,7 +1,10 @@
 // ============================================================
 // CHARACTER SELECT: all ten, selectable from the start.
-// Cards slide in staggered, hover to lift, a gold glow tracks
-// the selection, details in a sleek bottom panel.
+// Ten pixel polaroids (the kit's HUD portraits, bigger): a white
+// card, the friend standing in the dark photo, their name written
+// underneath. Cards slide in staggered, hover to lift, the chosen
+// one is taped down and a gold glow glides between them. Details
+// on a paper card along the bottom.
 // ============================================================
 
 scene("select", () => {
@@ -10,21 +13,21 @@ scene("select", () => {
   add([sprite("bg-night"), pos(0, 0), scale(G.W / 8, G.H / 256), z(0)]);
   add([sprite("vignette"), pos(0, 0), scale(G.W / 480, G.H / 270), opacity(0.5), z(40)]);
 
-  const heading = add([
-    text("WHO ARE YOU, THEN?", { size: 28 }),
-    pos(G.W / 2, 40), anchor("center"), color(255, 242, 205), z(5), opacity(1),
-  ]);
+  const heading = UI.labelObj("WHO ARE YOU, THEN?", G.W / 2, 40, { size: 16, anchor: "center", z: 5, fixed: false });
   UI.slideIn(heading, vec2(G.W / 2, 18), vec2(G.W / 2, 40), 0.5);
-  const headRule = add([rect(0, 2.5), pos(G.W / 2, 62), anchor("center"), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), z(5), opacity(0.8)]);
+  const headRule = add([rect(0, 2), pos(G.W / 2, 60), anchor("center"), color(UI.YELLOW[0], UI.YELLOW[1], UI.YELLOW[2]), z(5), opacity(0.9)]);
   let hr = 0;
   headRule.onUpdate(() => { hr += dt(); headRule.width = 320 * UI.ease(hr / 0.7); });
 
   let selected = 0;
   const cards = [];
 
-  const CW = 148, CH = 148, GX = 168, GY = 166;
+  const CW = 140, CH = 164, GX = 168, GY = 172;
+  const PW = 128, PH = 112;                       // the photo
   const x0 = G.W / 2 - 2 * GX;
-  const y0 = 152;
+  const y0 = 156;
+  const photoY = -CH / 2 + 6 + PH / 2;            // photo centre, relative to the card
+  const feetY = photoY + PH / 2 - 4;              // where the friend stands
 
   // one glow that glides between cards instead of popping
   const glow = add([
@@ -35,33 +38,41 @@ scene("select", () => {
   CHARACTERS.forEach((c, i) => {
     const col = i % 5, row = Math.floor(i / 5);
     const p = vec2(x0 + col * GX, y0 + row * GY);
+    const delay = 0.05 * (col + row * 2);
 
+    // the polaroid itself is drawn, so it gets the kit's notched corners
+    // and inset shadow; the friend and the caption are children on top
     const card = add([
-      rect(CW, CH, { radius: 12 }), pos(p), anchor("center"),
-      color(22, 24, 34), outline(2, rgb(62, 65, 82)),
-      area(), z(5), opacity(1),
-      { idx: i, home: p.clone(), lift: 0 },
+      pos(p), area({ shape: new Rect(vec2(-CW / 2, -CH / 2), CW, CH) }), z(5), opacity(1),
+      { idx: i, home: p.clone(), lift: 0, born: time() + delay },
     ]);
-    const sprObj = add([...ART.charComps(c.id, 84), pos(p.add(0, -10)), z(6), opacity(1), { t: rand(0, 5) }]);
-    const nameObj = add([text(c.name, { size: 15 }), pos(p.add(0, 56)), anchor("center"), z(6), opacity(1)]);
+    card.onDraw(() => {
+      const op = card.opacity;
+      UI.card(vec2(0, 0), CW, CH, { center: true, fill: UI.WHITE, opacity: op });
+      UI.R(-PW / 2, photoY - PH / 2, PW, PH, UI.INK, op);
+      UI.R(-PW / 2 + 1, photoY - PH / 2 + 1, PW - 2, PH - 2, UI.PHOTO, op);
+    });
+    const figure = card.add([...ART.charComps(c.id, 84), pos(0, feetY - 42), opacity(1)]);
+    const name = card.add([
+      text(c.name.toLowerCase(), { size: 32, font: UI.VT }), pos(0, CH / 2 - 21), anchor("center"),
+      color(UI.rgb(UI.TEXT)), opacity(1),
+    ]);
+    // a strip of yellow tape holds the chosen one down
+    const tapeInk = card.add([rect(40, 14), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.INK)), opacity(1)]);
+    const tape = card.add([rect(36, 10), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.YELLOW)), opacity(1)]);
+    const kids = [figure, name, tapeInk, tape];
 
     // staggered entrance
-    UI.slideIn(card, p.add(0, 36), p, 0.45, 0.05 * (col + row * 2));
-    UI.slideIn(sprObj, p.add(0, 26), p.add(0, -10), 0.45, 0.05 * (col + row * 2));
-    UI.slideIn(nameObj, p.add(0, 92), p.add(0, 56), 0.45, 0.05 * (col + row * 2));
+    UI.slideIn(card, p.add(0, 36), p, 0.45, delay);
 
     card.onUpdate(() => {
-      // hover lift + selected bob
+      // hover lift + selected bob, once the entrance has landed
       const want = (card.isHovering() || selected === i) ? 1 : 0;
       card.lift += (want - card.lift) * Math.min(1, dt() * 10);
-      const dy = -6 * card.lift;
-      card.pos.y = card.home.y + dy;
-      sprObj.pos.y = card.home.y - 10 + dy + (selected === i ? Math.sin(time() * 3 + 1) * 2.5 : 0);
-      nameObj.pos.y = card.home.y + 56 + dy;
-
-      card.outline.color = selected === i ? rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]) : rgb(62, 65, 82);
-      card.outline.width = selected === i ? 2.5 : 2;
-      card.color = card.isHovering() && selected !== i ? rgb(30, 33, 46) : rgb(22, 24, 34);
+      if (time() > card.born + 0.5) card.pos.y = card.home.y - 6 * card.lift;
+      figure.pos.y = feetY - 42 + (selected === i ? Math.sin(time() * 3 + 1) * 2.5 : 0);
+      for (const k of kids) k.opacity = card.opacity;
+      tapeInk.hidden = tape.hidden = selected !== i;
     });
 
     card.onClick(() => {
@@ -77,27 +88,25 @@ scene("select", () => {
     glow.opacity = 0.3 + Math.sin(time() * 2.5) * 0.08;
   });
 
-  // ----- detail panel -----
+  // ----- detail panel: a paper card -----
   const panelY = G.H - 64;
-  const panel = add([
-    rect(G.W - 120, 78, { radius: 16 }), pos(G.W / 2, panelY), anchor("center"),
-    color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(8),
-  ]);
-  UI.fadeObj(panel, 0.68, 0.5, 0.35);
-  const dName = add([text("", { size: 19 }), pos(80, panelY - 22), anchor("left"), color(255, 242, 205), z(9)]);
-  const dFlavour = add([text("", { size: 13 }), pos(80, panelY + 2), anchor("left"), color(178, 186, 208), z(9)]);
-  const dInfo = add([text("", { size: 12 }), pos(80, panelY + 24), anchor("left"), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), z(9)]);
+  const panel = add([pos(G.W / 2, panelY), opacity(0), z(8)]);
+  panel.onDraw(() => UI.card(vec2(0, 0), G.W - 120, 78, { center: true, opacity: panel.opacity }));
+  UI.fadeObj(panel, 1, 0.5, 0.35);
+  const dName = add([text("", { size: 16, font: UI.PX }), pos(80, panelY - 24), anchor("left"), color(UI.rgb(UI.TEXT)), z(9)]);
+  const dFlavour = add([text("", { size: 16, font: UI.VT }), pos(80, panelY - 1), anchor("left"), color(UI.rgb(UI.TEXT)), z(9)]);
+  const dInfo = add([text("", { size: 16, font: UI.VT }), pos(80, panelY + 18), anchor("left"), color(UI.rgb(UI.RED)), z(9)]);
 
   onUpdate(() => {
     const c = CHARACTERS[selected];
-    dName.text = c.name;
+    dName.text = c.name.toUpperCase();
     dFlavour.text = c.flavour;
     dInfo.text = "throws: " + c.weapon.name + "    ·    as a companion: " + c.passive.name + " (" + c.passive.desc + ")";
   });
 
   const hintTxt = add([
-    text("click once to look, again to pick   ·   arrows + ENTER", { size: 11 }),
-    pos(G.W / 2, G.H - 14), anchor("center"), color(110, 115, 135), z(9), opacity(0),
+    text("click once to look, again to pick   ·   arrows + ENTER", { size: 16, font: UI.VT }),
+    pos(G.W / 2, G.H - 12), anchor("center"), color(170, 175, 190), z(9), opacity(0),
   ]);
   UI.fadeObj(hintTxt, 1, 0.6, 0.8);
 

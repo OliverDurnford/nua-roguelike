@@ -141,7 +141,7 @@ MAPS.buildPlate = (plate) => {
       "door", { unlocked: false },
     ]);
     const lbl = add([
-      text("WAY OUT", { size: 11 }), anchor("center"),
+      text("WAY OUT", { size: 8, font: UI.PX }), anchor("center"),
       pos(mid.x, y1 * U - 13),
       color(230, 200, 190), opacity(0.75), z(11),
     ]);
@@ -211,7 +211,7 @@ scene("area", ({ chapter, area: areaNum }) => {
         cObj.pos.y = cObj.baseY + Math.sin(cObj.t * 3) * 5;
       });
       const mark = add([
-        text("!", { size: 24 }), pos(m.companionSpawn.add(0, -44)), anchor("center"),
+        text("!", { size: 16, font: UI.PX }), pos(m.companionSpawn.add(0, -44)), anchor("center"),
         color(255, 220, 120), z(44), opacity(1),
       ]);
       mark.onUpdate(() => { mark.pos.y = cObj.pos.y - 46; });
@@ -231,8 +231,9 @@ scene("area", ({ chapter, area: areaNum }) => {
       : {};
     ENEMIES.spawnBoss(ch, m.bossSpawn, finaleOpts);
 
-    // boss health bar: name plate + gradient fill + white "ghost" that
-    // lags behind when the boss takes damage (classic juice)
+    // boss health bar: a paper card at the foot of the screen, the name in
+    // pixel type over a wristband meter like the HUD's, in red, with a pink
+    // "ghost" that lags behind when the boss takes damage (classic juice)
     const bar = add([fixed(), z(175), pos(0, 0), { disp: 1, ghost: 1 }]);
     bar.onDraw(() => {
       const b = get("boss")[0];
@@ -243,22 +244,16 @@ scene("area", ({ chapter, area: areaNum }) => {
 
       const bw = 460, bh = 13;
       const bx = G.W / 2 - bw / 2, by = G.H - 36;
-      UI.dPanel(vec2(bx - 16, by - 28), bw + 32, 52, 14);
-      drawText({ text: b.bname, size: 12, pos: vec2(G.W / 2, by - 18), anchor: "center", color: rgb(255, 226, 200) });
-      // accent diamonds either side of the name
-      for (const side of [-1, 1]) {
-        drawRect({
-          pos: vec2(G.W / 2 + side * (b.bname.length * 4.4 + 22), by - 13), width: 7, height: 7,
-          angle: 45, anchor: "center", color: rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity: 0.85,
-        });
-      }
-      drawRect({ pos: vec2(bx, by), width: bw, height: bh, radius: 6.5, color: rgb(28, 29, 40) });
-      if (bar.ghost > 0.005) {
-        drawRect({ pos: vec2(bx + 1, by + 1), width: (bw - 2) * bar.ghost, height: bh - 2, radius: 5.5, color: rgb(255, 255, 255), opacity: 0.45 });
-      }
-      if (bar.disp > 0.005) {
-        drawSprite({ sprite: "grad-red", pos: vec2(bx + 1, by + 1), scale: vec2(((bw - 2) * bar.disp) / 64, (bh - 2) / 8) });
-      }
+      UI.card(vec2(bx - 16, by - 30), bw + 32, 56);
+      UI.label(b.bname, G.W / 2, by - 18, { anchor: "center", color: UI.TEXT, shadow: false });
+      UI.R(bx - 2, by - 2, bw + 4, bh + 4, UI.INK);
+      UI.R(bx, by, bw, bh, UI.WHITE);
+      const blocks = (k, col) => {
+        const fw = Math.round((bw - 2) * k);
+        for (let off = 0; off < fw; off += 9) UI.R(bx + 1 + off, by + 1, Math.min(8, fw - off), bh - 2, col);
+      };
+      if (bar.ghost > 0.005) blocks(bar.ghost, UI.PINK);
+      if (bar.disp > 0.005) blocks(bar.disp, UI.RED);
     });
 
     if (a.finale) FINALE.setup(m);
@@ -298,7 +293,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       }
     });
     const tag = add([
-      text(a.npc.name, { size: 11 }), anchor("center"),
+      text(a.npc.name, { size: 16, font: UI.VT }), anchor("center"),
       pos(npcPos.add(0, -42)), color(200, 205, 220), opacity(0.8), z(44),
     ]);
     tag.onUpdate(() => { tag.pos.y = npc.pos.y - 44; });
@@ -386,16 +381,16 @@ scene("area", ({ chapter, area: areaNum }) => {
     const vin = add([sprite("vignette"), pos(0, 0), scale(G.W / 480, G.H / 270), color(160, 20, 25), opacity(0), fixed(), z(210)]);
     UI.fadeObj(vin, 0.85, 0.6, koHold);
 
-    const big = add([text("YOU DIED", { size: 46 }), pos(0, 0), anchor("center"), color(225, 72, 72), fixed(), z(211), opacity(1)]);
+    const big = UI.labelObj("YOU DIED", G.W / 2, G.H * 0.38, { size: 32, anchor: "center", color: UI.RED, shadowOff: 4, z: 211 });
     UI.slideIn(big, vec2(G.W / 2, G.H * 0.3), vec2(G.W / 2, G.H * 0.38), 0.55, 0.15 + koHold);
     const subT = add([
-      text("Chapter " + chapter + " starts again. Companions stay with you.", { size: 15, align: "center" }),
+      text("Chapter " + chapter + " starts again. Companions stay with you.", { size: 16, font: UI.VT, align: "center" }),
       pos(G.W / 2, G.H * 0.53), anchor("center"), color(200, 202, 214), fixed(), z(211), opacity(0),
     ]);
     UI.fadeObj(subT, 1, 0.4, 0.7 + koHold);
     const hint = add([
-      text("press ENTER  /  tap to retry", { size: 15 }),
-      pos(G.W / 2, G.H * 0.62), anchor("center"), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(211), opacity(0),
+      text("press ENTER  /  tap to retry", { size: 16, font: UI.VT }),
+      pos(G.W / 2, G.H * 0.62), anchor("center"), color(UI.YELLOW[0], UI.YELLOW[1], UI.YELLOW[2]), fixed(), z(211), opacity(0),
     ]);
     let htD = -1.0 - koHold;
     hint.onUpdate(() => {
@@ -422,7 +417,12 @@ scene("area", ({ chapter, area: areaNum }) => {
   UI.mobileControls();
   COMPANIONS.ambient();
   COMPANIONS.onAreaEnter();
-  UI.titleCard("CHAPTER " + chapter + ": " + ch.title, a.name, areaNum === 1);
+  // the taped-down label: track number in the chapter, the room, the chapter and its year
+  UI.titleCard({
+    num: String(areaNum).padStart(2, "0"),
+    name: a.name.toUpperCase(),
+    sub: ch.year ? ch.title + " · " + ch.year : ch.title,
+  });
   UI.sceneFade();
 
   G.devSkip = () => {

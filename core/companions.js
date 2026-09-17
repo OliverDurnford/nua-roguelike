@@ -143,13 +143,13 @@ COMPANIONS.recruit = (id) => {
   }
 
   // staggered text
-  const t1 = add([text(c.name + " has joined the party!", { size: 25 }), pos(G.W * 0.44, G.H * 0.33), fixed(), z(202), opacity(0), "banner"]);
+  const t1 = add([text(c.name + " has joined the party!", { size: 16, font: UI.PX, width: 480 }), pos(G.W * 0.44, G.H * 0.33), fixed(), z(202), opacity(0), "banner"]);
   const t2 = add([
-    text(c.passive.name + "\n" + c.passive.desc, { size: 15, width: 420 }),
+    text(c.passive.name + "\n" + c.passive.desc, { size: 16, font: UI.VT, width: 420 }),
     pos(G.W * 0.44, G.H * 0.43), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(202), opacity(0), "banner",
   ]);
   const t3 = add([
-    text("“" + c.recruitLine + "”", { size: 15, width: 420 }),
+    text("“" + c.recruitLine + "”", { size: 16, font: UI.VT, width: 420 }),
     pos(G.W * 0.44, G.H * 0.57), color(178, 198, 228), fixed(), z(202), opacity(0), "banner",
   ]);
   UI.fadeObj(t1, 1, 0.35, 0.2);
@@ -268,17 +268,17 @@ COMPANIONS.trySpecial = () => {
   UI.slideIn(por, vec2(G.W * 0.12, G.H * 0.49), vec2(G.W * 0.28, G.H * 0.49), 0.3);
 
   const nameT = add([
-    text(c.name.toUpperCase(), { size: 24 }), pos(0, 0),
+    text(c.name.toUpperCase(), { size: 16, font: UI.PX }), pos(0, 0),
     color(178, 186, 208), fixed(), z(202), opacity(1), "banner",
   ]);
   UI.slideIn(nameT, vec2(G.W * 0.58, G.H * 0.33), vec2(G.W * 0.44, G.H * 0.33), 0.3, 0.05);
   const specT = add([
-    text(c.special.name.toUpperCase(), { size: 36 }), pos(0, 0),
+    text(c.special.name.toUpperCase(), { size: 24, font: UI.PX, width: 500 }), pos(0, 0),
     color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(202), opacity(1), "banner",
   ]);
   UI.slideIn(specT, vec2(G.W * 0.6, G.H * 0.41), vec2(G.W * 0.44, G.H * 0.41), 0.32, 0.1);
   const lineT = add([
-    text(c.special.line, { size: 15, width: 430 }), pos(0, 0),
+    text(c.special.line, { size: 16, font: UI.VT, width: 430 }), pos(0, 0),
     color(200, 202, 222), fixed(), z(202), opacity(1), "banner",
   ]);
   UI.slideIn(lineT, vec2(G.W * 0.5, G.H * 0.56), vec2(G.W * 0.44, G.H * 0.56), 0.3, 0.16);

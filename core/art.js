@@ -123,65 +123,31 @@ ART.genBoss = (color, size) => {
 };
 
 // ---------- pickups & props ----------
-// Crisp pixel heart, redrawn as a blocky bitmap rather than filled
-// arcs, since arcs anti-alias into a soft vector look at this size and
-// the reskin wants it reading as pixel art. Same 14x13 canvas and the
-// same (fill, stroke) signature as before: `stroke`, when passed,
-// becomes the outline colour (the empty heart needs a lighter rim so
-// it still reads against a dark HUD panel); left null, the outline is
-// UI ink and the fill gets its two-tone shading from the fixed danger
-// red used everywhere else in the reskin. Either way the fill is
-// shaded darker across the bottom-right for a chunky two-tone look.
-ART.genHeart = (fill = "#e0444f", stroke = null) => {
+// The kit's pixel heart: 16 x 13, an ink outline, red with a darker
+// bottom-right half and a pink glint top-left. The empty heart is the
+// same shape in grey outline over paper. Drawn as row spans lifted
+// straight off the kit's SVG, so the two match to the pixel.
+ART.genHeart = (full = true) => {
   const cv = document.createElement("canvas");
-  cv.width = 14; cv.height = 13;
+  cv.width = 16; cv.height = 13;
   const x = cv.getContext("2d");
-
-  const ink = "#090a10";       // UI.INK, hardcoded here - art.js loads before ui.js
-  const outlineCol = stroke || ink;
-  const darken = (hex, amt) => {
-    const n = parseInt(hex.slice(1), 16);
-    const r = Math.max(0, Math.floor(((n >> 16) & 255) * (1 - amt)));
-    const g = Math.max(0, Math.floor(((n >> 8) & 255) * (1 - amt)));
-    const b = Math.max(0, Math.floor((n & 255) * (1 - amt)));
-    return `rgb(${r},${g},${b})`;
-  };
-  // the default red gets the exact hand-picked shade from the brief
-  // (matches UI danger red); any other fill colour is darkened in place
-  const dark = fill === "#e0444f" ? "#a8202e" : darken(fill, 0.3);
-
-  // heart silhouette as [start, end] column spans per row (14 wide, 13
-  // tall) - row 0 is two separate lobes, every other row is one span
-  const outerRows = [
-    [[1, 4], [9, 12]],
-    [[0, 13]], [[0, 13]], [[0, 13]], [[0, 13]],
-    [[1, 12]], [[1, 12]],
-    [[2, 11]], [[2, 11]],
-    [[3, 10]],
-    [[4, 9]],
-    [[5, 8]],
-    [[6, 7]],
+  const span = (col, y, s, e) => { x.fillStyle = col; x.fillRect(s, y, e - s + 1, 1); };
+  const ink = full ? "#090a10" : "#9a9384";
+  const red = full ? "#e63946" : "#e9e4d8";
+  const dark = full ? "#b52a36" : "#e9e4d8";
+  // the outline is the whole silhouette; the fill goes over it inset by one
+  const outline = [
+    [[2, 5], [10, 13]], [[1, 6], [9, 14]],
+    [[0, 15]], [[0, 15]], [[0, 15]], [[0, 15]],
+    [[1, 14]], [[2, 13]], [[3, 12]], [[4, 11]], [[5, 10]], [[6, 9]], [[7, 8]],
   ];
-
-  // outline pass: the full silhouette in the outline colour
-  x.fillStyle = outlineCol;
-  outerRows.forEach((spans, y) => {
-    spans.forEach(([s, e]) => x.fillRect(s, y, e - s + 1, 1));
-  });
-
-  // fill pass: each row inset by 1px so the outline reads as a clean
-  // 1px border; rows too narrow to inset (the top lobes, the bottom
-  // point) are left as outline only, which gives the heart its tip
-  for (let y = 1; y <= 11; y++) {
-    const [s, e] = outerRows[y][0];
-    const is = s + 1, ie = e - 1;
-    if (ie < is) continue;
-    for (let cx = is; cx <= ie; cx++) {
-      x.fillStyle = (cx >= 7 && y >= 6) ? dark : fill;
-      x.fillRect(cx, y, 1, 1);
-    }
-  }
-
+  outline.forEach((spans, y) => spans.forEach(([s, e]) => span(ink, y, s, e)));
+  [[2, 5], [10, 13]].forEach(([s, e]) => span(red, 1, s, e));
+  for (let y = 2; y <= 5; y++) span(red, y, 1, 14);
+  // from row 6 down the right half is in shadow
+  const lower = [[6, 2, 7, 8, 13], [7, 3, 7, 8, 12], [8, 4, 7, 8, 11], [9, 5, 7, 8, 10], [10, 6, 7, 8, 9], [11, 7, 7, 8, 8]];
+  for (const [y, s1, e1, s2, e2] of lower) { span(red, y, s1, e1); span(dark, y, s2, e2); }
+  if (full) { span("#ff9aa2", 2, 2, 3); span("#ff9aa2", 3, 1, 1); }
   return cv.toDataURL();
 };
 
@@ -306,6 +272,16 @@ ART.genCrack = (seed) => {
 
 // ---------- load everything ----------
 ART.init = () => {
+  // The UI kit's two pixel faces (core/fonts-real.js). Press Start 2P is
+  // an 8px grid, so its atlas is rasterised at 8 and every multiple of 8
+  // lands exactly on the pixels; VT323 at 16, its comfortable size.
+  // Nearest filtering keeps the doubled sizes blocky rather than blurred.
+  // Without the file the names fall through to a browser font.
+  if (typeof REAL_FONTS !== "undefined") {
+    loadFont("pixel", REAL_FONTS.pixel, { size: 8, filter: "nearest" });
+    loadFont("vt", REAL_FONTS.vt, { size: 16, filter: "nearest" });
+  }
+
   for (const c of CHARACTERS) {
     if (typeof REAL_ANIMS !== "undefined" && REAL_ANIMS[c.id]) {
       // animated sheet (core/sprites-anim.js): idle, walk, attack, hurt, ko, victory
@@ -388,8 +364,8 @@ ART.init = () => {
   // Painted room backgrounds (core/plates-real.js), one per venue
   for (const k in PLATES) loadSprite("plate-" + k, PLATES[k]);
 
-  loadSprite("heart", ART.genHeart());
-  loadSprite("heart-empty", ART.genHeart("#2c2d3a", "#565a70"));
+  loadSprite("heart", ART.genHeart(true));
+  loadSprite("heart-empty", ART.genHeart(false));
   loadSprite("ball", ART.genBall());
   // Real prop art (core/props-real.js) when present
   if (typeof REAL_PROPS !== "undefined" && REAL_PROPS.car) {

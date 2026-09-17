@@ -36,25 +36,25 @@ scene("ending", () => {
     .map((c) => c.name);
 
   const lines = [
-    { t: 1.0, s: 26, c: [255, 240, 200], y: 0.16, txt: "Victoria Park, restored." },
+    { t: 1.0, s: 16, f: UI.PX, c: [255, 240, 200], y: 0.16, txt: "Victoria Park, restored." },
     {
-      t: 3.0, s: 16, c: [210, 215, 230], y: 0.32,
+      t: 3.0, s: 16, f: UI.VT, c: [210, 215, 230], y: 0.32,
       txt: "[ PLACEHOLDER - this is where Ollie's real message goes. ]\nTen years. One group chat. Apparently unkillable.",
     },
     {
-      t: 5.5, s: 14, c: [170, 180, 200], y: 0.5,
+      t: 5.5, s: 16, f: UI.VT, c: [170, 180, 200], y: 0.5,
       txt: "run time " + G.fmtTime(secs) +
         "   -   annoyances flattened: " + r.kills +
         "   -   deaths: " + r.deaths +
         "   -   specials: " + r.specialsUsed,
     },
     {
-      t: 7.0, s: 16, c: [255, 220, 120], y: 0.62,
+      t: 7.0, s: 16, f: UI.VT, c: [255, 220, 120], y: 0.62,
       txt: "WHAT YOU MISSED\nfound this run: " + (found.length ? found.join(", ") : "nobody") +
         "\nstill out there: " + missed.join(", "),
     },
     {
-      t: 9.0, s: 14, c: [150, 155, 170], y: 0.8,
+      t: 9.0, s: 16, f: UI.VT, c: [150, 155, 170], y: 0.8,
       // "first run finished as X" only means something from the second
       // win onward; on the very first completion it goes without saying
       txt: (win.firstAsChar && win.story.wins > 1
@@ -63,13 +63,13 @@ scene("ending", () => {
           ? "across your runs you've met all ten. the whole group, back together."
           : "you've met " + met.length + " of the group's 10 so far.\na different four friends appear every run. go again?"),
     },
-    { t: 10.0, s: 16, c: [255, 240, 200], y: 0.88, txt: "press ENTER / tap - back to the title" },
+    { t: 10.0, s: 16, f: UI.VT, c: [255, 240, 200], y: 0.88, txt: "press ENTER / tap - back to the title" },
   ];
 
   for (const ln of lines) {
     wait(ln.t, () => {
       const t = add([
-        text(ln.txt, { size: ln.s, width: G.W - 160, align: "center" }),
+        text(ln.txt, { size: ln.s, font: ln.f, width: G.W - 160, align: "center" }),
         pos(G.W / 2, G.H * ln.y + 8), anchor("center"),
         color(ln.c[0], ln.c[1], ln.c[2]), z(55), opacity(0),
       ]);

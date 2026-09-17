@@ -4,10 +4,16 @@
 game skeleton runs end to end: title → character select → Victoria Park
 tutorial → 5 chapters × 5 areas → Old Age finale → ending message screen.
 
-**The UI look:** translucent rounded panels, gold accent colour, soft
-glows, smooth animated bars, cinematic vignette, slide/fade motion on
-everything. All drawn in code (core/ui.js + core/art.js) - no image
-files, so it survives the real art pass untouched.
+**The UI look:** the Pixel Polaroids kit (Ollie's design, 17 Sep 2026,
+in ../docs/design/2026-09-17-pixel-polaroids-ui-kit). The ephemera of the
+years in the game's own pixel language: a lanyard card for hearts and
+the special meter, polaroids for the companions (the chosen one taped
+down), a ticket stub naming the song, a taped-down label for each room,
+sticky notes for speech, paper chips for prompts, a yellow chip for
+system toasts, and bitmap type throughout (Press Start 2P for labels,
+VT323 for notes). All drawn in code (core/ui.js + core/art.js); the two
+fonts travel embedded in core/fonts-real.js, built by
+../tools/ui/build_fonts.py.
 
 Everything visual is a placeholder except the Ollie and Annie sprites.
 Everything written (jokes, lines, the ending message) is placeholder text
@@ -153,6 +159,7 @@ nua-roguelike/
 │   ├── boot.js           engine start, shared state, base stats
 │   ├── save.js           the run checkpoint (remembered between visits)
 │   ├── story.js          permanent memory across runs (friends ever met)
+│   ├── fonts-real.js     the UI's two pixel fonts (embedded as data)
 │   ├── sprites-real.js   Ollie + Annie sprites (embedded as data)
 │   ├── plates-real.js    painted level backgrounds (embedded as data)
 │   ├── art.js            generates the placeholder sprites

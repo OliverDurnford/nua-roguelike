@@ -46,6 +46,7 @@ const CHAPTERS = [
   // ========================= CHAPTER 1 =========================
   {
     num: 1, title: "FRESHERS", era: "First year at NUA Norwich",
+    year: 2016, lanyard: "FRESHER 2016",   // the HUD lanyard card (12 chars max) and the title card - PLACEHOLDER wording, Ollie's call
     enemySet: [
       // Enemy LOOKS are real where core/enemies-real.js has the id (4 Sep 2026 art
       // pass); behaviours stay the four placeholder types until the enemy design session
@@ -94,6 +95,7 @@ const CHAPTERS = [
   // ========================= CHAPTER 2 =========================
   {
     num: 2, title: "CROSS-COURSE COLLABORATION", era: "Film x Photography x Fashion",
+    year: 2017, lanyard: "STUDENT 2017",   // the HUD lanyard card (12 chars max) and the title card - PLACEHOLDER wording, Ollie's call
     enemySet: [
       { type: "runner",  name: "Deadline", id: "deadline",        color: [220, 60, 60] },
       { type: "shooter", name: "Overdue Book", id: "book",    color: [150, 110, 70] },
@@ -133,6 +135,7 @@ const CHAPTERS = [
   // ========================= CHAPTER 3 =========================
   {
     num: 3, title: "GRADUATION", era: "Finals and the ceremony",
+    year: 2019, lanyard: "GRAD 2019",   // the HUD lanyard card (12 chars max) and the title card - PLACEHOLDER wording, Ollie's call
     enemySet: [
       { type: "chaser",  name: "All-Nighter", id: "allnighter",      color: [40, 45, 90] },
       { type: "brute",   name: "Printer Jam", id: "printer",      color: [120, 120, 125] },
@@ -172,6 +175,7 @@ const CHAPTERS = [
   // ========================= CHAPTER 4 =========================
   {
     num: 4, title: "EARLY LONDON", era: "The move, lockdown, first steps",
+    year: 2020, lanyard: "LONDON 2020",   // the HUD lanyard card (12 chars max) and the title card - PLACEHOLDER wording, Ollie's call
     enemySet: [
       { type: "chaser",  name: "Covid Particle", id: "covid",  color: [110, 200, 90] },
       { type: "shooter", name: "Estate Agent", id: "agent",    color: [70, 110, 190] },
@@ -211,6 +215,7 @@ const CHAPTERS = [
   // ========================= CHAPTER 5 =========================
   {
     num: 5, title: "LATER LONDON", era: "Present day - the group now",
+    year: 2026, lanyard: "LONDON 2026",   // the HUD lanyard card (12 chars max) and the title card - PLACEHOLDER wording, Ollie's call
     enemySet: [
       { type: "runner",  name: "Pigeon", id: "pigeon",       color: [150, 150, 160] },
       { type: "brute",   name: "Slow Tourist", id: "tourist", color: [230, 140, 170] },

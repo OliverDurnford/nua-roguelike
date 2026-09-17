@@ -1,19 +1,201 @@
 // ============================================================
 // UI: HUD, touch controls, and the visual-polish helpers.
-// Design language: chunky pixel-art panels (ink outline, warm
-// wood-toned bevel, notched square corners) over the painted
-// venues, gold accents, segmented meter bars, cinematic vignette.
-// Everything is code-drawn - no asset files needed.
+//
+// Design language: the Pixel Polaroids kit (Ollie, 17 Sep 2026,
+// docs/design/2026-09-17-pixel-polaroids-ui-kit). The ephemera of
+// the ten years redrawn in the game's own pixel language: paper
+// cards with a 2px ink outline and notched corners, a lanyard card
+// for the hearts and the meter, polaroids for the companions, a
+// ticket stub for the song, a taped-down label for the room, sticky
+// notes for speech, and bitmap type throughout (Press Start 2P for
+// labels and headings, VT323 for notes and prompts). Everything is
+// code-drawn; the two fonts travel embedded in core/fonts-real.js.
+//
+// The kit was drawn at 960 x 540, the game's own resolution, so the
+// positions and sizes in here are the kit's own numbers.
 // ============================================================
 
 const UI = {};
 
-UI.GOLD = [255, 214, 92];
-UI.INK = [9, 10, 16];
-// panel palette sampled from the Gonzo's plate, 26 Aug 2026 art pass
-UI.PANEL_FILL = [36, 20, 18];    // #241412 warm near-black fill
-UI.PANEL_BEVEL = [90, 58, 40];   // #5a3a28 muted warm wood - top/left highlight
-UI.PANEL_SHADOW = [21, 10, 9];   // #150a09 deep inner shadow - bottom/right
+// ---------- palette: the kit's hex values ----------
+UI.INK = [9, 10, 16];              // #090a10  every outline and shadow
+UI.TEXT = [26, 26, 26];            // #1a1a1a  type on paper
+UI.PAPER = [244, 239, 228];        // #f4efe4  the lanyard card, the ticket, the stick
+UI.PAPER_SHADE = [201, 194, 178];  // #c9c2b2  the 2px inset shadow on paper
+UI.PAPER_DIM = [233, 228, 216];    // #e9e4d8  an empty polaroid, an empty heart
+UI.CHIP = [232, 223, 200];         // #e8dfc8  prompt chips
+UI.WHITE = [255, 255, 255];
+UI.RED = [230, 57, 70];            // #e63946  hearts, the lanyard, the GO chip, the knob
+UI.RED_DARK = [181, 42, 54];       // #b52a36
+UI.PINK = [255, 154, 162];         // #ff9aa2  the heart's highlight
+UI.YELLOW = [255, 233, 77];        // #ffe94d  meter blocks, the tape on the chosen polaroid
+UI.YELLOW_CHIP = [255, 241, 118];  // #fff176  the toast chip (sound OFF)
+UI.YELLOW_SHADE = [217, 199, 58];  // #d9c73a
+UI.LABEL = [245, 195, 60];         // #f5c33c  the title card's number block
+UI.NAVY = [27, 22, 54];            // #1b1636  the title card
+UI.PALE = [201, 205, 217];         // #c9cdd9  the title card's rule and subtitle
+UI.GREY = [154, 147, 132];         // #9a9384  an empty heart's outline
+UI.SLOT = [58, 53, 48];            // #3a3530  an empty polaroid's photo
+UI.SLOT_TEXT = [138, 132, 122];    // #8a847a
+UI.PHOTO = [36, 20, 18];           // #241412  behind a portrait
+UI.STICK_RING = [216, 207, 187];   // #d8cfbb  the joystick's inner ring
+UI.GOLD = [255, 214, 92];          // glows, sparks and hairlines, as before
+// the chrome of the room's name on the title card, top band to bottom band
+UI.CHROME = [[255, 255, 255], [185, 196, 232], [90, 106, 168], [231, 236, 255], [185, 196, 232], [138, 151, 201]];
+
+// ---------- type ----------
+// Press Start 2P is an 8px grid: keep its sizes to multiples of 8 and it
+// stays pixel-perfect (its atlas is rasterised at 8, see ART.init). VT323
+// is rasterised at 16, so 16 and 32 are its clean sizes.
+UI.PX = "pixel";
+UI.VT = "vt";
+
+// ---------- drawing primitives (used inside onDraw) ----------
+
+UI.rgb = (c) => rgb(c[0], c[1], c[2]);
+
+UI.R = (x, y, w, h, c, op = 1) => {
+  if (w <= 0 || h <= 0) return;
+  drawRect({ pos: vec2(x, y), width: w, height: h, color: UI.rgb(c), opacity: op });
+};
+
+UI.measure = (str, font, size, extra = {}) => formatText(Object.assign({ text: str, font, size }, extra));
+
+// Paper card: a 2px ink outline whose corners are notched (the bars stop
+// two pixels short and nothing is drawn in the corner), a flat fill, and a
+// 2px inset shadow along the bottom and right (the kit's #c9c2b2).
+// Options: fill, shade (null for none), highlight (a 2px light edge top and
+// left, the lanyard card), opacity, center (p is the centre rather than the
+// top-left), notch (false for square corners, the chips), drop (a hard ink
+// drop shadow, in px).
+UI.card = (p, w, h, o = {}) => {
+  const op = o.opacity === undefined ? 1 : o.opacity;
+  const fill = o.fill || UI.PAPER;
+  const shade = o.shade === undefined ? UI.PAPER_SHADE : o.shade;
+  const n = o.notch === false ? 0 : 2;
+  const x = Math.round(o.center ? p.x - w / 2 : p.x);
+  const y = Math.round(o.center ? p.y - h / 2 : p.y);
+  if (o.drop) UI.R(x + o.drop, y + o.drop, w, h, UI.INK, op);
+  UI.R(x + n, y, w - n * 2, 2, UI.INK, op);
+  UI.R(x + n, y + h - 2, w - n * 2, 2, UI.INK, op);
+  UI.R(x, y + n, 2, h - n * 2, UI.INK, op);
+  UI.R(x + w - 2, y + n, 2, h - n * 2, UI.INK, op);
+  UI.R(x + 2, y + 2, w - 4, h - 4, fill, op);
+  if (o.highlight) {
+    UI.R(x + 2, y + 2, w - 4, 2, o.highlight, op);
+    UI.R(x + 2, y + 2, 2, h - 4, o.highlight, op);
+  }
+  if (shade) {
+    UI.R(x + 2, y + h - 4, w - 4, 2, shade, op);
+    UI.R(x + w - 4, y + 2, 2, h - 4, shade, op);
+  }
+};
+
+// kept for older call sites: a plain paper card
+UI.dPanel = (p, w, h) => UI.card(p, w, h);
+
+// VT323 notes: plain type, anchored top-left unless told otherwise.
+UI.text = (str, x, y, o = {}) => {
+  drawText({
+    text: str, font: o.font || UI.VT, size: o.size || 16,
+    pos: vec2(x, y), anchor: o.anchor || "topleft", align: o.align, width: o.width,
+    letterSpacing: o.letterSpacing, color: UI.rgb(o.color || UI.TEXT),
+    opacity: o.opacity === undefined ? 1 : o.opacity,
+  });
+};
+
+// Press Start 2P labels, with the kit's hard 2px ink shadow unless o.shadow is false.
+UI.label = (str, x, y, o = {}) => {
+  const base = Object.assign({ font: UI.PX, size: 8, color: UI.WHITE }, o);
+  if (o.shadow !== false) {
+    const d = o.shadowOff || 2;
+    UI.text(str, x + d, y + d, Object.assign({}, base, { color: UI.INK }));
+  }
+  UI.text(str, x, y, base);
+};
+
+// The room's name in chrome: the kit's five-stop gradient, as horizontal
+// bands shown through the letters (a stencil mask), over a 2px ink shadow.
+UI.chromeText = (str, x, y, size, op = 1) => {
+  const tw = Math.ceil(UI.measure(str, UI.PX, size).width);
+  UI.text(str, x + 2, y + 2, { font: UI.PX, size, color: UI.INK, opacity: op });
+  const stops = [0, 5, 7, 8, 10, 13, 16];
+  drawMasked(() => {
+    for (let i = 0; i < UI.CHROME.length; i++) {
+      const a = stops[i] * size / 16, b = stops[i + 1] * size / 16;
+      UI.R(x, y + a, tw, b - a, UI.CHROME[i], op);
+    }
+  }, () => {
+    UI.text(str, x, y, { font: UI.PX, size, color: UI.WHITE });
+  });
+};
+
+// A chip drawn on the spot: text on a small square-cornered card.
+// Anchored top-left, or "topright" (x is the right edge) or "center".
+UI.chip = (str, x, y, o = {}) => {
+  const font = o.font || UI.VT, size = o.size || 16;
+  const padX = o.padX === undefined ? 10 : o.padX, padY = o.padY === undefined ? 4 : o.padY;
+  const w = Math.ceil(UI.measure(str, font, size).width) + padX * 2 + 4;
+  const h = size + padY * 2 + 4;
+  let cx = x, cy = y;
+  if (o.anchor === "topright") cx = x - w;
+  else if (o.anchor === "center") { cx = x - w / 2; cy = y - h / 2; }
+  const op = o.opacity === undefined ? 1 : o.opacity;
+  UI.card(vec2(cx, cy), w, h, {
+    fill: o.fill || UI.CHIP, shade: o.shade === undefined ? null : o.shade, notch: false, opacity: op,
+  });
+  UI.text(str, cx + w / 2, cy + h / 2 + 1, { font, size, anchor: "center", color: o.color || UI.TEXT, opacity: op });
+  return { w, h };
+};
+
+// ---------- entity builders (for scenes that fade and move things) ----------
+
+// The chip as an entity centred on (x, y). root.set(str) reworks the text
+// and the size; an empty string hides it. Children follow the root's
+// opacity every frame, so UI.fadeObj and UI.slideIn work on the root.
+UI.chipObj = (str, x, y, o = {}) => {
+  const font = o.font || UI.VT, size = o.size || 16;
+  const padX = o.padX === undefined ? 10 : o.padX, padY = o.padY === undefined ? 4 : o.padY;
+  const comps = [pos(x, y), opacity(o.opacity === undefined ? 1 : o.opacity), z(o.z || 190), { w: 0, h: 0, label: str }];
+  if (o.fixed !== false) comps.push(fixed());
+  const root = add(comps);
+  const txt = root.add([text(str, { font, size }), pos(0, 1), anchor("center"), color(UI.rgb(o.color || UI.TEXT)), opacity(1)]);
+  root.set = (s) => {
+    root.label = s;
+    txt.text = s;
+    root.w = Math.ceil(UI.measure(s, font, size).width) + padX * 2 + 4;
+    root.h = size + padY * 2 + 4;
+    if (o.area) {   // a tappable chip: its hit box follows the text
+      if (root.c("area")) root.unuse("area");
+      root.use(area({ shape: new Rect(vec2(-root.w / 2, -root.h / 2), root.w, root.h) }));
+    }
+  };
+  root.set(str);
+  root.onDraw(() => {
+    if (root.label === "") return;
+    UI.card(vec2(0, 0), root.w, root.h, {
+      center: true, fill: o.fill || UI.CHIP, shade: o.shade === undefined ? null : o.shade, notch: false, opacity: root.opacity,
+    });
+  });
+  root.onUpdate(() => { txt.opacity = root.opacity; txt.hidden = root.label === ""; });
+  return root;
+};
+
+// A Press Start 2P heading as an entity, ink shadow and all.
+UI.labelObj = (str, x, y, o = {}) => {
+  const font = o.font || UI.PX, size = o.size || 16;
+  const comps = [pos(x, y), opacity(o.opacity === undefined ? 1 : o.opacity), z(o.z || 190), { label: str }];
+  if (o.fixed !== false) comps.push(fixed());
+  const root = add(comps);
+  const topt = { font, size, width: o.width, align: o.align, letterSpacing: o.letterSpacing };
+  const anc = o.anchor || "topleft";
+  const d = o.shadow === false ? 0 : (o.shadowOff || 2);
+  const sh = d ? root.add([text(str, topt), pos(d, d), anchor(anc), color(UI.rgb(UI.INK)), opacity(1)]) : null;
+  const tx = root.add([text(str, topt), pos(0, 0), anchor(anc), color(UI.rgb(o.color || UI.WHITE)), opacity(1)]);
+  root.set = (s) => { root.label = s; tx.text = s; if (sh) sh.text = s; };
+  root.onUpdate(() => { tx.opacity = root.opacity; if (sh) sh.opacity = root.opacity * 0.9; });
+  return root;
+};
 
 // ---------- motion helpers ----------
 
@@ -68,103 +250,39 @@ UI.vignette = (op = 0.5) => {
   ]);
 };
 
-// ---------- drawing helpers (used inside onDraw) ----------
-
-// Chunky pixel-art frame: 2px ink outline, a 1px bevel just inside it
-// (light on top/left, shadow on bottom/right), a flat fill, and a
-// notched corner pixel (the fill peeks through the ink's very corner)
-// so square panels chamfer like pixel art instead of reading as a
-// rounded web box. `p` is top-left unless opts.center is set.
-// Shared by every panel-ish drawer below - dPanel, portrait boxes,
-// the speech chip and the title banner all call this one helper.
-UI._frame = (p, w, h, opts = {}) => {
-  const outlineW = 2, bevelW = 1, notch = 2;
-  const op = opts.opacity !== undefined ? opts.opacity : 1;
-  const fillOp = (opts.fillOpacity !== undefined ? opts.fillOpacity : 0.94) * op;
-  const fillCol = opts.fill || UI.PANEL_FILL;
-  const light = opts.light || UI.PANEL_BEVEL;
-  const shadow = opts.shadow || UI.PANEL_SHADOW;
-  const tl = opts.center ? vec2(p.x - w / 2, p.y - h / 2) : p;
-
-  // ink base - its edges double as the outline once the fill covers the middle
-  drawRect({ pos: tl, width: w, height: h, color: rgb(UI.INK[0], UI.INK[1], UI.INK[2]), opacity: op });
-
-  const fx = tl.x + outlineW, fy = tl.y + outlineW, fw = w - outlineW * 2, fh = h - outlineW * 2;
-  if (fw > 0 && fh > 0) {
-    drawRect({ pos: vec2(fx, fy), width: fw, height: fh, color: rgb(fillCol[0], fillCol[1], fillCol[2]), opacity: fillOp });
-    // bevel: light top/left, shadow bottom/right, laid right on the fill's inner edge
-    drawRect({ pos: vec2(fx, fy), width: fw, height: bevelW, color: rgb(light[0], light[1], light[2]), opacity: fillOp });
-    drawRect({ pos: vec2(fx, fy), width: bevelW, height: fh, color: rgb(light[0], light[1], light[2]), opacity: fillOp });
-    drawRect({ pos: vec2(fx, fy + fh - bevelW), width: fw, height: bevelW, color: rgb(shadow[0], shadow[1], shadow[2]), opacity: fillOp });
-    drawRect({ pos: vec2(fx + fw - bevelW, fy), width: bevelW, height: fh, color: rgb(shadow[0], shadow[1], shadow[2]), opacity: fillOp });
-  }
-
-  // notch: skip the ink's very corner pixel by letting the fill colour
-  // show through instead, so each corner chamfers by one pixel
-  const corners = [
-    vec2(tl.x, tl.y), vec2(tl.x + w - notch, tl.y),
-    vec2(tl.x, tl.y + h - notch), vec2(tl.x + w - notch, tl.y + h - notch),
-  ];
-  corners.forEach((c) => {
-    drawRect({ pos: c, width: notch, height: notch, color: rgb(fillCol[0], fillCol[1], fillCol[2]), opacity: fillOp });
-  });
-
-  // optional short gold L-brackets at the four corners (titleCard banner)
-  if (opts.goldCorners) {
-    const armW = Math.min(14, Math.floor(Math.min(w, h) / 3)), armT = 2;
-    const g = UI.GOLD;
-    const drawL = (cornerX, cornerY, signX, signY) => {
-      const xThick = signX > 0 ? cornerX : cornerX - armW;
-      const yThin = signY > 0 ? cornerY : cornerY - armT;
-      const xThin = signX > 0 ? cornerX : cornerX - armT;
-      const yThick = signY > 0 ? cornerY : cornerY - armW;
-      drawRect({ pos: vec2(xThick, yThin), width: armW, height: armT, color: rgb(g[0], g[1], g[2]), opacity: op });
-      drawRect({ pos: vec2(xThin, yThick), width: armT, height: armW, color: rgb(g[0], g[1], g[2]), opacity: op });
-    };
-    drawL(tl.x, tl.y, 1, 1);
-    drawL(tl.x + w, tl.y, -1, 1);
-    drawL(tl.x, tl.y + h, 1, -1);
-    drawL(tl.x + w, tl.y + h, -1, -1);
-  }
-};
-
-// chunky pixel panel (was: translucent rounded panel with a hairline
-// edge). `r` is kept in the signature so every existing call site
-// still works, but corners are square pixel-art now, so it's ignored.
-UI.dPanel = (p, w, h, r = 12) => {
-  UI._frame(p, w, h);
-};
-
 UI.dGlow = (p, size, col, op) => {
   drawSprite({ sprite: "glow", pos: p, anchor: "center", scale: size / 96, color: rgb(col[0], col[1], col[2]), opacity: op });
 };
 
 // ---------- tiny effect helpers ----------
 
+// damage numbers and system feedback: pixel type with a one-pixel ink shadow
 UI.floatText = (p, str, col, big = false) => {
-  // dark copy underneath + bright copy on top = readable on any floor
+  const size = big ? 16 : 8;
   const o = add([
-    text(str, { size: big ? 18 : 14 }),
+    text(str, { size, font: UI.PX }),
     pos(p), anchor("center"),
-    color(10, 10, 14),
+    color(UI.rgb(UI.INK)),
     opacity(1),
     move(vec2(0, -1), 42),
     lifespan(1.2, { fade: 0.6 }),
     z(150), "fx",
   ]);
   const top = o.add([
-    text(str, { size: big ? 18 : 14 }),
-    pos(-1, -2), anchor("center"),
+    text(str, { size, font: UI.PX }),
+    pos(-1, -1), anchor("center"),
     color(col[0], col[1], col[2]),
     opacity(1),
   ]);
   o.onUpdate(() => { top.opacity = o.opacity; });
 };
 
-// Speech bubble: a chip with a tail that hangs above a character and
-// FOLLOWS them as they move, outlined in the speaker's colour. This is
-// how all spoken dialogue is shown - floatText is for damage numbers
-// and system feedback only, so speech is always clearly attributed.
+// Speech: a sticky note that hangs above a character and FOLLOWS them as
+// they move, with a little tail pointing down at the speaker. This is how
+// all spoken dialogue is shown - floatText is for damage numbers and
+// system feedback only, so speech is always clearly attributed. The
+// `accent` argument (the speaker's colour) is kept for every existing call
+// site; the kit's note is plain white, so it is not drawn.
 UI._bubbles = [];
 
 UI.speech = (ent, str, accent = [255, 255, 255]) => {
@@ -174,13 +292,12 @@ UI.speech = (ent, str, accent = [255, 255, 255]) => {
   UI._bubbles = UI._bubbles.filter((b) => b.exists());
 
   const wrapW = 230;
-  const textW = str.length * 7.4;
-  const w = Math.min(wrapW, textW) + 24;
-  const lineCount = Math.max(1, Math.ceil(textW / wrapW));
-  const h = lineCount * 15 + 15;
+  const fmt = UI.measure(str, UI.VT, 16, { width: wrapW, align: "center" });
+  const w = Math.ceil(fmt.width) + 28;
+  const h = Math.ceil(fmt.height) + 17;
   const dur = 1.7 + Math.min(2, str.length * 0.035);
 
-  // if a neighbour is already speaking, stack this bubble above theirs
+  // if a neighbour is already speaking, stack this note above theirs
   let lift = 0;
   for (const b of UI._bubbles) {
     if (!b.ent || !b.ent.exists()) continue;
@@ -193,27 +310,26 @@ UI.speech = (ent, str, accent = [255, 255, 255]) => {
   ent._bubble = root;
   UI._bubbles.push(root);
 
-  // pixel frame chip: same helper as dPanel, with the speaker's accent
-  // colour standing in for the bevel's light edge so each character's
-  // lines still read as clearly attributed
-  const chip = root.add([pos(0, 0), opacity(0)]);
-  chip.onDraw(() => {
-    UI._frame(vec2(0, 0), w, h, { center: true, opacity: chip.opacity, light: accent });
+  const note = root.add([pos(0, 0), opacity(0)]);
+  note.onDraw(() => {
+    const op = note.opacity;
+    UI.card(vec2(0, 0), w, h, { center: true, fill: UI.WHITE, opacity: op });
+    // the tail: a white diamond straddling the bottom edge, inked along
+    // its two lower sides so the outline runs down into the point
+    const ty = h / 2 + 1, d = 6.4;
+    drawRect({ pos: vec2(0, ty), width: 9, height: 9, anchor: "center", angle: 45, color: UI.rgb(UI.WHITE), opacity: op });
+    drawLines({ pts: [vec2(-d, ty), vec2(0, ty + d), vec2(d, ty)], width: 2, color: UI.rgb(UI.INK), opacity: op });
   });
-  const tail = root.add([
-    rect(9, 9), pos(0, h / 2 + 1), anchor("center"), rotate(45),
-    color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0),
-  ]);
   const txt = root.add([
-    text(str, { size: 13, width: w - 16, align: "center" }),
-    anchor("center"), color(255, 245, 225), opacity(0),
+    text(str, { size: 16, font: UI.VT, width: wrapW, align: "center" }),
+    pos(0, 1), anchor("center"), color(UI.rgb(UI.TEXT)), opacity(0),
   ]);
 
   root.onUpdate(() => {
     const gone = !ent.exists();
     if (!gone) {
       root.pos = ent.pos.add(0, -50 - h / 2 - root.lift);
-      // keep the bubble inside the map so it never clips off the edges
+      // keep the note inside the map so it never clips off the edges
       if (G.mapBounds) {
         root.pos.x = G.clamp(root.pos.x, w / 2 + 10, Math.max(w / 2 + 10, G.mapBounds.x2 - w / 2 - 10));
         root.pos.y = Math.max(root.pos.y, h / 2 + 10);
@@ -223,12 +339,11 @@ UI.speech = (ent, str, accent = [255, 255, 255]) => {
     if (gone) root.t = Math.max(root.t, dur - 0.25);
 
     let op;
-    if (root.t < 0.15) op = root.t / 0.15;                       // fade in
+    if (root.t < 0.15) op = root.t / 0.15;                                // fade in
     else if (root.t > dur - 0.3) op = Math.max(0, (dur - root.t) / 0.3);  // fade out
     else op = 1;
 
-    chip.opacity = op * 0.88;
-    tail.opacity = op * 0.88;
+    note.opacity = op;
     txt.opacity = op;
     if (root.t >= dur) destroy(root);
   });
@@ -266,83 +381,70 @@ UI.ring = (p, r) => {
   });
 };
 
-// subtitles in a sleek bottom chip
-UI.subtitleSeq = (lines) => {
-  lines.forEach((ln, i) => {
-    wait(i * 2.0, () => {
-      const chip = add([
-        rect(24 + ln.length * 8.4, 34, { radius: 17 }),
-        pos(G.W / 2, G.H - 46), anchor("center"),
-        color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), fixed(), z(190),
-      ]);
-      const t = add([
-        text(ln, { size: 15 }), pos(G.W / 2, G.H - 46), anchor("center"),
-        color(255, 240, 200), fixed(), z(191), opacity(0),
-      ]);
-      UI.fadeObj(chip, 0.7, 0.18);
-      UI.fadeObj(t, 1, 0.18);
-      wait(1.65, () => {
-        chip.onUpdate(() => { chip.opacity -= dt() * 5; if (chip.opacity <= 0) destroy(chip); });
-        t.onUpdate(() => { t.opacity -= dt() * 5; if (t.opacity <= 0) destroy(t); });
-      });
-    });
+// a chip that fades in at the bottom of the screen and out again
+UI._bottomChip = (str, o) => {
+  const chip = UI.chipObj(str, G.W / 2, G.H - 46, Object.assign({ opacity: 0, z: 190 }, o));
+  UI.fadeObj(chip, 1, 0.18);
+  wait(1.65, () => {
+    chip.onUpdate(() => { chip.opacity -= dt() * 5; if (chip.opacity <= 0) destroy(chip); });
   });
+  return chip;
 };
 
-// chapter / area title card - slides in with a gold underline sweep
-UI.titleCard = (chapterTitle, areaName, big) => {
-  const items = [];
-  const baseX = 28, baseY = 96;   // below the HUD panel so they never overlap
+// subtitles and narration: paper chips, one line after another
+UI.subtitleSeq = (lines) => {
+  lines.forEach((ln, i) => { wait(i * 2.0, () => UI._bottomChip(ln)); });
+};
 
-  if (big) {
-    const t1 = add([text(chapterTitle, { size: 30 }), pos(baseX, baseY), fixed(), z(195), opacity(1)]);
-    const t2 = add([text(areaName, { size: 17 }), pos(baseX, baseY + 40), color(195, 200, 215), fixed(), z(195), opacity(1)]);
-    UI.slideIn(t1, vec2(baseX - 46, baseY), vec2(baseX, baseY), 0.5);
-    UI.slideIn(t2, vec2(baseX - 46, baseY + 40), vec2(baseX, baseY + 40), 0.5, 0.12);
-    // underline sweep
-    const line = add([rect(0, 3), pos(baseX, baseY + 36), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(195), opacity(1)]);
-    let lt = 0;
-    const lineW = Math.min(330, chapterTitle.length * 16);
-    line.onUpdate(() => { lt += dt(); line.width = lineW * UI.ease(lt / 0.6); });
+// system feedback (sound OFF, god mode ON): the kit's yellow chip
+UI.toast = (str) => UI._bottomChip(str, { fill: UI.YELLOW_CHIP, shade: UI.YELLOW_SHADE, padY: 5 });
 
-    // solid pixel banner behind the text (was a soft glow) - gold corner
-    // brackets, same slide-in as the title, same fade-out below since
-    // it rides along in `items`
-    const bx0 = baseX - 18, by0 = baseY - 14, bw = lineW + 56, bh = 84;
-    const banner = add([pos(bx0, by0), opacity(0), fixed(), z(194)]);
-    banner.onDraw(() => { UI._frame(vec2(0, 0), bw, bh, { opacity: banner.opacity, goldCorners: true }); });
-    UI.slideIn(banner, vec2(bx0 - 46, by0), vec2(bx0, by0), 0.5);
+// The room's title card: a taped-down label, pixel polaroid style. A
+// yellow number block, then the room's name in chrome over its subtitle
+// (the chapter and the year) on navy, the whole thing sitting on a hard
+// ink drop shadow. Slides in from the left, holds, fades.
+UI.titleCard = ({ num, name, sub }) => {
+  const x0 = 14, y0 = 112;
+  const NAME = 16, SUB = 8, NUM = 24;
+  const nameW = Math.ceil(UI.measure(name, UI.PX, NAME).width);
+  const subW = Math.ceil(UI.measure(sub, UI.PX, SUB, { letterSpacing: 1 }).width);
+  const numW = Math.ceil(UI.measure(num, UI.PX, NUM).width);
+  const leftW = 2 + 12 + numW + 12;               // ink on the left only: the seam is the name block's outline
+  const rightW = 4 + 14 + Math.max(nameW, subW) + 16 + 4;
+  const h = 4 + 8 + NAME + 6 + SUB + 8 + 4;
+  const w = leftW + rightW;
 
-    items.push(t1, t2, line, banner);
-  } else {
-    const t = add([text(areaName, { size: 19 }), pos(baseX, baseY), fixed(), z(195), opacity(1)]);
-    const line = add([rect(0, 3), pos(baseX, baseY + 26), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(195), opacity(1)]);
-    UI.slideIn(t, vec2(baseX - 36, baseY), vec2(baseX, baseY), 0.45);
-    let lt = 0;
-    const lineW = Math.min(260, areaName.length * 11);
-    line.onUpdate(() => { lt += dt(); line.width = lineW * UI.ease(lt / 0.5); });
-
-    const bx0 = baseX - 16, by0 = baseY - 12, bw = lineW + 48, bh = 48;
-    const banner = add([pos(bx0, by0), opacity(0), fixed(), z(194)]);
-    banner.onDraw(() => { UI._frame(vec2(0, 0), bw, bh, { opacity: banner.opacity, goldCorners: true }); });
-    UI.slideIn(banner, vec2(bx0 - 36, by0), vec2(bx0, by0), 0.45);
-
-    items.push(t, line, banner);
-  }
-
+  const card = add([pos(x0, y0), opacity(0), fixed(), z(194)]);
+  card.onDraw(() => {
+    const op = card.opacity;
+    UI.R(4, 4, w, h, UI.INK, op);                              // the drop shadow
+    UI.R(0, 0, leftW, h, UI.INK, op);                          // number block
+    UI.R(2, 2, leftW - 2, h - 4, UI.LABEL, op);
+    UI.label(num, 2 + 12, h / 2, { size: NUM, anchor: "left", color: UI.NAVY, shadow: false, opacity: op });
+    const rx = leftW;                                          // name block: ink, pale rule, navy
+    UI.R(rx, 0, rightW, h, UI.INK, op);
+    UI.R(rx + 2, 2, rightW - 4, h - 4, UI.PALE, op);
+    UI.R(rx + 4, 4, rightW - 8, h - 8, UI.NAVY, op);
+    const tx = rx + 4 + 14, ty = 4 + 8;
+    UI.chromeText(name, tx, ty, NAME, op);
+    UI.label(sub, tx, ty + NAME + 6, { size: SUB, letterSpacing: 1, color: UI.PALE, shadow: false, opacity: op });
+  });
+  UI.slideIn(card, vec2(x0 - 46, y0), vec2(x0, y0), 0.5);
   wait(2.8, () => {
-    items.forEach((it) => {
-      it.onUpdate(() => {
-        it.opacity -= dt() * 1.8;
-        if (it.opacity <= 0) destroy(it);
-      });
+    card.onUpdate(() => {
+      card.opacity -= dt() * 1.8;
+      if (card.opacity <= 0) destroy(card);
     });
   });
 };
 
 // ---------- HUD ----------
 
-UI.PORTRAIT = { x: () => G.W - 4 * 54 - 22, y: 14, w: 46, gap: 54 };
+// The companions' polaroids, top right. Screen positions from the kit.
+UI.PORTRAIT = { x: 712, y: 8, w: 54, h: 64, gap: 58 };
+
+// The lanyard card, top left: hearts and the special meter
+UI.LANYARD = { x: 14, y: 14, w: 250, h: 76 };
 
 UI.hud = () => {
   const hud = add([fixed(), z(170), pos(0, 0), {
@@ -367,100 +469,101 @@ UI.hud = () => {
     hud.lastHp = r.hp;
     hud.hurtPulse = Math.max(0, hud.hurtPulse - dt() * 2.5);
 
-    // ===== top-left: hearts + special meter panel =====
-    const heartsW = s.maxHp * 28;
-    const mw = 200;
-    const panelW = Math.max(heartsW, mw) + 30;
-    UI.dPanel(vec2(14, 12), panelW, 66);
+    // ===== top-left: the lanyard card =====
+    // Hearts are the kit's 16 x 13 pixel heart at 2x, two pixels apart.
+    // The card is the kit's 250 wide unless the party's max HP needs more.
+    const L = UI.LANYARD;
+    const HEART_W = 32, HEART_H = 26, HEART_STEP = 34;
+    const heartsW = s.maxHp * HEART_STEP - 2;
+    const cw = Math.max(L.w, heartsW + 20);
+    // the strap hangs in from the top edge and clips onto the card
+    UI.R(132, 0, 14, 20, UI.RED);
+    UI.R(132, 0, 2, 20, UI.INK);
+    UI.R(144, 0, 2, 20, UI.INK);
+    UI.R(132, 18, 14, 2, UI.INK);
+    UI.card(vec2(L.x, L.y), cw, L.h, { highlight: UI.WHITE });
+    UI.R(126, 20, 26, 6, UI.INK);   // the clip's slot
+    const ch = CHAPTERS[r.chapter - 1];
+    UI.label(ch.lanyard || ch.title, 26, 22, { color: UI.RED, shadow: false });
+
+    // whose go it is, top right of the card; the GO chip once the meter is full
+    const rightX = L.x + cw - 10;
+    if (r.companions.length > 0) {
+      const sel = G.char(r.companions[r.selected]);
+      if (r.meter >= 1) {
+        const go = isTouchscreen() ? "GO ON THEN · SP" : "GO ON THEN · SPACE";
+        UI.chip(go, rightX, 16, {
+          anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 3,
+          fill: UI.RED, color: UI.WHITE, opacity: 0.8 + Math.sin(time() * 5) * 0.2,
+        });
+      } else {
+        UI.label(sel.name.toUpperCase() + "'S GO", rightX, 22, { anchor: "topright", color: UI.TEXT, shadow: false });
+      }
+    }
 
     const lowHp = r.hp <= 2;
     for (let i = 0; i < s.maxHp; i++) {
       const filled = i < r.hp;
-      const hx = 32 + i * 28;
+      const hx = 24 + i * HEART_STEP + HEART_W / 2, hy = 36 + HEART_H / 2;
       let sc = 2;
       if (filled && lowHp) sc = 2 + Math.sin(time() * 7 + i) * 0.22;          // low-health pulse
       if (hud.hurtPulse > 0 && i === r.hp) sc = 2 + hud.hurtPulse * 0.8;       // the heart you just lost pops
-      drawSprite({ sprite: filled ? "heart" : "heart-empty", pos: vec2(hx, 34), anchor: "center", scale: sc });
+      drawSprite({ sprite: filled ? "heart" : "heart-empty", pos: vec2(hx, hy), anchor: "center", scale: sc });
     }
 
-    // special meter - square pixel track, segmented block fill, shimmer when ready
-    const bx = 26, by = 52, mh = 11;
-    drawRect({ pos: vec2(bx, by), width: mw, height: mh, color: rgb(30, 31, 42) });
-    const fw = mw * hud.meterDisp;
-    if (fw > 4) {
-      // blocky fill: an 8px block every 9px (1px gap between), each block
-      // stamped with the full gradient sprite - simplest way to keep the
-      // segmented pixel-art read without slicing the gradient texture
-      const blockW = 8, period = 9, innerH = mh - 2;
-      const gradSpr = r.meter >= 1 ? "grad-gold" : "grad-violet";
-      for (let off = 0; off < fw; off += period) {
-        const w = Math.min(blockW, fw - off);
-        if (w <= 0) break;
-        drawSprite({
-          sprite: gradSpr,
-          pos: vec2(bx + 1 + off, by + 1),
-          scale: vec2(w / 64, innerH / 8),
-        });
-      }
-    }
-    if (r.meter >= 1) {
-      // glow + travelling shimmer
-      UI.dGlow(vec2(bx + mw / 2, by + mh / 2), mw * 1.25, UI.GOLD, 0.16 + Math.sin(time() * 5) * 0.06);
-      const sx = bx + ((time() * 130) % mw);
-      drawRect({ pos: vec2(Math.min(sx, bx + mw - 14), by + 1), width: 14, height: mh - 2, radius: 5, color: rgb(255, 255, 255), opacity: 0.4 });
-    }
-    if (r.companions.length > 0) {
-      const sel = G.char(r.companions[r.selected]);
-      const ready = r.meter >= 1;
-      const label = ready
-        ? sel.special.name.toUpperCase() + "  -  SPACE"
-        : sel.name + "'s special";
-      drawText({
-        text: label, size: 11,
-        pos: vec2(bx + mw + 10, by + 1),
-        color: ready ? rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]) : rgb(150, 152, 168),
-        opacity: ready ? 0.75 + Math.sin(time() * 5) * 0.25 : 1,
-      });
+    // the wristband meter: white track in a 2px ink border, filled with
+    // 8px yellow blocks a pixel apart
+    const mx = 24, my = 68, mw = cw - 20, mh = 13;
+    UI.R(mx - 2, my - 2, mw + 4, mh + 4, UI.INK);
+    UI.R(mx, my, mw, mh, UI.WHITE);
+    const fw = Math.round((mw - 2) * hud.meterDisp);
+    for (let off = 0; off < fw; off += 9) {
+      UI.R(mx + 1 + off, my + 1, Math.min(8, fw - off), mh - 2, UI.YELLOW);
     }
     if (r.shield > 0) {
-      drawText({ text: "cosy shield " + r.shield.toFixed(1) + "s", size: 11, pos: vec2(26, 84), color: rgb(140, 185, 235) });
+      UI.label("cosy shield " + r.shield.toFixed(1) + "s", 26, L.y + L.h + 6, { color: [140, 185, 235] });
     }
 
-    // ===== top-right: companion portraits =====
+    // ===== top-right: the companions' polaroids =====
     const P = UI.PORTRAIT;
-    UI.dPanel(vec2(P.x() - 10, 8), 4 * P.gap + 16, 62);
     for (let i = 0; i < 4; i++) {
-      const x = P.x() + i * P.gap;
-      const cx2 = x + P.w / 2, cy2 = P.y + P.w / 2;
-      const isSel = i === r.selected && i < r.companions.length;
-
-      if (isSel) {
-        UI.dGlow(vec2(cx2, cy2), 110 + hud.selPop * 30, UI.GOLD, 0.3);
-      }
-      // same pixel frame as dPanel - selection reads through the glow
-      // above plus a gold bevel edge here instead of a whole-outline colour swap
-      UI._frame(vec2(x, P.y), P.w, P.w, {
-        opacity: i < r.companions.length ? 0.95 : 0.45,
-        light: isSel ? UI.GOLD : UI.PANEL_BEVEL,
-      });
-
-      if (i < r.companions.length) {
+      const x = P.x + i * P.gap, y = P.y;
+      const has = i < r.companions.length;
+      const isSel = has && i === r.selected;
+      const px = x + 5, py = y + 5, pw = 44, ph = 38;   // the photo
+      if (has) {
+        UI.card(vec2(x, y), P.w, P.h, { fill: UI.WHITE });
+        UI.R(px, py, pw, ph, UI.INK);
+        UI.R(px + 1, py + 1, pw - 2, ph - 2, UI.PHOTO);
         const c = G.char(r.companions[i]);
         const reg = G.SPR["ch-" + c.id];
         const popSc = isSel ? 1 + hud.selPop * 0.18 : 1;
-        drawSprite({
-          sprite: reg.name,
-          pos: vec2(cx2, cy2 + 3),
-          anchor: "center",
-          scale: ((P.w - 12) / reg.h) * popSc,
+        // the figure stands 32px tall on the photo's bottom edge, clipped to
+        // the photo (a sheet's cell is padded past the body)
+        drawMasked(() => {
+          drawSprite({
+            sprite: reg.name, frame: 0,
+            pos: vec2(px + pw / 2, py + ph - 2 - 16 * popSc),
+            anchor: "center",
+            scale: (32 / reg.h) * popSc,
+          });
+        }, () => {
+          UI.R(px + 1, py + 1, pw - 2, ph - 2, UI.WHITE);
         });
-        drawText({ text: String(i + 1), size: 9, pos: vec2(x + 5, P.y + 4), color: rgb(150, 152, 168) });
+        UI.text(c.name.toLowerCase(), x + P.w / 2, py + ph + 2, { anchor: "top" });
+        if (isSel) {
+          // a strip of yellow tape holds the chosen one down
+          UI.R(x + 16, y - 6, 26, 10, UI.INK);
+          UI.R(x + 18, y - 4, 22, 6, UI.YELLOW);
+        }
       } else {
-        drawText({ text: "·", size: 18, pos: vec2(cx2, cy2), anchor: "center", color: rgb(110, 112, 130), opacity: 0.5 });
+        UI.card(vec2(x, y), P.w, P.h, { fill: UI.PAPER_DIM, shade: null, opacity: 0.6 });
+        UI.R(px, py, pw, ph, UI.SLOT, 0.6);
+        UI.label(String(i + 1), px + pw / 2, py + ph / 2, { anchor: "center", color: UI.SLOT_TEXT, shadow: false, opacity: 0.6 });
       }
     }
 
-    // ===== the record: announces each new song =====
+    // ===== the ticket: announces each new song =====
     // Timer and token both live on SOUNDTRACK, not this hud object: hud
     // is rebuilt fresh on every scene change, but SOUNDTRACK persists, so
     // a track that legitimately CONTINUES across an area boundary (play()
@@ -482,35 +585,29 @@ UI.hud = () => {
       const IN_DUR = 0.45, OUT_DUR = 0.5;
 
       if (T < OUT_AT + OUT_DUR) {
-        const ease = (x) => 1 - Math.pow(1 - x, 3);
-        const inK = ease(Math.min(1, T / IN_DUR));
-        const outK = ease(Math.max(0, Math.min(1, (T - OUT_AT) / OUT_DUR)));
+        const inK = UI.ease(Math.min(1, T / IN_DUR));
+        const outK = UI.ease(Math.max(0, Math.min(1, (T - OUT_AT) / OUT_DUR)));
         // slides in from off the right edge, and back out the same way
         const slide = (1 - inK) * 110 + outK * 110;
         const alpha = Math.min(inK, 1 - outK);
 
-        const cx = 920 + slide, cy = 112;
-        drawSprite({
-          sprite: "record",
-          pos: vec2(cx, cy),
-          anchor: "center",
-          angle: time() * 150,      // about 0.4 turns a second
-          width: 44, height: 44,
-          opacity: alpha,
-        });
-
-        // "???" until the reveal, then the title, with a brief pop
+        // "???" until the reveal, then the title, with a little jump
         const revealed = T >= REVEAL;
         const pop = revealed ? Math.max(0, 1 - (T - REVEAL) / 0.35) : 0;
-        drawText({
-          text: revealed ? SOUNDTRACK.current.title : "???",
-          size: 12 + pop * 4,
-          pos: vec2(cx - 34, cy),
-          anchor: "right",
-          color: revealed
-            ? rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2])
-            : rgb(150, 152, 168),
-          opacity: alpha,
+        const title = revealed ? SOUNDTRACK.current.title : "???";
+        const tw = Math.ceil(UI.measure(title, UI.VT, 16).width);
+        const w = 4 + 10 + 8 + 6 + tw + 10, h = 30;
+        const x = G.W - 14 - w + slide, y = 92 - Math.round(pop * 4);
+        // a ticket stub: paper in ink, perforated down its left edge
+        UI.R(x, y, w, h, UI.INK, alpha);
+        UI.R(x + 2, y + 2, w - 4, h - 4, UI.PAPER, alpha);
+        for (let dy = 5; dy < h - 4; dy += 6) UI.R(x, y + dy, 2, 3, UI.PAPER, alpha);
+        UI.label("♪", x + 12, y + 11, { color: UI.TEXT, shadow: false, opacity: alpha });
+        UI.text(title, x + 26, y + 8, { color: revealed ? UI.TEXT : UI.GREY, opacity: alpha });
+        // and the record itself, spinning beside it
+        drawSprite({
+          sprite: "record", pos: vec2(x - 17, y + h / 2), anchor: "center",
+          angle: time() * 150, width: 26, height: 26, opacity: alpha,
         });
       }
     }
@@ -519,14 +616,11 @@ UI.hud = () => {
     if (isTouchscreen()) {
       const bp = vec2(G.W - 72, G.H - 72);
       const ready = r.meter >= 1;
-      if (ready) UI.dGlow(bp, 200 + Math.sin(time() * 5) * 24, UI.GOLD, 0.4);
-      drawCircle({ pos: bp, radius: 46, color: rgb(20, 21, 30), opacity: 0.78 });
-      drawCircle({
-        pos: bp, radius: 46, fill: false,
-        outline: { width: 2.5, color: ready ? rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]) : rgb(255, 255, 255) },
-        opacity: ready ? 0.95 : 0.18,
-      });
-      drawText({ text: "SP", size: 21, pos: bp, anchor: "center", color: ready ? rgb(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]) : rgb(120, 122, 140) });
+      const op = ready ? 0.85 + Math.sin(time() * 5) * 0.15 : 0.35;
+      drawCircle({ pos: bp, radius: 46, color: UI.rgb(UI.WHITE), opacity: op });
+      drawCircle({ pos: bp, radius: 45, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op });
+      drawCircle({ pos: bp, radius: 41.5, fill: false, outline: { width: 5, color: UI.rgb(UI.RED) }, opacity: op });
+      UI.label("SP", bp.x, bp.y + 1, { size: 16, anchor: "center", color: UI.TEXT, shadow: false, opacity: op });
     }
 
     // ===== desktop crosshair: ring + dot =====
@@ -557,14 +651,14 @@ UI.wireControls = () => {
   onKeyPress("q", () => cycle(-1));
   onKeyPress("e", () => cycle(1));
 
-  // taps: companion portraits + mobile special button
+  // taps: companion polaroids + mobile special button
   onMousePress(() => {
     if (!G.run) return;
     const m = mousePos();
     const P = UI.PORTRAIT;
     for (let i = 0; i < G.run.companions.length; i++) {
-      const x = P.x() + i * P.gap;
-      if (m.x >= x && m.x <= x + P.w && m.y >= P.y && m.y <= P.y + P.w) {
+      const x = P.x + i * P.gap;
+      if (m.x >= x && m.x <= x + P.w && m.y >= P.y - 6 && m.y <= P.y + P.h) {
         G.run.selected = i;
         return;
       }
@@ -579,7 +673,7 @@ UI.wireControls = () => {
   onKeyPress("n", () => {
     const on = SFX.toggle();
     SOUNDTRACK.syncMute();
-    UI.subtitleSeq([on ? "sound ON" : "sound OFF"]);
+    UI.toast(on ? "sound ON" : "sound OFF");
     if (on) SFX.play("uiconfirm");
   });
 
@@ -587,7 +681,7 @@ UI.wireControls = () => {
   onKeyPress("k", () => { get("enemy").forEach((e) => ENEMIES.hit(e, 999, 0)); get("boss").forEach((b) => ENEMIES.hit(b, 999, 0)); });
   onKeyPress("h", () => { if (G.run) G.run.hp = G.stats().maxHp; });
   onKeyPress("m", () => { if (G.run) G.run.meter = 1; });
-  onKeyPress("g", () => { G.godMode = !G.godMode; UI.subtitleSeq([G.godMode ? "god mode ON" : "god mode OFF"]); });
+  onKeyPress("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });
   onKeyPress("]", () => { if (G.devSkip) G.devSkip(); });
 };
 
@@ -598,26 +692,28 @@ UI.mobileControls = () => {
 
   let stickId = null;
   let anchorPos = null;
-  // pixel-frame touch stick: warm bevel-tone ring with an ink outline,
-  // gold knob so it reads with the same ink+accent language as the
-  // rest of the reskin - positions, radii and hit areas unchanged
-  const base = add([
-    circle(54), pos(-999, -999),
-    color(UI.PANEL_BEVEL[0], UI.PANEL_BEVEL[1], UI.PANEL_BEVEL[2]), opacity(0.22),
-    outline(2, rgb(UI.INK[0], UI.INK[1], UI.INK[2])),
-    fixed(), z(185),
-  ]);
-  const baseRing = add([circle(54), pos(-999, -999), color(255, 255, 255), opacity(0), fixed(), z(185)]);
-  const knob = add([
-    circle(24), pos(-999, -999),
-    color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0.55),
-    outline(2, rgb(UI.INK[0], UI.INK[1], UI.INK[2])),
-    fixed(), z(186),
-  ]);
+  // The kit's stick: a paper disc in an ink ring with a white and a tan
+  // ring inset, and a red knob with its own darker ring. Positions, radii
+  // and hit areas are unchanged from before. Drawn as one entity so the
+  // translucency never stacks where the rings meet.
+  const base = add([pos(-999, -999), opacity(0.7), fixed(), z(185)]);
+  base.onDraw(() => {
+    const op = base.opacity;
+    drawCircle({ pos: vec2(0, 0), radius: 45, color: UI.rgb(UI.PAPER), opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 49.5, fill: false, outline: { width: 5, color: UI.rgb(UI.WHITE) }, opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 46, fill: false, outline: { width: 2, color: UI.rgb(UI.STICK_RING) }, opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 53, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op + 0.2 });
+  });
+  const knob = add([pos(-999, -999), opacity(0.9), fixed(), z(186)]);
+  knob.onDraw(() => {
+    const op = knob.opacity;
+    drawCircle({ pos: vec2(0, 0), radius: 21, color: UI.rgb(UI.RED), opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 22.5, fill: false, outline: { width: 3, color: UI.rgb(UI.RED_DARK) }, opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 25, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op });
+  });
 
   const hide = () => {
     base.pos = vec2(-999, -999);
-    baseRing.pos = vec2(-999, -999);
     knob.pos = vec2(-999, -999);
     G.joy = vec2(0, 0);
     stickId = null;
@@ -628,7 +724,6 @@ UI.mobileControls = () => {
       stickId = t ? t.identifier : 0;
       anchorPos = p;
       base.pos = p;
-      baseRing.pos = p;
       knob.pos = p;
     }
   });

@@ -223,21 +223,11 @@ scene("title", () => {
   // holds on its first frame until they do. Starting the song and the video in
   // the same gesture is also the only way the two are guaranteed to be locked.
   const promptY = G.H - 26;
-  const prompt = add([
-    text("press any key", { size: 15 }),
-    pos(G.W / 2, promptY), anchor("center"),
-    color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0), z(20),
-  ]);
-  const promptShade = add([
-    rect(200, 26, { radius: 13 }), pos(G.W / 2, promptY), anchor("center"),
-    color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(19),
-  ]);
+  const prompt = UI.chipObj("press any key", G.W / 2, promptY, { opacity: 0, z: 20, fixed: false });
   if (!replay) {
     prompt.onUpdate(() => {
       if (phase !== "armed") return;
-      const k = 0.55 + Math.sin(time() * 3.2) * 0.45;
-      prompt.opacity = k;
-      promptShade.opacity = k * 0.5;
+      prompt.opacity = 0.7 + Math.sin(time() * 3.2) * 0.3;
     });
   }
 
@@ -245,45 +235,40 @@ scene("title", () => {
   // Same deal as before the sequence existed: with a run waiting, the big
   // prompt carries it on and a quieter chip underneath sets it aside.
   //
-  // It sits ON the cover, in the band between the title and the ten, in the
-  // pale chrome of the lettering rather than gold: the cover is already
-  // yellow, and gold on it disappeared (Ollie, 4 Sep). An ink shadow one
-  // pixel-art step behind it keeps it legible over the sunburst.
-  const startLabel = saved
-    ? "carry on as " + G.char(saved.run.charId).name +
-      (saved.scene === "tutorial" ? "  ·  victoria park" : "  ·  chapter " + saved.run.chapter)
-    : "PRESS START";
+  // It sits ON the cover, in the band between the title and the ten, in
+  // white pixel type rather than gold: the cover is already yellow, and gold
+  // on it disappeared (Ollie, 4 Sep). The kit's hard ink shadow one pixel-art
+  // step behind it keeps it legible over the sunburst.
+  // With a run waiting the big line is CARRY ON, with who and where in
+  // small type underneath: the full sentence at the kit's 16px is wider
+  // than the sleeve.
+  const startLabel = saved ? "CARRY ON" : "PRESS START";
+  const startSub = saved
+    ? ("as " + G.char(saved.run.charId).name +
+      (saved.scene === "tutorial" ? " · victoria park" : " · chapter " + saved.run.chapter)).toUpperCase()
+    : null;
   const titleFoot = titleRest + (REAL_TITLE.top.h + REAL_TITLE.bottom.h) * titleK;
   const castTop = feet - castH;                       // the middle pair are the tallest
   const startY = (titleFoot + castTop) / 2;
-  const startOpts = { size: saved ? 15 : 21, letterSpacing: saved ? 0 : 4 };
-  const startShadow = card.add([
-    text(startLabel, startOpts), pos(SL.w / 2 + 2, startY + 2), anchor("center"),
-    color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(3),
-  ]);
-  const startText = card.add([
-    text(startLabel, startOpts), pos(SL.w / 2, startY), anchor("center"),
-    color(236, 240, 255), opacity(0), z(3.1),
-  ]);
+  // each line is a white pixel label over its own ink shadow
+  const stamp = (str, size, y) => [
+    card.add([text(str, { size, font: UI.PX }), pos(SL.w / 2 + 2, y + 2), anchor("center"),
+      color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(3)]),
+    card.add([text(str, { size, font: UI.PX }), pos(SL.w / 2, y), anchor("center"),
+      color(255, 255, 255), opacity(0), z(3.1)]),
+  ];
+  const startPieces = stamp(startLabel, 16, startSub ? startY - 6 : startY);
+  if (startSub) startPieces.push(...stamp(startSub, 8, startY + 14));
+  const startText = startPieces[1];
   startText.onUpdate(() => {
     if (phase !== "ready") return;
     const k = 0.8 + Math.sin(time() * 3.4) * 0.2;
-    startText.opacity = k;
-    startShadow.opacity = k * 0.85;
+    startPieces.forEach((pc, i) => { pc.opacity = i % 2 === 0 ? k * 0.85 : k; });
   });
 
   let newChip = null;
-  let newText = null;
   if (saved) {
-    newChip = add([
-      rect(170, 20, { radius: 10 }), pos(G.W / 2, G.H - 13), anchor("center"),
-      color(UI.INK[0], UI.INK[1], UI.INK[2]), opacity(0), z(20), area(), "newgame",
-    ]);
-    newText = add([
-      text("n  ·  start a new game", { size: 11 }),
-      pos(G.W / 2, G.H - 13), anchor("center"),
-      color(178, 186, 208), opacity(0), z(21),
-    ]);
+    newChip = UI.chipObj("n · start a new game", G.W / 2, G.H - 18, { opacity: 0, z: 20, fixed: false, area: true });
   }
 
   // ---------- the cues ----------
@@ -341,8 +326,7 @@ scene("title", () => {
       }));
       if (newChip) {
         UI.fadeObj(floorFade, 0.85, 0.35, 0.15);
-        UI.fadeObj(newChip, 0.55, 0.3, 0.55);
-        UI.fadeObj(newText, 0.9, 0.3, 0.55);
+        UI.fadeObj(newChip, 1, 0.3, 0.55);
       }
       phase = "ready";
     }
@@ -376,7 +360,6 @@ scene("title", () => {
   const begin = () => {
     phase = "running";
     prompt.opacity = 0;
-    promptShade.opacity = 0;
     TITLEVIDEO.seen = true;
     SOUNDTRACK.playById("dare-8-bit", TSEQ.MUSIC_LEAD);
     video.currentTime = 0;
