@@ -179,6 +179,29 @@ ART.genPixStar = () => {
   return cv.toDataURL();
 };
 
+// a wheel of soft light wedges, for sweeping slowly over the cover's sunburst
+ART.genRayWheel = (spokes = 9) => {
+  const s = 256;
+  const cv = document.createElement("canvas");
+  cv.width = s; cv.height = s;
+  const x = cv.getContext("2d");
+  x.translate(s / 2, s / 2);
+  for (let i = 0; i < spokes; i++) {
+    const a0 = (i / spokes) * Math.PI * 2;
+    x.beginPath();
+    x.moveTo(0, 0);
+    x.arc(0, 0, s / 2, a0, a0 + (Math.PI * 2 / spokes) * 0.5);
+    x.closePath();
+    const rg = x.createRadialGradient(0, 0, 8, 0, 0, s / 2);
+    rg.addColorStop(0, "rgba(255,255,255,0.0)");
+    rg.addColorStop(0.35, "rgba(255,255,255,0.9)");
+    rg.addColorStop(1, "rgba(255,255,255,0.0)");
+    x.fillStyle = rg;
+    x.fill();
+  }
+  return cv.toDataURL();
+};
+
 ART.genVignette = () => {
   const w = 480, h = 270;
   const cv = document.createElement("canvas");
@@ -227,6 +250,141 @@ ART.genBall = () => {
   x.strokeStyle = "#cc4444"; x.lineWidth = 1;
   x.beginPath(); x.arc(2, 6, 5, -0.8, 0.8); x.stroke();
   x.beginPath(); x.arc(10, 6, 5, Math.PI - 0.8, Math.PI + 0.8); x.stroke();
+  return cv.toDataURL();
+};
+
+// ---------- the polaroid backdrop: Victoria Park, one long afternoon ----------
+// Ten friends, ten snapshots, one park. This draws a single panorama and the
+// select screen takes a 64px window of it per card, so every photo is a
+// different bit of the same place rather than ten copies of one picture.
+// A few props sit in the margins the friends do not cover, so some cards get
+// a bench or a lamppost behind them. Drawn at half the size it is shown at,
+// so its pixels come out the same size as the sprites'.
+ART.genPolaroidPark = () => {
+  const SLICE = 64, N = 10, W = SLICE * N, H = 56;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+  let seed = 20160917;                                   // the year they met
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  // everything lands on whole pixels: half a pixel anywhere and the canvas
+  // anti-aliases it into mush at this size
+  const px = (c, X, Y, w = 1, h = 1) => {
+    x.fillStyle = c;
+    x.fillRect(Math.round(X), Math.round(Y), Math.round(w), Math.round(h));
+  };
+  const blob = (c, X, Y, r) => {
+    x.fillStyle = c;
+    x.beginPath(); x.arc(Math.round(X), Math.round(Y), r, 0, Math.PI * 2); x.fill();
+  };
+  const hex = (a) => "#" + a.map((v) => {
+    const n = Math.max(0, Math.min(255, Math.round(v)));
+    return (n < 16 ? "0" : "") + n.toString(16);
+  }).join("");
+  const mix = (a, b, t) => hex([0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * t));
+
+  const HZ = 28;                                         // where the grass starts
+  const SKY_TOP = [116, 163, 207], SKY_LOW = [206, 224, 232];
+
+  // ----- sky: a hazy afternoon, banded rather than smoothly graded -----
+  for (let y = 0; y < HZ; y++) px(mix(SKY_TOP, SKY_LOW, Math.floor((y / HZ) * 6) / 5), 0, y, W, 1);
+
+  // clouds: flat-bottomed and stepped, the way they get drawn in pixel art
+  for (let i = 0; i < 12; i++) {
+    const cx = 6 + rnd() * (W - 12), cy = 1 + rnd() * 6, w = 12 + rnd() * 16;
+    px("#e4edf5", cx - w / 2, cy + 2, w, 2);
+    px("#f2f7fb", cx - w / 2 + 3, cy, w - 7, 2);
+    px("#ffffff", cx - w / 2 + 4, cy, (w - 7) / 2, 1);
+  }
+
+  // ----- the far treeline: hazy, low, with sky showing between the clumps ---
+  const tree = (cx, baseY, r, haze) => {
+    const mid = [63, 99, 48], dk = [36, 62, 31], lt = [108, 148, 72];
+    const air = (c) => mix(c, SKY_LOW, haze);            // distance washes them out
+    px(air([62, 46, 33]), cx - 1, baseY - r * 0.75, 2, r * 0.75 + 3);   // trunk
+    const lumps = [[0, -r * 1.08, r * 0.76], [-r * 0.74, -r * 0.6, r * 0.6],
+                   [r * 0.74, -r * 0.58, r * 0.58], [-r * 0.3, -r * 0.18, r * 0.64],
+                   [r * 0.36, -r * 0.14, r * 0.58]];
+    for (const [dx, dy, rr] of lumps) blob(air(dk), cx + dx, baseY + dy + 1, rr);
+    for (const [dx, dy, rr] of lumps) blob(air(mid), cx + dx, baseY + dy, rr);
+    for (const [dx, dy, rr] of lumps) blob(air(lt), cx + dx - rr * 0.32, baseY + dy - rr * 0.36, rr * 0.48);
+    for (let i = 0; i < r * 1.5; i++) {                  // leaf speckle
+      const a = rnd() * Math.PI * 2, d = rnd() * r * 0.85;
+      px(air(rnd() < 0.5 ? dk : lt), cx + Math.cos(a) * d, baseY - r * 0.62 + Math.sin(a) * d * 0.7, 1, 1);
+    }
+  };
+  for (let cx = -6; cx < W + 10; cx += 17 + rnd() * 14) tree(cx, HZ - 9, 5 + rnd() * 3, 0.55);
+  // the near row is planted in clumps of two or three with real gaps between
+  for (let cx = -6; cx < W + 12;) {
+    const clump = 1 + Math.round(rnd() * 2);
+    for (let i = 0; i < clump; i++, cx += 13 + rnd() * 6) tree(cx, HZ - 1, 9 + rnd() * 4, 0.08);
+    cx += 16 + rnd() * 26;                               // the gap the sky shows through
+  }
+
+  // the hedge that hides every trunk's foot, with the park railing standing
+  // against it. The railing has to sit ON the hedge: posts against open sky
+  // read as a bright dashed line all the way across.
+  px("#22381f", 0, HZ - 7, W, 9);
+  px("#33512a", 0, HZ - 7, W, 2);
+  for (let X = 1; X < W; X += 4) px("#4e6a52", X, HZ - 6, 1, 5);
+  px("#5d7a61", 0, HZ - 6, W, 1);
+  px("#2b4523", 0, HZ - 1, W, 3);
+  px("#43672f", 0, HZ - 1, W, 1);
+
+  // ----- the grass: mown stripes running away in perspective -----
+  const LIGHT = [110, 150, 70], DARK = [80, 118, 54], SHADOW = [42, 66, 33];
+  let y = HZ + 2, band = 0, step = 2;
+  while (y < H) {
+    const h = Math.min(step, H - y);
+    const near = (y - HZ) / (H - HZ);
+    px(mix(band % 2 ? LIGHT : DARK, SHADOW, 0.06 + near * 0.26), 0, y, W, h);
+    y += h; band++; step = Math.round(step * 1.55);
+  }
+  px(mix(DARK, SHADOW, 0.5), 0, HZ + 2, W, 2);           // the hedge's own shadow
+
+  // tight clumps of blades rather than an even scatter of single pixels,
+  // which at this size just reads as static
+  for (let i = 0; i < 150; i++) {
+    const gx = rnd() * W, gy = HZ + 4 + rnd() * (H - HZ - 5);
+    const near = (gy - HZ) / (H - HZ);
+    if (rnd() > 0.28 + near * 0.6) continue;             // thicker towards the camera
+    const blades = 2 + Math.round(rnd() * (1 + near * 2));
+    for (let b = 0; b < blades; b++) {
+      const tall = 1 + Math.round(rnd() * (1 + near * 2));
+      px(b % 2 ? mix([128, 168, 88], SHADOW, 0.1 + near * 0.3) : mix([56, 88, 41], SHADOW, near * 0.3),
+         gx + b, gy - tall, 1, tall + 1);
+    }
+  }
+  for (let i = 0; i < 14; i++) px("#eef2e4", 4 + rnd() * (W - 8), HZ + 8 + rnd() * (H - HZ - 10), 1, 1);
+
+  // ----- props, placed in the margins a standing friend does not cover -----
+  const bench = (X, Y) => {
+    px("#2c2019", X, Y, 12, 1); px("#5a4331", X, Y + 1, 12, 1);   // seat
+    px("#2c2019", X + 1, Y - 4, 10, 1); px("#5a4331", X + 1, Y - 3, 10, 1);  // back
+    px("#2c2019", X + 1, Y - 3, 1, 3); px("#2c2019", X + 10, Y - 3, 1, 3);
+    px("#2c2019", X + 1, Y + 2, 1, 3); px("#2c2019", X + 10, Y + 2, 1, 3);   // legs
+  };
+  const lamp = (X, Y) => {
+    px("#20302c", X, Y - 15, 2, 16);
+    px("#20302c", X - 2, Y - 18, 6, 3); px("#c9d6cd", X - 1, Y - 17, 4, 1);
+  };
+  const bin = (X, Y) => {
+    px("#1f3a24", X, Y - 6, 6, 7); px("#2f5231", X + 1, Y - 6, 4, 6);
+    px("#16281a", X - 1, Y - 7, 8, 1);
+  };
+  const ball = (X, Y) => {
+    px("#1b2c18", X, Y, 4, 1);                            // its shadow
+    px("#f2f2ea", X, Y - 3, 4, 3); px("#2a2a30", X + 1, Y - 2, 2, 1);
+  };
+  bench(114, HZ + 1); lamp(206, HZ + 1); bench(332, HZ + 1);
+  bin(500, HZ + 2); ball(528, H - 13); bench(608, HZ + 1);
+
+  // the foreground drops into shadow, which keeps the friends' feet readable
+  const g = x.createLinearGradient(0, H - 14, 0, H);
+  g.addColorStop(0, "rgba(20,32,16,0)");
+  g.addColorStop(1, "rgba(20,32,16,0.45)");
+  x.fillStyle = g; x.fillRect(0, H - 14, W, 14);
+
   return cv.toDataURL();
 };
 
@@ -400,6 +558,8 @@ ART.init = () => {
   loadSprite("glow", ART.genGlow());
   loadSprite("vignette", ART.genVignette());
   loadSprite("pixstar", ART.genPixStar());
+  loadSprite("raywheel", ART.genRayWheel());
+  loadSprite("photo-park", ART.genPolaroidPark());
   loadSprite("bg-night", ART.genVGrad("#101322", "#1d1430"));
   // clear-to-dark, for settling figures onto a busy background
   loadSprite("grad-fade", ART.genVGrad("rgba(10,8,22,0)", "rgba(10,8,22,1)"));

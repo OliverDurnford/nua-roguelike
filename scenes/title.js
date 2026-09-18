@@ -148,30 +148,44 @@ scene("title", () => {
   let lifeK = 0;                                // 0 until the park, then up to 1
 
   const glow = card.add([
-    sprite("glow"), pos(RAY), anchor("center"), scale(4.6),
+    sprite("glow"), pos(RAY), anchor("center"), scale(5.4),
     color(255, 214, 120), opacity(0), z(0.4),
   ]);
   glow.onUpdate(() => {
-    glow.opacity = lifeK * (0.14 + Math.sin(time() * 1.1) * 0.06);
-    glow.scale = vec2(4.6 + Math.sin(time() * 1.1) * 0.25);
+    glow.opacity = lifeK * (0.24 + Math.sin(time() * 1.1) * 0.10);
+    glow.scale = vec2(5.4 + Math.sin(time() * 1.1) * 0.4);
   });
+
+  // light sweeping through the sunburst: two wheels of soft wedges turning
+  // slowly against each other over the painted rays, so the rays seem to
+  // shimmer without anything on the cover actually being redrawn
+  for (const [dir, op, sc] of [[1, 0.13, 3.9], [-1, 0.09, 3.2]]) {
+    const wheel = card.add([
+      sprite("raywheel"), pos(RAY), anchor("center"), scale(sc), rotate(rand(0, 360)),
+      color(255, 232, 170), opacity(0), z(0.42),
+    ]);
+    wheel.onUpdate(() => {
+      wheel.angle += dir * 5 * dt();
+      wheel.opacity = lifeK * op;
+    });
+  }
 
   // the stars: a plus each, in the cover's own colours, twinkling out of step
   // with one another and quietly moving house whenever one has faded right out
   const STAR_COLOURS = [[255, 255, 255], [255, 255, 255], [255, 240, 180], [255, 226, 120],
                         [120, 220, 205], [255, 150, 200]];
   const starHome = () => vec2(rand(SL.w * 0.04, SL.w * 0.96), rand(SL.h * 0.04, SL.h * 0.96));
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 28; i++) {
     const col = STAR_COLOURS[i % STAR_COLOURS.length];
     const st = card.add([
       sprite("pixstar"), pos(starHome()), anchor("center"), scale(1),
       color(col[0], col[1], col[2]), opacity(0), z(0.5),
-      { phase: rand(0, 6.28), speed: rand(1.4, 3.2), size: rand(0.9, 1.6), low: false },
+      { phase: rand(0, 6.28), speed: rand(1.6, 3.8), size: rand(1.0, 2.0), low: false },
     ]);
     st.onUpdate(() => {
       const k = 0.5 + 0.5 * Math.sin(time() * st.speed + st.phase);   // 0..1
-      st.opacity = lifeK * (0.15 + 0.85 * k * k);
-      st.scale = vec2(st.size * (0.55 + 0.45 * k));
+      st.opacity = lifeK * (0.2 + 0.8 * k * k);
+      st.scale = vec2(st.size * (0.5 + 0.5 * k));
       if (k < 0.03 && !st.low) { st.low = true; if (rand() < 0.5) st.pos = starHome(); }
       if (k > 0.5) st.low = false;
     });
@@ -183,8 +197,8 @@ scene("title", () => {
   let streakT = 0;
   const spawnStreak = () => {
     const a = rand(-175, -5) * Math.PI / 180;      // the upper fan; the floor is dark
-    const speed = rand(150, 320);
-    const len = rand(14, 34);
+    const speed = rand(180, 380);
+    const len = rand(18, 46);
     const gold = rand() < 0.6;
     const sk = card.add([
       rect(len, 2), pos(RAY.add(vec2(Math.cos(a), Math.sin(a)).scale(rand(30, 70)))),
@@ -198,13 +212,13 @@ scene("title", () => {
       const k = sk.t / sk.life;
       if (k >= 1) { destroy(sk); return; }
       sk.pos = sk.pos.add(vec2(Math.cos(sk.a), Math.sin(sk.a)).scale(sk.speed * dt()));
-      sk.opacity = lifeK * 0.75 * Math.sin(k * Math.PI);
+      sk.opacity = lifeK * 0.9 * Math.sin(k * Math.PI);
     });
   };
   onUpdate(() => {
     if (lifeK <= 0) return;
     streakT += dt();
-    while (streakT > 0.16) { streakT -= 0.16; spawnStreak(); }
+    while (streakT > 0.09) { streakT -= 0.09; spawnStreak(); }
   });
 
   // With a run waiting, the "start a new game" chip sits on the carpet under
