@@ -9,6 +9,7 @@
 
 scene("select", () => {
   G.paused = false;
+  SOUNDTRACK.playForKey("select");   // blank slot: the title song carries on
 
   add([sprite("bg-night"), pos(0, 0), scale(G.W / 8, G.H / 256), z(0)]);
   add([sprite("vignette"), pos(0, 0), scale(G.W / 480, G.H / 270), opacity(0.5), z(40)]);
@@ -51,6 +52,19 @@ scene("select", () => {
       UI.card(vec2(0, 0), CW, CH, { center: true, fill: UI.WHITE, opacity: op });
       UI.R(-PW / 2, photoY - PH / 2, PW, PH, UI.INK, op);
       UI.R(-PW / 2 + 1, photoY - PH / 2 + 1, PW - 2, PH - 2, UI.PHOTO, op);
+      // each card takes its own window of the one park panorama, so the ten
+      // snapshots are the same afternoon in the same place
+      drawSprite({
+        sprite: "photo-park",
+        quad: new Quad(i / 10, 0, 1 / 10, 1),
+        pos: vec2(-PW / 2 + 1, photoY - PH / 2 + 1),
+        width: PW - 2, height: PH - 2, opacity: op,
+      });
+      // a soft shadow puts the friend on the grass rather than in front of it
+      drawEllipse({
+        pos: vec2(0, feetY - 1), radiusX: 20, radiusY: 5,
+        color: rgb(30, 48, 24), opacity: op * 0.45,
+      });
     });
     const figure = card.add([...ART.charComps(c.id, 84), pos(0, feetY - 42), opacity(1)]);
     const name = card.add([

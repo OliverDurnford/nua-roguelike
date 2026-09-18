@@ -7,9 +7,10 @@
 
 scene("ending", () => {
   // The finale is a boss area, so without this the boss track ("White
-  // Noise") would keep looping under Ollie's closing message. Play the
-  // ending out in silence instead.
-  SOUNDTRACK.stop();
+  // Noise") would keep looping under Ollie's closing message. If he has
+  // pinned a song to the "ending" slot it plays here; otherwise the ending
+  // plays out in silence.
+  if (!SOUNDTRACK.playForKey("ending")) SOUNDTRACK.stop();
   G.paused = false;
   SAVE.clear();   // the run is complete, next visit starts clean
   add([sprite("bg-night"), pos(0, 0), scale(G.W / 8, G.H / 256), z(0)]);

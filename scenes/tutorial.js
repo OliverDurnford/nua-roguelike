@@ -8,6 +8,7 @@
 scene("tutorial", () => {
   G.paused = false;
   SAVE.write("tutorial");   // checkpoint: a quit here resumes into the park
+  SOUNDTRACK.playForKey("tutorial");   // blank slot: the title song carries on
   // The park is a painted plate, so everyone stands at its own ground
   // scale. This has to be set before anything is added to the scene.
   G.areaScale = PARK_PLATE.charScale;

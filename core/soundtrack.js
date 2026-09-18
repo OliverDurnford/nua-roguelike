@@ -229,6 +229,18 @@ SOUNDTRACK.playById = (id, at = 0) => {
   if (t) SOUNDTRACK.play(t, at);
 };
 
+// The track Ollie pinned to a slot that is not a room: "select",
+// "tutorial" or "ending" (assigned on tools/soundtrack/board.html, baked in
+// by make_registry.py). Returns false when the slot is blank, so each scene
+// keeps its old behaviour: the title song carries on, or the ending is silent.
+SOUNDTRACK.playForKey = (key) => {
+  if (typeof TRACKS === "undefined") return false;
+  const t = TRACKS.filter((x) => x.areas && x.areas.indexOf(key) >= 0)[0];
+  if (!t) return false;
+  SOUNDTRACK.play(t);
+  return true;
+};
+
 // Where the song has got to, in seconds, or null if nothing is sounding.
 // The title sequence cues its titles off this rather than off its own clock:
 // the beat is the thing the eye is being asked to feel, so the beat is the
