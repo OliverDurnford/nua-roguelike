@@ -54,14 +54,14 @@ friends appear per run).
 **Desktop**
 - Move: WASD or arrow keys
 - Aim: mouse (your character fires automatically when enemies are alive)
-- Companion special: SPACE (when the yellow meter is full)
+- Companion special: SPACE (when the meter is full)
 - Swap companion: 1 / 2 / 3 / 4, or Q / E to cycle, or click their portrait
 - Pause: ESC or P (or click PAUSE at the top). The menu has carry on,
   sound on/off, and back to the title; the run is kept, so the title
   offers to carry on from this room's door
 
 **Phone**
-- Move: touch and drag on the left half of the screen
+- Move: the stick, bottom left (dragging anywhere on the left half works)
 - Aim: automatic (locks to the nearest enemy)
 - Special: tap the SP button, bottom right
 - Swap companion: tap their portrait, top right

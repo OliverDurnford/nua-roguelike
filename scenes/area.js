@@ -390,7 +390,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     UI.fadeObj(subT, 1, 0.4, 0.7 + koHold);
     const hint = add([
       text("press ENTER  /  tap to retry", { size: 16, font: UI.VT }),
-      pos(G.W / 2, G.H * 0.62), anchor("center"), color(UI.YELLOW[0], UI.YELLOW[1], UI.YELLOW[2]), fixed(), z(211), opacity(0),
+      pos(G.W / 2, G.H * 0.62), anchor("center"), color(UI.rgb(UI.SILVER)), fixed(), z(211), opacity(0),
     ]);
     let htD = -1.0 - koHold;
     hint.onUpdate(() => {

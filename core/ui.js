@@ -28,10 +28,6 @@ UI.WHITE = [255, 255, 255];
 UI.RED = [230, 57, 70];            // #e63946  hearts, the lanyard, the GO chip, the knob
 UI.RED_DARK = [181, 42, 54];       // #b52a36
 UI.PINK = [255, 154, 162];         // #ff9aa2  the heart's highlight
-UI.YELLOW = [255, 233, 77];        // #ffe94d  meter blocks, the tape on the chosen polaroid
-UI.YELLOW_CHIP = [255, 241, 118];  // #fff176  the toast chip (sound OFF)
-UI.YELLOW_SHADE = [217, 199, 58];  // #d9c73a
-UI.LABEL = [245, 195, 60];         // #f5c33c  the title card's number block
 UI.NAVY = [27, 22, 54];            // #1b1636  the title card
 UI.PALE = [201, 205, 217];         // #c9cdd9  the title card's rule and subtitle
 UI.GREY = [154, 147, 132];         // #9a9384  an empty heart's outline
@@ -39,9 +35,18 @@ UI.SLOT = [58, 53, 48];            // #3a3530  an empty polaroid's photo
 UI.SLOT_TEXT = [138, 132, 122];    // #8a847a
 UI.PHOTO = [36, 20, 18];           // #241412  behind a portrait
 UI.STICK_RING = [216, 207, 187];   // #d8cfbb  the joystick's inner ring
-UI.GOLD = [255, 214, 92];          // glows, sparks and hairlines, as before
+// The accent family is the title lettering's own chrome (Ollie, 18 Sep 2026:
+// keep the UI within the silver and blue of the title, no yellow anywhere).
+// The meter, the tape on the chosen polaroid, the number block, the stick,
+// the SP button, the GO chip, the toast and the pause menu all draw from it.
+UI.SILVER = [231, 236, 255];       // #e7ecff
+UI.STEEL = [185, 196, 232];        // #b9c4e8
+UI.BLUE = [138, 151, 201];         // #8a97c9
+UI.BLUE_DEEP = [90, 106, 168];     // #5a6aa8
+UI.ACCENT = UI.STEEL;
+UI.GOLD = UI.ACCENT;               // older call sites (glows, sparks, hairlines) take the accent
 // the chrome of the room's name on the title card, top band to bottom band
-UI.CHROME = [[255, 255, 255], [185, 196, 232], [90, 106, 168], [231, 236, 255], [185, 196, 232], [138, 151, 201]];
+UI.CHROME = [[255, 255, 255], UI.STEEL, UI.BLUE_DEEP, UI.SILVER, UI.STEEL, UI.BLUE];
 
 // ---------- type ----------
 // Press Start 2P is an 8px grid: keep its sizes to multiples of 8 and it
@@ -401,7 +406,7 @@ UI.subtitleSeq = (lines) => {
 };
 
 // system feedback (sound OFF, god mode ON): the kit's yellow chip
-UI.toast = (str) => UI._bottomChip(str, { fill: UI.YELLOW_CHIP, shade: UI.YELLOW_SHADE, padY: 5 });
+UI.toast = (str) => UI._bottomChip(str, { fill: UI.STEEL, shade: UI.BLUE, padY: 5 });
 
 // The room's title card: a taped-down label, pixel polaroid style. A
 // yellow number block, then the room's name in chrome over its subtitle
@@ -422,8 +427,10 @@ UI.titleCard = ({ num, name, sub }) => {
   card.onDraw(() => {
     const op = card.opacity;
     UI.R(4, 4, w, h, UI.INK, op);                              // the drop shadow
-    UI.R(0, 0, leftW, h, UI.INK, op);                          // number block
-    UI.R(2, 2, leftW - 2, h - 4, UI.LABEL, op);
+    UI.R(0, 0, leftW, h, UI.INK, op);                          // number block, in the title's chrome
+    UI.R(2, 2, leftW - 2, h - 4, UI.STEEL, op);
+    UI.R(2, 2, leftW - 2, 3, UI.SILVER, op);
+    UI.R(2, h - 5, leftW - 2, 3, UI.BLUE_DEEP, op);
     UI.label(num, 2 + 12, h / 2, { size: NUM, anchor: "left", color: UI.NAVY, shadow: false, opacity: op });
     const rx = leftW;                                          // name block: ink, pale rule, navy
     UI.R(rx, 0, rightW, h, UI.INK, op);
@@ -481,14 +488,14 @@ UI.hud = () => {
     const heartsW = s.maxHp * HEART_STEP - 2;
     const cw = Math.max(L.w, heartsW + 20);
     // the strap hangs in from the top edge and clips onto the card
-    UI.R(132, 0, 14, 20, UI.RED);
+    UI.R(132, 0, 14, 20, UI.BLUE_DEEP);
     UI.R(132, 0, 2, 20, UI.INK);
     UI.R(144, 0, 2, 20, UI.INK);
     UI.R(132, 18, 14, 2, UI.INK);
     UI.card(vec2(L.x, L.y), cw, L.h, { highlight: UI.WHITE });
     UI.R(126, 20, 26, 6, UI.INK);   // the clip's slot
     const ch = CHAPTERS[r.chapter - 1];
-    UI.label(ch.lanyard || ch.title, 26, 22, { color: UI.RED, shadow: false });
+    UI.label(ch.lanyard || ch.title, 26, 22, { color: UI.BLUE_DEEP, shadow: false });
 
     // whose go it is, top right of the card; the GO chip once the meter is full
     const rightX = L.x + cw - 10;
@@ -498,10 +505,10 @@ UI.hud = () => {
         const go = isTouchscreen() ? "GO ON THEN · SP" : "GO ON THEN · SPACE";
         UI.chip(go, rightX, 16, {
           anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 3,
-          fill: UI.RED, color: UI.WHITE, opacity: 0.8 + Math.sin(time() * 5) * 0.2,
+          fill: UI.BLUE_DEEP, color: UI.SILVER, opacity: 0.8 + Math.sin(time() * 5) * 0.2,
         });
       } else {
-        UI.label(sel.name.toUpperCase() + "'S GO", rightX, 22, { anchor: "topright", color: UI.TEXT, shadow: false });
+        UI.label(sel.name.toUpperCase() + "'S GO", rightX, 22, { anchor: "topright", color: UI.NAVY, shadow: false });
       }
     }
 
@@ -516,13 +523,17 @@ UI.hud = () => {
     }
 
     // the wristband meter: white track in a 2px ink border, filled with
-    // 8px yellow blocks a pixel apart
+    // 8px blocks a pixel apart, each in the title's chrome (silver over
+    // steel over blue)
     const mx = 24, my = 68, mw = cw - 20, mh = 13;
     UI.R(mx - 2, my - 2, mw + 4, mh + 4, UI.INK);
     UI.R(mx, my, mw, mh, UI.WHITE);
     const fw = Math.round((mw - 2) * hud.meterDisp);
     for (let off = 0; off < fw; off += 9) {
-      UI.R(mx + 1 + off, my + 1, Math.min(8, fw - off), mh - 2, UI.YELLOW);
+      const bw = Math.min(8, fw - off), bx = mx + 1 + off;
+      UI.R(bx, my + 1, bw, 3, UI.SILVER);
+      UI.R(bx, my + 4, bw, 4, UI.STEEL);
+      UI.R(bx, my + 8, bw, 4, UI.BLUE_DEEP);
     }
     if (r.shield > 0) {
       UI.label("cosy shield " + r.shield.toFixed(1) + "s", 26, L.y + L.h + 6, { color: [140, 185, 235] });
@@ -556,9 +567,9 @@ UI.hud = () => {
         });
         UI.text(c.name.toLowerCase(), x + P.w / 2, py + ph + 2, { anchor: "top" });
         if (isSel) {
-          // a strip of yellow tape holds the chosen one down
+          // a strip of silver tape holds the chosen one down
           UI.R(x + 16, y - 6, 26, 10, UI.INK);
-          UI.R(x + 18, y - 4, 22, 6, UI.YELLOW);
+          UI.R(x + 18, y - 4, 22, 6, UI.STEEL);
         }
       } else {
         UI.card(vec2(x, y), P.w, P.h, { fill: UI.PAPER_DIM, shade: null, opacity: 0.6 });
@@ -623,8 +634,8 @@ UI.hud = () => {
       const op = ready ? 0.85 + Math.sin(time() * 5) * 0.15 : 0.35;
       drawCircle({ pos: bp, radius: 46, color: UI.rgb(UI.WHITE), opacity: op });
       drawCircle({ pos: bp, radius: 45, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op });
-      drawCircle({ pos: bp, radius: 41.5, fill: false, outline: { width: 5, color: UI.rgb(UI.RED) }, opacity: op });
-      UI.label("SP", bp.x, bp.y + 1, { size: 16, anchor: "center", color: UI.TEXT, shadow: false, opacity: op });
+      drawCircle({ pos: bp, radius: 41.5, fill: false, outline: { width: 5, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op });
+      UI.label("SP", bp.x, bp.y + 1, { size: 16, anchor: "center", color: UI.NAVY, shadow: false, opacity: op });
     }
 
     // ===== desktop crosshair: ring + dot =====
@@ -769,7 +780,7 @@ UI.pause = () => {
     ITEMS.forEach((_, i) => {
       const r = rowRect(i), on = i === sel;
       UI.card(vec2(r.x, r.y), r.w, r.h, {
-        fill: on ? UI.YELLOW_CHIP : UI.CHIP, shade: on ? UI.YELLOW_SHADE : null, notch: false,
+        fill: on ? UI.STEEL : UI.CHIP, shade: on ? UI.BLUE : null, notch: false,
       });
       UI.text(label(i), r.x + r.w / 2, r.y + r.h / 2 + 1, { anchor: "center" });
     });
@@ -798,55 +809,50 @@ UI.pause = () => {
 
 // ---------- mobile virtual joystick ----------
 
+// The stick lives bottom left, mirroring the SP button (Ollie, 18 Sep 2026).
+UI.STICK = { x: 72, y: G.H - 72, r: 54 };
+
 UI.mobileControls = () => {
   if (!isTouchscreen()) return;
 
   let stickId = null;
   let anchorPos = null;
-  // The kit's stick: a paper disc in an ink ring with a white and a tan
-  // ring inset, and a red knob with its own darker ring. Positions, radii
-  // and hit areas are unchanged from before. Drawn as one entity so the
-  // translucency never stacks where the rings meet.
-  const base = add([pos(-999, -999), opacity(0.7), fixed(), z(185)]);
+  // A touch anywhere on the left half drives the stick: starting on the
+  // stick itself steers from its centre, starting elsewhere steers from
+  // where the finger landed, and either way the knob shows the direction.
+  // Silver and blue like the rest of the accent; drawn as one entity so
+  // the translucency never stacks where the rings meet.
+  const S = UI.STICK;
+  const base = add([pos(S.x, S.y), opacity(0.7), fixed(), z(185)]);
   base.onDraw(() => {
     const op = base.opacity;
-    drawCircle({ pos: vec2(0, 0), radius: 45, color: UI.rgb(UI.PAPER), opacity: op });
-    drawCircle({ pos: vec2(0, 0), radius: 49.5, fill: false, outline: { width: 5, color: UI.rgb(UI.WHITE) }, opacity: op });
-    drawCircle({ pos: vec2(0, 0), radius: 46, fill: false, outline: { width: 2, color: UI.rgb(UI.STICK_RING) }, opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 45, color: UI.rgb(UI.SILVER), opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 49.5, fill: false, outline: { width: 5, color: UI.rgb(UI.STEEL) }, opacity: op });
+    drawCircle({ pos: vec2(0, 0), radius: 46, fill: false, outline: { width: 2, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op });
     drawCircle({ pos: vec2(0, 0), radius: 53, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op + 0.2 });
+    const k = G.joy.scale(S.r);
+    drawCircle({ pos: k, radius: 21, color: UI.rgb(UI.BLUE), opacity: op + 0.2 });
+    drawCircle({ pos: k, radius: 22.5, fill: false, outline: { width: 3, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op + 0.2 });
+    drawCircle({ pos: k, radius: 25, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op + 0.2 });
   });
-  const knob = add([pos(-999, -999), opacity(0.9), fixed(), z(186)]);
-  knob.onDraw(() => {
-    const op = knob.opacity;
-    drawCircle({ pos: vec2(0, 0), radius: 21, color: UI.rgb(UI.RED), opacity: op });
-    drawCircle({ pos: vec2(0, 0), radius: 22.5, fill: false, outline: { width: 3, color: UI.rgb(UI.RED_DARK) }, opacity: op });
-    drawCircle({ pos: vec2(0, 0), radius: 25, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op });
-  });
-
-  const hide = () => {
-    base.pos = vec2(-999, -999);
-    knob.pos = vec2(-999, -999);
-    G.joy = vec2(0, 0);
-    stickId = null;
-  };
 
   onTouchStart((p, t) => {
     if (p.x < G.W * 0.5 && stickId === null && !UI.inPauseBtn(p)) {
       stickId = t ? t.identifier : 0;
-      anchorPos = p;
-      base.pos = p;
-      knob.pos = p;
+      anchorPos = p.dist(vec2(S.x, S.y)) < S.r + 24 ? vec2(S.x, S.y) : p;
+      base.opacity = 0.9;
     }
   });
   onTouchMove((p, t) => {
     if (stickId === null || (t && t.identifier !== stickId)) return;
     let d = p.sub(anchorPos);
-    if (d.len() > 54) d = d.unit().scale(54);
-    knob.pos = anchorPos.add(d);
-    G.joy = d.scale(1 / 54);
+    if (d.len() > S.r) d = d.unit().scale(S.r);
+    G.joy = d.scale(1 / S.r);
   });
   onTouchEnd((p, t) => {
     if (stickId === null || (t && t.identifier !== stickId)) return;
-    hide();
+    G.joy = vec2(0, 0);
+    stickId = null;
+    base.opacity = 0.7;
   });
 };

@@ -15,7 +15,7 @@ scene("select", () => {
 
   const heading = UI.labelObj("WHO ARE YOU, THEN?", G.W / 2, 40, { size: 16, anchor: "center", z: 5, fixed: false });
   UI.slideIn(heading, vec2(G.W / 2, 18), vec2(G.W / 2, 40), 0.5);
-  const headRule = add([rect(0, 2), pos(G.W / 2, 60), anchor("center"), color(UI.YELLOW[0], UI.YELLOW[1], UI.YELLOW[2]), z(5), opacity(0.9)]);
+  const headRule = add([rect(0, 2), pos(G.W / 2, 60), anchor("center"), color(UI.rgb(UI.STEEL)), z(5), opacity(0.9)]);
   let hr = 0;
   headRule.onUpdate(() => { hr += dt(); headRule.width = 320 * UI.ease(hr / 0.7); });
 
@@ -57,9 +57,9 @@ scene("select", () => {
       text(c.name.toLowerCase(), { size: 32, font: UI.VT }), pos(0, CH / 2 - 21), anchor("center"),
       color(UI.rgb(UI.TEXT)), opacity(1),
     ]);
-    // a strip of yellow tape holds the chosen one down
+    // a strip of silver tape holds the chosen one down
     const tapeInk = card.add([rect(40, 14), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.INK)), opacity(1)]);
-    const tape = card.add([rect(36, 10), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.YELLOW)), opacity(1)]);
+    const tape = card.add([rect(36, 10), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.STEEL)), opacity(1)]);
     const kids = [figure, name, tapeInk, tape];
 
     // staggered entrance
@@ -95,7 +95,7 @@ scene("select", () => {
   UI.fadeObj(panel, 1, 0.5, 0.35);
   const dName = add([text("", { size: 16, font: UI.PX }), pos(80, panelY - 24), anchor("left"), color(UI.rgb(UI.TEXT)), z(9)]);
   const dFlavour = add([text("", { size: 16, font: UI.VT }), pos(80, panelY - 1), anchor("left"), color(UI.rgb(UI.TEXT)), z(9)]);
-  const dInfo = add([text("", { size: 16, font: UI.VT }), pos(80, panelY + 18), anchor("left"), color(UI.rgb(UI.RED)), z(9)]);
+  const dInfo = add([text("", { size: 16, font: UI.VT }), pos(80, panelY + 18), anchor("left"), color(UI.rgb(UI.BLUE_DEEP)), z(9)]);
 
   onUpdate(() => {
     const c = CHARACTERS[selected];
