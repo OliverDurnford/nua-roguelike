@@ -21,34 +21,29 @@ scene("tutorial", () => {
   const player = PLAYER.make(m.playerSpawn);
   const startPos = m.playerSpawn.clone();
 
-  // --- the other nine friends, hanging out in the park ---
+  // --- the other nine friends, mid game in the park ---
   // The first one picks up the bat and stands on home plate. The other
-  // eight fill friendBox on a loose 4 x 2 grid: the two rows are offset
-  // half a cell sideways and everyone is jittered inside their own cell,
-  // so they read as a group standing about rather than a line up, and
-  // nobody ends up on top of anybody.
+  // eight take the fielding positions measured onto the plate (the
+  // three basemen on their bags, a catcher, a short stop and three in
+  // the outfield), so you walk out into a game already going on rather
+  // than a group standing about. Who plays where is shuffled each run,
+  // and everyone is nudged a few pixels off their mark so the side is
+  // not pegged out with a ruler.
   const others = CHARACTERS.filter((c) => c.id !== G.run.charId);
-  const batterChar = others[0];
   const batterPos = pt(PARK_PLATE.batter);
   const friends = [];
 
-  const [fx1, fy1, fx2, fy2] = PARK_PLATE.friendBox;
-  const FCOLS = 4, FROWS = 2;
-  const cellW = (fx2 - fx1) / FCOLS * U;
-  const cellH = (fy2 - fy1) / FROWS * U;
-  const cells = MAPS.shuffle([...Array(FCOLS * FROWS).keys()]);
+  const spots = MAPS.shuffle(PARK_PLATE.fielders.map(pt));
 
   others.forEach((c, i) => {
-    let p = batterPos;
-    if (i > 0) {
-      const cell = cells[(i - 1) % cells.length];
-      const col = cell % FCOLS, row = Math.floor(cell / FCOLS);
-      p = vec2(
-        fx1 * U + (col + 0.5 + (row % 2 ? 0.25 : -0.25)) * cellW + rand(-cellW * 0.14, cellW * 0.14),
-        fy1 * U + (row + 0.5) * cellH + rand(-cellH * 0.1, cellH * 0.1),
-      );
-    }
+    const p = i === 0
+      ? batterPos
+      : spots[(i - 1) % spots.length].add(rand(-7, 7), rand(-7, 7));
     const f = add([...ART.charComps(c.id, G.charH(0.95)), pos(p), z(44), opacity(1), "friend", { charId: c.id }]);
+    // Everyone watches the plate. The sprites are drawn facing right,
+    // so anyone stood to the right of home plate gets flipped; the
+    // catcher and centre field are dead in line and stay as they are.
+    if (i > 0 && Math.abs(p.x - batterPos.x) > 24) f.flipX = p.x > batterPos.x;
     friends.push(f);
   });
 
@@ -69,6 +64,8 @@ scene("tutorial", () => {
   let batterMark = null;
   let ballFocus = null;  // where the ball is while it flies, for the camera
   let cam = null;        // the camera's smoothed position
+  const WIDE = Math.min(G.W / m.w, G.H / m.h);   // zoom that fits the whole park
+  let wideK = 0;         // 0 in close on the player, 1 pulled back to the park
 
   // --- the throw ---
   const throwBall = () => {
@@ -182,6 +179,17 @@ scene("tutorial", () => {
     const cy = m.h <= G.H ? m.h / 2 : G.clamp(focus.y, G.H / 2, m.h - G.H / 2);
     cam = cam ? cam.lerp(vec2(cx, cy), Math.min(1, dt() * 5)) : vec2(cx, cy);
     reveal.apply(cam);
+
+    // Once the ground goes, pull back out to the whole park. The nine
+    // are spread across a fielding side, so from in close most of them
+    // would be dragged under off the edges of the frame, and the whole
+    // point of the beat is watching it happen to everybody.
+    if (st >= 3) {
+      wideK = Math.min(1, wideK + dt() / 1.4);
+      const k = UI.ease(wideK);
+      camScale(vec2(1 + (WIDE - 1) * k));
+      camPos(cam.lerp(vec2(m.w / 2, m.h / 2), k));
+    }
 
     if (st === 0 && player.pos.dist(startPos) > 70) {
       st = 1;

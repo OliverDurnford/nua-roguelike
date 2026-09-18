@@ -124,11 +124,29 @@ const PARK_PLATE = {
   // and the bloke's "OI!!" comes off this point.
   carTarget: [27.05, 12.95],
 
-  // The open grass the other eight stand on, between the top of the
-  // diamond and the treeline: [x1, y1, x2, y2]. Held clear of the
-  // fountain, both top trees and the car park fence, and kept low
-  // enough that the whole group is in shot from the pitcher's mound.
-  friendBox: [11.3, 8.3, 22.8, 11.9],
+  // Where the other eight stand: a full fielding side. You pitch from
+  // the mound, the first friend bats, and these eight cover the rest of
+  // the positions, so the park reads as a game already going on.
+  //
+  // Measured off the four painted mats, not eyeballed: first is at
+  // [21.30, 13.15], second [16.01, 8.31], third [10.47, 13.24] and home
+  // [15.99, 18.27]. The three basemen stand a little past their bag on
+  // the outfield side, so the white mat still reads in front of their
+  // feet instead of vanishing under them.
+  //
+  // The outfield is shallow because the park is. Straight-away centre
+  // walks into the fountain and deep right into the car park fence, so
+  // both are pulled in to the last clear grass.
+  fielders: [
+    [16.00, 19.90],   // catcher, behind home plate
+    [21.55, 12.50],   // first base
+    [16.90,  7.95],   // second base
+    [10.20, 12.60],   // third base
+    [12.90, 10.40],   // short stop, between second and third
+    [ 6.80,  8.70],   // left field
+    [13.90,  6.60],   // centre field, off the fountain's left shoulder
+    [21.20,  9.20],   // right field
+  ],
 
   // Where the ground splits open: the diamond and the grass just
   // around it, so every crack is a short walk from a friend.
