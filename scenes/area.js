@@ -400,7 +400,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     });
 
     const retry = () => {
-      if (!dead) return;
+      if (!dead || UI.pauseOpen) return;
       dead = false;
       G.run.hp = G.stats().maxHp;
       go("area", { chapter, area: 1 });
@@ -415,6 +415,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   UI.hud();
   UI.wireControls();
   UI.mobileControls();
+  UI.pause();
   COMPANIONS.ambient();
   COMPANIONS.onAreaEnter();
   // the taped-down label: track number in the chapter, the room, the chapter and its year

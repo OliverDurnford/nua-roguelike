@@ -232,8 +232,12 @@ UI.fadeObj = (obj, target, dur, delay = 0) => {
   });
 };
 
-// quick black fade-in at the start of every scene - makes cuts feel intentional
+// quick black fade-in at the start of every scene - makes cuts feel intentional.
+// Every scene calls this, so it is also where a pause left behind by a scene
+// change (a dev skip while the menu was up) gets cleared.
 UI.sceneFade = () => {
+  UI.pauseOpen = false;
+  debug.paused = false;
   const f = add([rect(G.W, G.H), color(0, 0, 0), opacity(1), fixed(), z(255)]);
   f.onUpdate(() => {
     f.opacity -= dt() * 2.8;
@@ -653,7 +657,7 @@ UI.wireControls = () => {
 
   // taps: companion polaroids + mobile special button
   onMousePress(() => {
-    if (!G.run) return;
+    if (!G.run || UI.pauseOpen) return;
     const m = mousePos();
     const P = UI.PORTRAIT;
     for (let i = 0; i < G.run.companions.length; i++) {
@@ -683,6 +687,113 @@ UI.wireControls = () => {
   onKeyPress("m", () => { if (G.run) G.run.meter = 1; });
   onKeyPress("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });
   onKeyPress("]", () => { if (G.devSkip) G.devSkip(); });
+};
+
+// ---------- pause menu ----------
+// ESC, P, or the PAUSE chip at the top of the screen. Freezes the whole
+// game with Kaboom's own debug.paused: updates and timers stop, drawing
+// and input carry on, so the menu draws itself in onDraw and nothing
+// else moves while it is up. G.paused is raised too, so the gameplay
+// keys underneath (space for the special) do nothing. Installed once per
+// gameplay scene; its objects die with the scene.
+UI.pauseOpen = false;
+UI.PAUSE_BTN = { x: G.W / 2 - 30, y: 8, w: 60, h: 20 };
+UI.inPauseBtn = (p) => {
+  const b = UI.PAUSE_BTN;
+  return p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+};
+
+UI.pause = () => {
+  const ITEMS = ["carry on", "sound", "back to the title"];
+  const W = 360, ROW_W = 260, ROW_H = 28, ROW_GAP = 10, LINE = 18;
+  const help = isTouchscreen()
+    ? ["drag on the left to move, aim is automatic", "tap SP for the special, tap a polaroid to swap"]
+    : ["WASD or arrows move, the mouse aims", "SPACE special, 1 to 4 or Q / E swap, N sound"];
+  const H = 20 + 16 + 22 + ITEMS.length * ROW_H + (ITEMS.length - 1) * ROW_GAP + 22 + help.length * LINE + 18;
+  const x0 = G.W / 2 - W / 2, y0 = Math.round(G.H / 2 - H / 2);
+  const rowsY = y0 + 20 + 16 + 22;
+  const rowRect = (i) => ({ x: G.W / 2 - ROW_W / 2, y: rowsY + i * (ROW_H + ROW_GAP), w: ROW_W, h: ROW_H });
+  const hit = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+  const label = (i) => (i === 1 ? "sound: " + (SFX.muted ? "off" : "on") : ITEMS[i]);
+
+  let sel = 0;
+  let wasPaused = false;   // a cutscene may already have G.paused up
+
+  const open = () => {
+    if (UI.pauseOpen) return;
+    UI.pauseOpen = true;
+    wasPaused = G.paused;
+    G.paused = true;
+    debug.paused = true;
+    sel = 0;
+    SFX.play("uitick");
+  };
+  const close = () => {
+    if (!UI.pauseOpen) return;
+    UI.pauseOpen = false;
+    G.paused = wasPaused;
+    debug.paused = false;
+    SFX.play("uiconfirm");
+  };
+  const activate = () => {
+    if (sel === 0) {
+      close();
+    } else if (sel === 1) {
+      SFX.toggle();
+      SOUNDTRACK.syncMute();
+      SFX.play("uitick");
+    } else {
+      // the run was checkpointed at this room's door, so the title offers to carry on
+      UI.pauseOpen = false;
+      G.paused = false;
+      debug.paused = false;
+      SFX.play("uiconfirm");
+      if (typeof SOUNDTRACK !== "undefined") SOUNDTRACK.stop();
+      go("title");
+    }
+  };
+  const move = (d) => { sel = (sel + d + ITEMS.length) % ITEMS.length; SFX.play("uitick"); };
+  const toggle = () => (UI.pauseOpen ? close() : open());
+
+  const menu = add([fixed(), z(230), pos(0, 0)]);
+  menu.onDraw(() => {
+    const b = UI.PAUSE_BTN;
+    if (!UI.pauseOpen) {
+      UI.card(vec2(b.x, b.y), b.w, b.h, { fill: UI.CHIP, shade: null, notch: false, opacity: 0.85 });
+      UI.label("PAUSE", b.x + b.w / 2, b.y + b.h / 2 + 1, { anchor: "center", color: UI.TEXT, shadow: false, opacity: 0.85 });
+      return;
+    }
+    UI.R(0, 0, G.W, G.H, UI.INK, 0.6);
+    UI.card(vec2(x0, y0), W, H, { drop: 4 });
+    UI.label("PAUSED", G.W / 2, y0 + 20, { size: 16, anchor: "top", color: UI.TEXT, shadow: false });
+    ITEMS.forEach((_, i) => {
+      const r = rowRect(i), on = i === sel;
+      UI.card(vec2(r.x, r.y), r.w, r.h, {
+        fill: on ? UI.YELLOW_CHIP : UI.CHIP, shade: on ? UI.YELLOW_SHADE : null, notch: false,
+      });
+      UI.text(label(i), r.x + r.w / 2, r.y + r.h / 2 + 1, { anchor: "center" });
+    });
+    const fy = y0 + H - 18 - help.length * LINE;
+    help.forEach((ln, i) => {
+      UI.text(ln, G.W / 2, fy + i * LINE + LINE / 2, { anchor: "center", color: UI.TEXT, opacity: 0.6 });
+    });
+  });
+
+  onKeyPress("escape", toggle);
+  onKeyPress("p", toggle);
+  for (const k of ["up", "w"]) onKeyPress(k, () => { if (UI.pauseOpen) move(-1); });
+  for (const k of ["down", "s"]) onKeyPress(k, () => { if (UI.pauseOpen) move(1); });
+  for (const k of ["enter", "space"]) onKeyPress(k, () => { if (UI.pauseOpen) activate(); });
+  onMouseMove(() => {
+    if (!UI.pauseOpen) return;
+    const m = mousePos();
+    ITEMS.forEach((_, i) => { if (hit(m, rowRect(i))) sel = i; });
+  });
+  onMousePress(() => {
+    const m = mousePos();
+    if (!UI.pauseOpen) { if (UI.inPauseBtn(m)) open(); return; }
+    ITEMS.forEach((_, i) => { if (hit(m, rowRect(i))) { sel = i; activate(); } });
+  });
 };
 
 // ---------- mobile virtual joystick ----------
@@ -720,7 +831,7 @@ UI.mobileControls = () => {
   };
 
   onTouchStart((p, t) => {
-    if (p.x < G.W * 0.5 && stickId === null) {
+    if (p.x < G.W * 0.5 && stickId === null && !UI.inPauseBtn(p)) {
       stickId = t ? t.identifier : 0;
       anchorPos = p;
       base.pos = p;

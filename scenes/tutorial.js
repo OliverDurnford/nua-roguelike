@@ -197,11 +197,12 @@ scene("tutorial", () => {
 
   if (isTouchscreen()) {
     onMousePress(() => {
-      if (st === 1) throwBall();
+      if (st === 1 && !UI.pauseOpen) throwBall();
     });
   }
 
   UI.mobileControls();
+  UI.pause();
   UI.vignette(0.36);
   UI.sceneFade();
   onKeyPress("]", () => go("area", { chapter: 1, area: 1 }));

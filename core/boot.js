@@ -15,6 +15,9 @@ kaboom({
   // of it. See core/titlevideo.js.
   background: [12, 12, 16, 0],
   touchToMouse: true,
+  // No engine debug keys or overlays: F8 would freeze the game behind a
+  // stray icon. The game's own pause menu (UI.pause) uses debug.paused.
+  debug: false,
 });
 
 const G = {
