@@ -188,13 +188,21 @@ scene("area", ({ chapter, area: areaNum }) => {
   let exiting = false;
 
   // --- enemies (randomised placement each run) ---
-  // never spawn right on top of the player's entrance
-  if (a.enemyBudget > 0) {
-    let pts = m.enemySpawns.filter((p) => p.dist(m.playerSpawn) > 260);
-    if (pts.length < a.enemyBudget) pts = m.enemySpawns;
-    pts = MAPS.shuffle(pts).slice(0, a.enemyBudget);
-    for (const p of pts) ENEMIES.spawn(choose(ch.enemySet), p);
-  }
+  // They come in once the room has been revealed (see the camera below),
+  // one after another, never right on top of the player's entrance.
+  // Until they have, the room does not count as cleared.
+  let spawned = false;
+  const spawnEnemies = () => {
+    if (a.enemyBudget > 0) {
+      let pts = m.enemySpawns.filter((p) => p.dist(m.playerSpawn) > 260);
+      if (pts.length < a.enemyBudget) pts = m.enemySpawns;
+      pts = MAPS.shuffle(pts).slice(0, a.enemyBudget);
+      pts.forEach((p, i) => wait(i * 0.14, () => { if (!dead && !exiting) ENEMIES.spawnIn(choose(ch.enemySet), p); }));
+      wait(pts.length * 0.14, () => { spawned = true; });
+    } else {
+      spawned = true;
+    }
+  };
 
   // --- companion pickup (quiet areas, chapters 1-4) ---
   if (m.companionSpawn && chapter <= 4) {
@@ -330,6 +338,15 @@ scene("area", ({ chapter, area: areaNum }) => {
     }
   }
 
+  // --- the reveal: pulled back over the whole room, then in to the player ---
+  // Nothing moves through the hold; control comes back as the push starts
+  // and the enemies arrive once the camera has landed.
+  G.paused = true;
+  const reveal = UI.reveal(m.w, m.h, {
+    onPush: () => { G.paused = false; },
+    onDone: spawnEnemies,
+  });
+
   // --- exit door logic ---
   onUpdate(() => {
     // camera follows player, leans toward the aim, clamps to the map
@@ -340,9 +357,9 @@ scene("area", ({ chapter, area: areaNum }) => {
     }
     const cx = m.w <= G.W ? m.w / 2 : G.clamp(target.x, G.W / 2, m.w - G.W / 2);
     const cy = m.h <= G.H ? m.h / 2 : G.clamp(target.y, G.H / 2, m.h - G.H / 2);
-    camPos(cx, cy);
+    reveal.apply(vec2(cx, cy));
 
-    const cleared = get("enemy").length === 0 && get("boss").length === 0;
+    const cleared = spawned && get("enemy").length === 0 && get("boss").length === 0;
     for (const d of m.exits) {
       if (cleared && !d.unlocked) {
         d.unlocked = true;

@@ -122,6 +122,17 @@ ENEMIES.spawn = (def, p) => {
   return e;
 };
 
+// An enemy arriving once the room has been revealed: a ring of light at
+// the spot and a quick fade up, so they read as coming IN rather than
+// having always been there.
+ENEMIES.spawnIn = (def, p) => {
+  const e = ENEMIES.spawn(def, p);
+  UI.pop(p, UI.STEEL, 9);
+  e.opacity = 0;
+  tween(0, 1, 0.35, (v) => { if (e.exists()) e.opacity = v; }, easings.easeOutQuad);
+  return e;
+};
+
 // `who` is the shooter's def (an enemy or a boss); when its id has real
 // bullet art (core/ebullets-real.js) that item flies instead of the circle.
 // Boss bullets reuse the plain Dean's art for his graduation form.

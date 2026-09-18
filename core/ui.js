@@ -243,6 +243,7 @@ UI.fadeObj = (obj, target, dur, delay = 0) => {
 UI.sceneFade = () => {
   UI.pauseOpen = false;
   debug.paused = false;
+  camScale(vec2(1));
   const f = add([rect(G.W, G.H), color(0, 0, 0), opacity(1), fixed(), z(255)]);
   f.onUpdate(() => {
     f.opacity -= dt() * 2.8;
@@ -447,6 +448,40 @@ UI.titleCard = ({ num, name, sub }) => {
       if (card.opacity <= 0) destroy(card);
     });
   });
+};
+
+// ---------- the room reveal ----------
+// Every room opens pulled back, the whole venue on screen for a moment
+// (Ollie, 18 Sep 2026: appreciate the level design and recognise the
+// setting before it starts), then the camera pushes in to the player.
+// The scene's camera code hands its normal follow position to apply()
+// every frame and this decides what the camera actually does: parked on
+// the room's centre at the pulled-back scale through the hold, then
+// eased in to the follow position at full scale. Gameplay stays paused
+// through the hold (opts.onPush releases it) and opts.onDone fires once
+// the camera has landed, which is when the enemies come in.
+UI.reveal = (mapW, mapH, opts = {}) => {
+  const HOLD = opts.hold === undefined ? 1.5 : opts.hold;
+  const PUSH = opts.push === undefined ? 0.8 : opts.push;
+  const fit = Math.min(G.W / mapW, G.H / mapH);
+  const start = Math.max(0.3, Math.min(1, fit) * 0.85);   // a little air round a room that already fits
+  const centre = vec2(mapW / 2, mapH / 2);
+  const r = { t: 0, active: true, pushed: false };
+  r.apply = (follow) => {
+    if (!r.active) { camPos(follow); return; }
+    r.t += dt();
+    if (r.t >= HOLD && !r.pushed) { r.pushed = true; if (opts.onPush) opts.onPush(); }
+    const k = UI.ease(Math.max(0, (r.t - HOLD) / PUSH));
+    camScale(vec2(start + (1 - start) * k));
+    camPos(centre.lerp(follow, k));
+    if (r.t >= HOLD + PUSH) {
+      r.active = false;
+      camScale(vec2(1));
+      camPos(follow);
+      if (opts.onDone) opts.onDone();
+    }
+  };
+  return r;
 };
 
 // ---------- HUD ----------

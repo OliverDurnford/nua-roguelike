@@ -165,6 +165,10 @@ scene("tutorial", () => {
     });
   };
 
+  // --- the reveal: the whole park first, then in to the player ---
+  G.paused = true;
+  const reveal = UI.reveal(m.w, m.h, { onPush: () => { if (st < 5) G.paused = false; } });
+
   // --- state machine ---
   onUpdate(() => {
     // camera: follows the player, but rides with the ball while it flies
@@ -176,7 +180,7 @@ scene("tutorial", () => {
     const cx = m.w <= G.W ? m.w / 2 : G.clamp(focus.x, G.W / 2, m.w - G.W / 2);
     const cy = m.h <= G.H ? m.h / 2 : G.clamp(focus.y, G.H / 2, m.h - G.H / 2);
     cam = cam ? cam.lerp(vec2(cx, cy), Math.min(1, dt() * 5)) : vec2(cx, cy);
-    camPos(cam);
+    reveal.apply(cam);
 
     if (st === 0 && player.pos.dist(startPos) > 70) {
       st = 1;
