@@ -442,7 +442,7 @@ UI.titleCard = ({ num, name, sub }) => {
     UI.label(sub, tx, ty + NAME + 6, { size: SUB, letterSpacing: 1, color: UI.PALE, shadow: false, opacity: op });
   });
   UI.slideIn(card, vec2(x0 - 46, y0), vec2(x0, y0), 0.5);
-  wait(2.8, () => {
+  wait(3.6, () => {
     card.onUpdate(() => {
       card.opacity -= dt() * 1.8;
       if (card.opacity <= 0) destroy(card);
@@ -461,7 +461,7 @@ UI.titleCard = ({ num, name, sub }) => {
 // through the hold (opts.onPush releases it) and opts.onDone fires once
 // the camera has landed, which is when the enemies come in.
 UI.reveal = (mapW, mapH, opts = {}) => {
-  const HOLD = opts.hold === undefined ? 1.5 : opts.hold;
+  const HOLD = opts.hold === undefined ? 2.5 : opts.hold;   // Ollie, 18 Sep: 1.5 was too brief
   const PUSH = opts.push === undefined ? 0.8 : opts.push;
   const fit = Math.min(G.W / mapW, G.H / mapH);
   const start = Math.max(0.3, Math.min(1, fit) * 0.85);   // a little air round a room that already fits
