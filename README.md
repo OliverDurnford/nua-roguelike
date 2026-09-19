@@ -78,9 +78,11 @@ While playing:
 - `m` — fill the special meter
 - `g` — god mode on/off
 - `]` — skip to the next area
-- `F2` — show the invisible walls on a painted level (Gonzo's). Red blocks
-  are what you bump into, the yellow dots are where enemies come in, the
-  blue dot is where you start. Use it if something feels wrong to walk past
+- `F2` — show the invisible geometry on a painted level. Red boxes are
+  footprints (what your feet bump into), blue shapes are outlines (what
+  gets drawn over you when you stand behind it) with their base line in
+  white, the yellow dots are where enemies come in, the blue dot is where
+  you start. Use it if something feels wrong to walk past
 
 From the browser console (right-click → Inspect → Console):
 - `dev.area(3, 5)` — jump straight to the Chapter 3 boss
@@ -161,6 +163,8 @@ nua-roguelike/
 │   └── level-gonzos.js   ← Gonzo's: walls, spawns and exit, in plain numbers
 ├── core/
 │   ├── boot.js           engine start, shared state, base stats
+│   ├── collide.js        walls stop your feet: footprints and the push-out
+│   ├── depth.js          who draws in front: z from where the feet are
 │   ├── save.js           the run checkpoint (remembered between visits)
 │   ├── story.js          permanent memory across runs (friends ever met)
 │   ├── fonts-real.js     the UI's two pixel fonts (embedded as data)
@@ -203,14 +207,23 @@ The maps in `data/chapters.js` are text drawings — `=` wall, `o` obstacle,
 `E` enemy spawn, `P` player start, `X` exit, `C` companion, `B` boss.
 Change the text, refresh the browser, the level changes.
 
-**Painted levels work differently.** Gonzo's has no text drawing. The
-picture is the level, and `data/level-gonzos.js` lists where the walls and
-furniture are as a set of rectangles. Picture the artwork cut into 32
-columns and 18 rows, then read off column and row: `[21.2, 2.9, 29.4, 4.6]`
-is the banquette along the top. Change a number, refresh, press `F2` to see
-where the block actually landed. Every other venue can be added the same
-way: drop the base64 picture into `core/plates-real.js`, copy
-`level-gonzos.js`, point the area at it in `chapters.js`.
+**Painted levels work differently.** Every venue is now painted, and there
+is no text drawing. The picture is the level, and `data/level-<venue>.js`
+lists the painted THINGS in it. Each thing has a footprint (the floor it
+takes up: your feet cannot cross it) and, if it is tall, an outline (the
+game redraws that patch of the painting over you when you stand behind
+it, so a table hides your legs and a lamppost's top is never under your
+feet). Picture the artwork cut into columns and rows of 48px, and every
+number is a column or a row. Only your FEET hit walls: your head can
+overlap whatever is painted above you.
+
+You do not edit those numbers by hand. Open the level board
+(`tools/levels/board.html`, served by the `level-board` launch entry on
+port 8644): pick the venue, drag red boxes for footprints, click round a
+shape for an outline, put the little person behind things to see what
+happens, press Save, then refresh the game and press `F2` to see it in
+place. Check runs the reachability tool so a box can never wall off a
+spawn without you knowing.
 
 ---
 
@@ -251,6 +264,11 @@ exists so automated testing can drive the game off-screen. Leave it in.
   than shown — decide later if it deserves its own moment
 - Death restarts the current chapter (companions kept). Friendly, not
   hardcore — flag if you want it harsher
+- Level board: spawns and the exit are shown but not editable yet; and
+  since walls no longer go through Kaboom bodies, enemies can overlap each
+  other in a doorway. Both easy to add if they read badly.
+- The first geometry pass on the 25 venues other than Gonzo's (19 Sep
+  2026) was measured by Claude, not yet reviewed by Ollie.
 - Soundtrack: every track defaults to the shared "general" pool. Assigning
   songs to specific levels is Ollie's call, see ../docs/soundtrack-labelling.md
   (one level above this repo's root, not tracked in here) and edit
