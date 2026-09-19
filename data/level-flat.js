@@ -25,116 +25,49 @@ const FLAT_PLATE = {
 
   charScale: 1.3,
 
-  solid: [
-    // ---- outer edge, so nobody walks off the picture ----
-    // Right edge is split so it doesn't cover the exit doorway, and
-    // drawn a little thinner (from 31.6, painted wall runs from
-    // 31.3): otherwise its own reach past the beanbag and plant
-    // beside it seals the approach to the exit just below.
-    [0, 0, 32, 0.3],
-    [0, 17.7, 32, 18],
-    [0, 0, 0.3, 18],
-    [31.6, 0, 32, 13.6],
-    [31.6, 15.9, 32, 18],
-
-    // ---- hallway ----
-    // Coat hooks, hanging coats and the shoe rack against the entry
-    // wall: painted as one tall wall-mounted band, like Gonzo's own
-    // wall-decor blocks. Loose shoes on the floor below stay walkable.
-    [0.25, 0, 3.75, 4.65],
-    // The front door itself, shut: painted top-left of the hallway,
-    // not at the bottom (the venue brief's percentages don't match
-    // the finished plate here; this follows the paint, not the brief).
-    [3.7, 0, 5.75, 4.2],
-
-    // Wall between the hallway and the kitchen/bathroom column.
-    // No doorway here in the paint: hallway only meets that column
-    // via the corridor gap in the middle (8.35 to 10.3).
-    [5.8, 0, 6.4, 8.35],
-    [5.8, 10.3, 6.4, 17.7],
-
-    // ---- kitchen ----
-    // Cabinets, counters, sink and hob along the top wall.
-    [6.4, 0, 14.5, 3.9],
-    // The cooker/oven unit sits proud of the counter line, with a
-    // chair tucked against it (chair stays walkable).
-    [10.9, 0, 13.2, 4.9],
-    [14.5, 0, 16.6, 5.7],
-    // Tall floor cabinet in the near corner, below the counter run.
-    [6.4, 3.9, 7.85, 8.2],
-    // Kitchen table: smaller than the four chairs around it suggest,
-    // the tabletop itself is the part between them. Chairs stay
-    // walkable, which leaves clear floor either side of the table
-    // (past the west and east chairs) connecting the doorway below
-    // up to the counters, wide enough for the brute to pass.
-    [10.15, 4.9, 13.15, 6.8],
-    // Kitchen's bottom wall, either side of its doorway down into the
-    // corridor. Drawn thinner than the painted band, and the left
-    // segment cut back further still (true wall runs to 9.5): the
-    // full dark band on this wall and the bathroom's wall below leave
-    // only ~1.4 units clear, less than the brute's 1.78 unit hitbox,
-    // and the table sits close enough behind its own doorway that the
-    // brute needs the extra width beside it to get past (reach.py).
-    // Sitting each collision line at the inner edge of its band keeps
-    // the corridor crossable; the wall-coloured outer part, and this
-    // extra sliver by the cabinet, stay walkable.
-    [6.4, 8.2, 8.6, 8.35],
-    [12.15, 8.2, 16.6, 8.35],
-
-    // Wall between the kitchen/bathroom column and the living room.
-    [16.55, 0, 17.05, 8.35],
-    [16.55, 10.3, 17.05, 17.7],
-
-    // Sealed bathroom, door shut: one block, per Gonzo's rule for
-    // sealed rooms. Top edge raised for the same corridor-clearance
-    // reason as the kitchen's bottom wall above.
-    [6.4, 10.3, 16.6, 17.7],
-
-    // Bicycle against the hallway wall.
-    [0.5, 10.7, 2.25, 15.8],
-
-    // ---- living room ----
-    // Back wall: framed prints, fairy lights, polaroids and bunting,
-    // the full width of the room (same convention as the hallway's
-    // coat wall and Gonzo's own top-wall block).
-    [17.05, 0, 31.3, 3.85],
-    // L-shaped grey sofa: the long run along the back wall, plus the
-    // deeper chaise on the left that reaches further into the room.
-    // The chaise is painted from 18.5, but is pulled back further
-    // still, to 19.0: the wall gap the corridor arrives through sits
-    // at exactly this height (7.3 to 11.0 covers it entirely), and
-    // with the second floor lamp also in the way (below), 18.5 left
-    // only a sliver beside the lamp, too narrow for the brute. Pulling
-    // the chaise back, and the lamp in a little (below), opens enough
-    // width for it to get through; the true sofa edge closer to the
-    // wall stays visually a little short of its red block here.
-    [17.6, 3.85, 25.3, 7.3],
-    [19.0, 7.3, 21.5, 11.0],
-    // Record player and the stacked game boxes beside it.
-    [25.5, 3.6, 28.35, 8.75],
-    // Potted plant by the record player/TV corner.
-    [29.85, 4.85, 31.1, 6.35],
-    // Television (thin, flush against the wall) and its low unit
-    // sitting proud of it, cable tangle and controllers on the floor
-    // in front stay walkable clutter.
-    [29.95, 6.3, 31.3, 11.4],
-    [27.9, 8.3, 30.0, 10.3],
-    // Coffee table, piled with games; the rug under it is walkable.
-    [21.6, 8.05, 26.6, 10.35],
-    // The two floor lamps, in the corners either side of the sofa.
-    // Second one nudged toward the wall from its painted spot (17.1
-    // to 17.8), for the same reason as the chaise above.
-    [17.1, 1.5, 17.8, 5.65],
-    [16.7, 12.5, 17.4, 17.5],
-    // Bookshelf along the bottom wall.
-    [17.5, 15.55, 24.2, 17.6],
-    // Two beanbags and the second plant, bottom right. The orange
-    // beanbag and the plant both pulled in short of where they're
-    // actually painted (30.6 and 31.2 respectively): flush against
-    // the wall between them they seal off the exit doorway just
-    // above, which needs the width to stay reachable.
-    [24.05, 14.2, 26.95, 17.5], [27.3, 13.4, 30.5, 17.4],
-    [29.75, 13.0, 30.5, 17.4],
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "outer edge, top", foot: [0, 0, 32, 0.3] },
+    { name: "outer edge, bottom", foot: [0, 17.7, 32, 18] },
+    { name: "outer edge, left", foot: [0, 0, 0.3, 18] },
+    { name: "outer edge, right, upper", foot: [31.6, 0, 32, 13.6] },
+    { name: "outer edge, right, lower", foot: [31.6, 15.9, 32, 18] },
+    { name: "coat hooks and shoe rack", foot: [0.25, 0, 3.75, 4.65] },
+    { name: "front door, shut", foot: [3.7, 0, 5.75, 4.2] },
+    { name: "wall, hallway to kitchen column, upper", foot: [5.8, 0, 6.4, 8.35] },
+    { name: "wall, hallway to kitchen column, lower", foot: [5.8, 10.3, 6.4, 17.7] },
+    { name: "kitchen counters, sink and hob", foot: [6.4, 0, 14.5, 3.9] },
+    { name: "cooker unit", foot: [10.9, 0, 13.2, 4.9] },
+    { name: "fridge", foot: [14.5, 0, 16.6, 5.7] },
+    { name: "tall floor cabinet", foot: [6.4, 3.9, 7.85, 8.2] },
+    { name: "kitchen table", foot: [10.15, 6.15, 13.15, 6.8], over: [[10.15, 4.9], [13.15, 4.9], [13.15, 6.8], [10.15, 6.8]] },
+    { name: "kitchen bottom wall, west of the doorway", foot: [6.4, 8.2, 8.6, 8.35] },
+    { name: "kitchen bottom wall, east of the doorway", foot: [12.15, 8.2, 16.6, 8.35] },
+    { name: "wall, kitchen column to living room, upper", foot: [16.55, 0, 17.05, 8.35] },
+    { name: "wall, kitchen column to living room, lower", foot: [16.55, 10.3, 17.05, 17.7] },
+    { name: "bathroom, door shut", foot: [6.4, 10.3, 16.6, 17.7] },
+    { name: "bicycle against the hallway wall", foot: [0.5, 10.7, 2.25, 15.8] },
+    { name: "living room back wall: prints, fairy lights, bunting", foot: [17.05, 0, 31.3, 3.85] },
+    { name: "sofa, main run", foot: [17.6, 6.45, 25.3, 7.3], over: [[17.6, 3.85], [25.3, 3.85], [25.3, 7.3], [17.6, 7.3]] },
+    { name: "sofa, chaise", foot: [19, 10.05, 21.5, 11], over: [[19, 7.3], [21.5, 7.3], [21.5, 11], [19, 11]] },
+    { name: "record player and stacked game boxes", foot: [25.5, 3.6, 28.35, 8.75] },
+    { name: "potted plant, record player corner", foot: [29.85, 4.85, 31.1, 6.35] },
+    { name: "television and its wall unit", foot: [29.95, 6.3, 31.3, 11.4] },
+    { name: "TV console, low unit in front", foot: [27.9, 8.3, 30, 10.3] },
+    { name: "coffee table", foot: [21.6, 8.05, 26.6, 10.35] },
+    { name: "floor lamp, sofa corner", foot: [17.1, 1.5, 17.8, 5.65] },
+    { name: "floor lamp, bookshelf corner", foot: [16.7, 12.5, 17.4, 17.5] },
+    { name: "bookshelf along the bottom wall", foot: [17.5, 16.9, 24.2, 17.6], over: [[17.5, 15.55], [24.2, 15.55], [24.2, 17.6], [17.5, 17.6]] },
+    { name: "beanbag, orange", foot: [24.05, 14.2, 26.95, 17.5] },
+    { name: "beanbag, second, and the second plant", foot: [27.3, 13.4, 30.5, 17.4] },
+    { name: "potted plant, bottom right corner", foot: [29.75, 13, 30.5, 17.4] },
   ],
 
   // Hallway, just inside the front door (which is top-left, not

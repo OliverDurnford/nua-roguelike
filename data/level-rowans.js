@@ -28,80 +28,43 @@ const ROWANS_PLATE = {
 
   charScale: 1.1,
 
-  solid: [
-    // ---- outer edge, so nobody walks off the picture ----
-    [0, 0, 32, 0.4],
-    [0, 17.6, 32, 18],
-    [0, 0, 0.4, 18],
-    [31.6, 0, 32, 18],
-
-    // ---- the eight lanes, top left ----
-    [1.0, 0, 18.6, 2.1],      // red and gold scalloped pediment + black header wall
-    [1.0, 1.7, 18.6, 7.9],    // the lanes and pins, down to the foul line
-
-    // ---- the approach: ball returns and seat clusters, one per lane ----
-    // (end seat, return, cluster, return, cluster, return, cluster, return, end seat)
-    [1.0, 8.2, 2.55, 10.15],   // end seat, lane 1
-    [3.05, 8.1, 4.0, 10.05],   // ball return machine 1
-    [4.6, 8.2, 6.6, 10.15],    // seat cluster 1
-    [7.1, 8.1, 8.05, 10.05],   // ball return machine 2
-    [8.65, 8.2, 10.65, 10.15], // seat cluster 2
-    [11.1, 8.1, 12.1, 10.05],  // ball return machine 3
-    [12.65, 8.2, 14.65, 10.15],// seat cluster 3
-    [15.1, 8.1, 16.1, 10.05],  // ball return machine 4
-    [16.65, 8.2, 18.2, 10.15], // end seat, lane 8
-    [0.5, 10.15, 2.9, 11.3],   // rack of bowling balls, left of the approach
-
-    // ---- the bar, bottom left (L shaped, like Gonzo's) ----
-    [0.55, 11.4, 7.7, 15.5],   // long counter run + mirrored back bar (stools walkable)
-    [7.7, 12.7, 8.6, 15.5],    // the return, short end of the L
-
-    // ---- pool room, bottom middle ----
-    // Pool table 3 is held back well short of its true painted bottom edge
-    // (16.65): the room reads as two halves, split down the middle by the
-    // pool tables, and the only crossing on the ground floor is this one
-    // strip between table 3 and the cue rack. Table 3 at its full height
-    // left under a unit of clearance there once the cue rack's own margin
-    // is added in, not enough for the brute - the same fix as the arcade
-    // rows above, just a bigger cut because two solids stack in this gap.
-    [11.0, 10.85, 14.65, 13.35], // pool table 1
-    // Pool table 2 is ALSO held back, on its top edge rather than its
-    // front: it sits directly under the one gap between the lanes and the
-    // arcade, and at full height it sealed that gap's only way down to
-    // the floor, cutting the arcade off entirely. The front edge (where a
-    // player would stand to play) is the one kept intact.
-    [16.7, 12.0, 20.4, 13.35],   // pool table 2 (held back from the lane/arcade gap above)
-    [13.9, 14.05, 17.6, 15.2],   // pool table 3 (held back from the cue rack)
-    [14.1, 17.05, 17.25, 17.55], // cue rack, bottom wall
-
-    // ---- the arcade, top right: three rows, cabinets back to back ----
-    // Both the row-to-row gaps and the lane/arcade gap (18.6 to the row's
-    // left edge) are held back a bit further than the bare 1.6 unit rule:
-    // reach.py's flood fill quantizes to 4px cells, and a corridor only a
-    // few px over the brute's own width reads as blocked at that
-    // resolution. 1.8-2.0 units gives it real margin.
-    //
-    // The rows' right edge is ALSO held back from the painted 27.85-27.9,
-    // and the staircase block's left edge held back from the rope post at
-    // 28.3: without this the arcade is sealed on all four sides for the
-    // brute (lanes/wall/pool table 2 below, rows themselves, and this
-    // edge), which split the room in two. The rope and the last sliver of
-    // the end cabinets in each row are the visible cost.
-    [18.6, 0, 20.2, 0.95],      // wall strip: black header over the lanes/arcade gap
-    [20.2, 0, 27.2, 2.75],      // arcade row 1: driving cabinets + standup cabinets
-    [20.2, 4.6, 27.2, 5.7],     // arcade row 2: cabinets, air hockey, claw machines (held back for the aisle)
-    [20.2, 7.55, 27.2, 9.75],   // arcade row 3: cabinets + the prize machine (held back for the aisle)
-
-    // ---- staircase and the motorcycle, right edge, roped off ----
-    [29.0, 0, 32, 9.4],
-
-    // ---- karaoke booths, bottom right ----
-    // Held back from the painted bottom edge (16.2) same as pool table 3:
-    // clearance to the bottom wall (17.6) has to be the GAP minus twice the
-    // brute's half-height, not the raw gap itself (16.2 gave 1.4 raw but
-    // only 0.1 once inflation on both sides is subtracted). 15.6 gives a
-    // real ~0.5 unit corridor.
-    [22.3, 11.2, 31.6, 15.6],
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "outer edge, top", foot: [0, 0, 32, 0.4] },
+    { name: "outer edge, bottom", foot: [0, 17.6, 32, 18] },
+    { name: "outer edge, left", foot: [0, 0, 0.4, 18] },
+    { name: "outer edge, right", foot: [31.6, 0, 32, 18] },
+    { name: "red and gold scalloped pediment, black header wall", foot: [1, 0, 18.6, 2.1] },
+    { name: "the lanes and pins, down to the foul line", foot: [1, 1.7, 18.6, 7.9] },
+    { name: "end seat, lane 1", foot: [1, 8.2, 2.55, 10.15] },
+    { name: "ball return machine 1", foot: [3.05, 8.1, 4, 10.05] },
+    { name: "seat cluster 1", foot: [4.6, 8.2, 6.6, 10.15] },
+    { name: "ball return machine 2", foot: [7.1, 8.1, 8.05, 10.05] },
+    { name: "seat cluster 2", foot: [8.65, 8.2, 10.65, 10.15] },
+    { name: "ball return machine 3", foot: [11.1, 8.1, 12.1, 10.05] },
+    { name: "seat cluster 3", foot: [12.65, 8.2, 14.65, 10.15] },
+    { name: "ball return machine 4", foot: [15.1, 8.1, 16.1, 10.05] },
+    { name: "end seat, lane 8", foot: [16.65, 8.2, 18.2, 10.15] },
+    { name: "rack of bowling balls, left of the approach", foot: [0.5, 10.15, 2.9, 11.3] },
+    { name: "bar counter", foot: [0.55, 11.4, 7.7, 15.5], over: [[0.55, 11.1], [7.7, 11.1], [7.7, 15.5], [0.55, 15.5]] },
+    { name: "bar counter return", foot: [7.7, 12.7, 8.6, 15.5], over: [[7.7, 12.4], [8.6, 12.4], [8.6, 15.5], [7.7, 15.5]] },
+    { name: "pool table 1", foot: [11, 12.45, 14.65, 13.35], over: [[11, 10.85], [14.65, 10.85], [14.65, 13.35], [11, 13.35]] },
+    { name: "pool table 2", foot: [16.7, 12.45, 20.4, 13.35], over: [[16.7, 10.85], [20.4, 10.85], [20.4, 13.35], [16.7, 13.35]] },
+    { name: "pool table 3", foot: [13.9, 15.8, 17.6, 16.65], over: [[13.9, 13.75], [17.6, 13.75], [17.6, 16.65], [13.9, 16.65]] },
+    { name: "cue rack, bottom wall", foot: [14.1, 17.05, 17.25, 17.55] },
+    { name: "wall strip: black header over the lanes/arcade gap", foot: [18.6, 0, 20.2, 0.95] },
+    { name: "arcade row 1: driving cabinets and standup cabinets", foot: [20.2, 0, 27.2, 2.75] },
+    { name: "arcade row 2: cabinets, air hockey, claw machines", foot: [20.2, 5.35, 27.2, 6.15], over: [[20.2, 3.85], [27.2, 3.85], [27.2, 6.15], [20.2, 6.15]] },
+    { name: "arcade row 3: cabinets and the prize machine", foot: [20.2, 8.85, 27.2, 9.85], over: [[20.2, 7], [27.2, 7], [27.2, 9.85], [20.2, 9.85]] },
+    { name: "staircase and the motorcycle, roped off", foot: [29, 0, 32, 9.4] },
+    { name: "karaoke booths", foot: [22.3, 11.2, 31.6, 15.6] },
   ],
 
   // No doorway is painted in the left wall, and the rule of thumb ("left

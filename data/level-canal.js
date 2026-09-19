@@ -32,49 +32,39 @@ const CANAL_PLATE = {
 
   charScale: 1.1,
 
-  solid: [
-    // ---- park band along the top: trees, railings and the shut gate,
-    // one band down to the towpath, no gap (the gate doesn't open) ----
-    [0, 0, 48, 6.3],
-
-    // ---- the lock keeper's cottage and its whole fenced garden, one
-    // block (house, lawn and picket fence together) ----
-    [25.0, 6.3, 32.1, 8.35],
-
-    // ---- road bridge, far right: the willow gives way to the bridge's
-    // buildings, brickwork and the water passing under its arch, all the
-    // way across. Measured (not assumed): on both sides a post carries a
-    // pedestrian railing at 8.0-8.7, and open pavement resumes only below
-    // it. So the towpath doesn't pass through a gap in this block, it
-    // passes UNDER it, at reduced headroom, 8.7 to 10.7 (2.0 units, over
-    // the 1.6 minimum) the full width of the bridge. ----
-    [40.2, 6.3, 48, 8.7],
-
-    // ---- towpath furniture, left to right ----
-    [9.7, 6.0, 12.15, 7.05],   // bench, back to the railings
-    [19.35, 6.15, 20.15, 7.2], // litter bin
-    [14.85, 9.5, 15.55, 10.35],// mooring bollard, roped to a boat
-    [24.2, 10.35, 27.9, 11.5], // lock gate: pivot post + balance beams, where they swing over the towpath
-    [33.25, 5.85, 35.2, 6.55], // bikes chained to the railings
-    [36.4, 6.0, 38.5, 7.05],   // second bench, under the willow
-
-    // ---- the whole canal band, water's edge down to the bottom: the
-    // moored boats and the far bank's warehouses are all covered by
-    // this since they sit in or beyond the water. The lock recesses the
-    // bank, so the edge steps out and back rather than running straight. ----
-    [0, 10.7, 22, 18],     // past the three boats, standard width
-    [22, 10.85, 25, 18],   // edge starting to curve out, into the lock
-    [25, 11.5, 28, 18],    // curving further
-    [28, 11.85, 32, 18],   // widest, where the lock chamber recesses the bank
-    [32, 11.5, 34, 18],    // curving back in
-    [34, 10.7, 48, 18],    // standard width again, through the junction and under the bridge deck
-
-    // ---- outer edge, so nobody walks off the picture ----
-    [0, 0, 48, 0.4],
-    [0, 17.6, 48, 18],
-    [0, 0, 0.4, 18],
-    [47.6, 0, 48, 8.8],    // right edge, above the exit
-    [47.6, 10.6, 48, 18],  // right edge, below the exit
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "outer edge, top", foot: [0, 0, 48, 0.4] },
+    { name: "outer edge, bottom", foot: [0, 17.6, 48, 18] },
+    { name: "outer edge, left", foot: [0, 0, 0.4, 18] },
+    { name: "outer edge, right, above the exit", foot: [47.6, 0, 48, 8.8] },
+    { name: "outer edge, right, below the exit", foot: [47.6, 10.6, 48, 18] },
+    { name: "park trees, railings and the shut gate", foot: [0, 0, 48, 6.3] },
+    { name: "lock cottage and its fenced garden", foot: [24.85, 6.3, 32.1, 8.8] },
+    { name: "road bridge", foot: [40.2, 6.3, 48, 8.7] },
+    { name: "bench, back to the railings", foot: [9.7, 6, 12.15, 7.05], over: [[9.7, 5.8], [12.15, 5.8], [12.15, 7.05], [9.7, 7.05]] },
+    { name: "litter bin", foot: [19.35, 6.67, 20.15, 7.2], over: [[19.35, 6.15], [20.15, 6.15], [20.15, 7.2], [19.35, 7.2]] },
+    { name: "mooring bollard, roped to a boat", foot: [14.85, 9.5, 15.55, 10.35] },
+    { name: "lock gate: pivot post and balance beams", foot: [24.2, 10.35, 27.9, 11.5] },
+    { name: "bikes chained to the railings", foot: [33.25, 5.85, 35.2, 6.55] },
+    { name: "second bench, under the willow", foot: [36.4, 6, 38.5, 7.05], over: [[36.4, 5.8], [38.5, 5.8], [38.5, 7.05], [36.4, 7.05]] },
+    { name: "narrowboat, moored, red with the bike", over: [[3, 9.6], [8.35, 9.6], [8.65, 10.3], [8.65, 11.3], [8.3, 11.55], [3.05, 11.55], [2.75, 11], [2.75, 10.3]] },
+    { name: "narrowboat, moored, green with the camp chair", over: [[9.75, 9.8], [15.6, 9.8], [15.9, 10.4], [15.9, 11.3], [15.55, 11.5], [9.8, 11.5], [9.5, 11], [9.5, 10.3]] },
+    { name: "narrowboat, moored, blue with the coal sacks", over: [[17.15, 9.75], [23.55, 9.75], [23.9, 10.35], [23.9, 11.3], [23.55, 11.5], [17.2, 11.5], [16.9, 11], [16.9, 10.3]] },
+    { name: "narrowboat, junction, broadside with the life ring", over: [[40.2, 10.3], [41.1, 10.3], [41.35, 10], [41.55, 10.3], [46.6, 10.3], [46.8, 10.55], [46.8, 11.55], [46.5, 11.75], [40.3, 11.75], [40, 11.5], [40, 10.55]] },
+    { name: "canal, past the three boats", foot: [0, 10.7, 22, 18] },
+    { name: "canal edge, starting to curve into the lock", foot: [22, 10.85, 25, 18] },
+    { name: "canal edge, curving further", foot: [25, 11.5, 28, 18] },
+    { name: "canal edge, widest at the lock chamber", foot: [28, 11.85, 32, 18] },
+    { name: "canal edge, curving back in", foot: [32, 11.5, 34, 18] },
+    { name: "canal, standard width through the junction and under the bridge", foot: [34, 10.7, 48, 18] },
   ],
 
   // Left edge, on the towpath.
