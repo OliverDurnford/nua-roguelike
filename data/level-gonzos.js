@@ -15,8 +15,7 @@
 // open "Level Design/Gonzos/Gonzos_Level.jpg", imagine it cut into
 // 32 columns and 18 rows, and read off the column and row.
 //
-// solid: [x1, y1, x2, y2] - a rectangle you cannot walk through.
-//        Bullets stop on these too.
+// things: one entry per painted thing (footprint and outline); see below.
 //
 // TUNING NOTE: loose chairs are deliberately NOT solid. You walk
 // straight over them. Only tables, benches, the bar and the walls
@@ -36,41 +35,36 @@ const GONZOS_PLATE = {
   // venue gets its own number.
   charScale: 1.3,
 
-  solid: [
-    // ---- sealed back of house (you can see it, you can't reach it) ----
-    [0,     0,     9.55,  7.65],   // commercial kitchen
-    [0,     7.65,  6.5,   18],     // both toilet blocks
-    [6.5,   7.65,  9.55,  10.85],  // corridor wall: fairy lights, pictures, extinguisher
-    [9.55,  0,     18.95, 8.4],    // stairwell + back bar (shelves, GONZO'S sign)
-
-    // ---- the L shaped bar ----
-    [9.55,  8.4,   18.0,  10.6],   // long counter run
-    [18.0,  6.5,   19.0,  10.6],   // the return, going up under the glass rack
-
-    // ---- main room shell ----
-    [18.95, 0,     29.4,  2.9],    // top wall: pictures, taxidermy, string lights
-    [19.3,  2.9,   21.0,  4.45],   // grandfather clock
-    [29.4,  0,     32,    18],     // right wall + the big gilt frame
-
-    // ---- banquette ----
-    // Only the top run needs its own block. The bench down the right
-    // hand side already falls inside the right wall block above.
-    [21.2,  2.9,   29.4,  4.6],    // bench along the top
-
-    // ---- furniture ----
-    [21.4,  4.45,  23.3,  6.1],    // banquette table 1
-    [24.1,  4.45,  25.95, 6.1],    // banquette table 2
-    [26.9,  4.45,  28.7,  6.1],    // banquette table 3
-    [27.5,  8.9,   29.05, 10.8],   // side table with the candle
-    [25.2,  14.4,  29.3,  16.9],   // DJ decks
-    [24.7,  14.75, 25.5,  15.95],  // DJ speaker, left
-    [28.0,  13.25, 28.8,  14.6],   // DJ speaker, right
-    [21.15, 13.9,  22.9,  15.3],   // round table at the foot of the rug
-    [16.1,  12.6,  17.6,  14.0],   // round table, middle of the floor
-    [16.85, 15.8,  18.3,  17.45],  // square table, bottom of the floor
-
-    // ---- outer edge, so nobody walks off the picture ----
-    [0,     17.8,  32,    18],
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "commercial kitchen", foot: [0, 0, 9.55, 7.65] },
+    { name: "both toilet blocks", foot: [0, 7.65, 6.5, 18] },
+    { name: "corridor wall: fairy lights, pictures, extinguisher", foot: [6.5, 7.65, 9.55, 10.85] },
+    { name: "stairwell and back bar", foot: [9.55, 0, 18.95, 8.4] },
+    { name: "bar counter", foot: [9.55, 8.4, 18, 10.6] },
+    { name: "bar counter return", foot: [18, 6.5, 19, 10.6] },
+    { name: "top wall: pictures, taxidermy, string lights", foot: [18.95, 0, 29.4, 2.9] },
+    { name: "grandfather clock", foot: [19.3, 2.9, 21, 4.45] },
+    { name: "right wall and the big gilt frame", foot: [29.4, 0, 32, 18] },
+    { name: "bench along the top", foot: [21.2, 2.9, 29.4, 4.6] },
+    { name: "banquette table 1", foot: [21.4, 5.55, 23.1, 6.28], over: [[21.47, 5.34], [21.35, 5.08], [21.39, 4.81], [21.58, 4.57], [21.88, 4.41], [22.25, 4.35], [22.62, 4.41], [22.92, 4.57], [23.11, 4.81], [23.15, 5.08], [23.03, 5.34], [22.37, 5.67], [22.37, 5.78], [22.67, 5.86], [22.67, 6.16], [22.46, 6.28], [22.04, 6.28], [21.83, 6.16], [21.83, 5.86], [22.13, 5.78], [22.13, 5.67]] },
+    { name: "banquette table 2", foot: [24.15, 5.55, 25.85, 6.28], over: [[24.22, 5.34], [24.1, 5.08], [24.14, 4.81], [24.33, 4.57], [24.63, 4.41], [25, 4.35], [25.37, 4.41], [25.67, 4.57], [25.86, 4.81], [25.9, 5.08], [25.78, 5.34], [25.12, 5.67], [25.12, 5.78], [25.42, 5.86], [25.42, 6.16], [25.21, 6.28], [24.79, 6.28], [24.58, 6.16], [24.58, 5.86], [24.88, 5.78], [24.88, 5.67]] },
+    { name: "banquette table 3", foot: [26.95, 5.55, 28.65, 6.28], over: [[27.02, 5.34], [26.9, 5.08], [26.94, 4.81], [27.13, 4.57], [27.43, 4.41], [27.8, 4.35], [28.17, 4.41], [28.47, 4.57], [28.66, 4.81], [28.7, 5.08], [28.58, 5.34], [27.92, 5.67], [27.92, 5.78], [28.22, 5.86], [28.22, 6.16], [28.01, 6.28], [27.59, 6.28], [27.38, 6.16], [27.38, 5.86], [27.68, 5.78], [27.68, 5.67]] },
+    { name: "side table with the candle", foot: [27.6, 10.2, 28.95, 10.8], over: [[27.54, 9], [28.97, 9], [28.97, 10.4], [28.8, 10.4], [28.8, 10.8], [27.75, 10.8], [27.75, 10.4], [27.54, 10.4]] },
+    { name: "DJ decks", foot: [24.75, 15.7, 29.35, 16.8], over: [[24.72, 15.45], [25.15, 14.65], [28.9, 14.05], [29.35, 14.35], [29.35, 15.45], [29.05, 15.75], [29.05, 16.6], [28.85, 16.6], [28.85, 15.8], [25.05, 16.35], [25.05, 17.05], [24.78, 17.05], [24.78, 16.35], [24.72, 16.1]] },
+    { name: "DJ speaker, left", over: [[24.72, 14.8], [25.5, 14.8], [25.5, 15.95], [24.72, 15.95]] },
+    { name: "DJ speaker, right", foot: [27.95, 14.2, 28.7, 14.6], over: [[27.95, 13.45], [28.7, 13.45], [28.7, 14.6], [27.95, 14.6]] },
+    { name: "round table at the foot of the rug", foot: [21.2, 15.05, 22.9, 16.1], over: [[21.27, 15], [21.15, 14.72], [21.19, 14.43], [21.38, 14.18], [21.68, 14.01], [22.05, 13.95], [22.42, 14.01], [22.72, 14.18], [22.91, 14.43], [22.95, 14.72], [22.83, 15], [22.17, 15.35], [22.17, 15.6], [22.5, 15.68], [22.5, 15.98], [22.28, 16.1], [21.83, 16.1], [21.6, 15.98], [21.6, 15.68], [21.93, 15.6], [21.93, 15.35]] },
+    { name: "round table, middle of the floor", foot: [16.2, 13.75, 17.6, 14.75], over: [[16.25, 13.66], [16.15, 13.4], [16.19, 13.12], [16.34, 12.87], [16.59, 12.71], [16.9, 12.65], [17.21, 12.71], [17.46, 12.87], [17.61, 13.12], [17.65, 13.4], [17.55, 13.66], [17.01, 14], [17.01, 14.3], [17.35, 14.38], [17.35, 14.63], [17.13, 14.75], [16.68, 14.75], [16.45, 14.63], [16.45, 14.38], [16.79, 14.3], [16.79, 14]] },
+    { name: "square table, bottom of the floor", foot: [16.85, 16.75, 18.25, 17.45], over: [[16.85, 15.75], [18.25, 15.75], [18.25, 17.45], [16.85, 17.45]] },
+    { name: "bottom edge of the picture", foot: [0, 17.8, 32, 18] },
   ],
 
   // Dead centre of the Persian rug, under the mirrorball.
