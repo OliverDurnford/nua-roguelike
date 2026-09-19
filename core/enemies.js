@@ -68,7 +68,6 @@ ENEMIES.spawn = (def, p) => {
   const e = add([
     ...comps,
     pos(p),
-    body(),
     color(255, 255, 255),
     opacity(1),
     z(45),
@@ -80,6 +79,7 @@ ENEMIES.spawn = (def, p) => {
     },
   ]);
   e.baseScale = e.scale.x;
+  DEPTH.track(e);
 
   e.onUpdate(() => {
     if (G.paused) return;
@@ -115,7 +115,7 @@ ENEMIES.spawn = (def, p) => {
     } else {
       vel = toP.unit().scale(e.speed);
     }
-    if (vel) e.move(vel);
+    if (vel) COLLIDE.moveBy(e, vel.scale(dt()));
     ENEMIES.animate(e, !!vel, vel);
   });
 
@@ -156,6 +156,7 @@ ENEMIES.shootAt = (from, to, speed, who) => {
     z(40),
     "ebullet",
   ]);
+  DEPTH.track(b, 0);
   if (eb) b.onUpdate(() => { b.angle += dt() * 240; });   // the item tumbles as it flies
 };
 
@@ -208,7 +209,6 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
   const b = add([
     ...comps,
     pos(p),
-    body({ isStatic: true }),
     color(255, 255, 255),
     opacity(1),
     z(46),
@@ -223,6 +223,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
     },
   ]);
   b.baseScale = b.scale.x;
+  DEPTH.track(b);
 
   b.onUpdate(() => {
     if (G.paused) return;
@@ -244,7 +245,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
 
     // charging dash
     if (b.charging) {
-      b.pos = b.pos.add(b.charging.dir.scale(420 * dt()));
+      COLLIDE.moveBy(b, b.charging.dir.scale(420 * dt()));
       b.charging.t -= dt();
       ENEMIES.animate(b, true, b.charging.dir);
       if (b.charging.t <= 0) b.charging = null;
@@ -268,7 +269,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
     // idle drift toward the player
     const toP = pl.pos.sub(b.pos);
     const drifting = toP.len() > 140;
-    if (drifting) b.pos = b.pos.add(toP.unit().scale(def.speed * dt()));
+    if (drifting) COLLIDE.moveBy(b, toP.unit().scale(def.speed * dt()));
     ENEMIES.animate(b, drifting, drifting ? toP : null);
 
     // next pattern

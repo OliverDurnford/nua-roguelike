@@ -290,6 +290,8 @@ scene("area", ({ chapter, area: areaNum }) => {
         area({ scale: 0.9 }), z(44), opacity(1),
         "companionPickup", { baseY: m.companionSpawn.y, t: rand(0, 5) },
       ]);
+      cObj.feet = ART.feetBox(G.charH(0.95));
+      DEPTH.track(cObj);
       cObj.onUpdate(() => {
         cObj.t += dt();
         cObj.pos.y = cObj.baseY + Math.sin(cObj.t * 3) * 5;
@@ -298,7 +300,7 @@ scene("area", ({ chapter, area: areaNum }) => {
         text("!", { size: 16, font: UI.PX }), pos(m.companionSpawn.add(0, -44)), anchor("center"),
         color(255, 220, 120), z(44), opacity(1),
       ]);
-      mark.onUpdate(() => { mark.pos.y = cObj.pos.y - 46; });
+      mark.onUpdate(() => { mark.pos.y = cObj.pos.y - 46; mark.z = cObj.z + 0.5; });
       onCollide("player", "companionPickup", (p, c) => {
         const joinAt = c.pos.clone();
         destroy(c); destroy(mark);
@@ -366,6 +368,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       sprite(a.npc.spr), anchor("center"), pos(npcPos), z(44), opacity(1),
       { t: rand(0, 5), said: false },
     ]);
+    DEPTH.track(npc, npc.height / 2);
     npc.onUpdate(() => {
       npc.t += dt();
       npc.pos.y = npcPos.y + Math.sin(npc.t * 2.2) * 4;
@@ -380,7 +383,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       text(a.npc.name, { size: 16, font: UI.VT }), anchor("center"),
       pos(npcPos.add(0, -42)), color(200, 205, 220), opacity(0.8), z(44),
     ]);
-    tag.onUpdate(() => { tag.pos.y = npc.pos.y - 44; });
+    tag.onUpdate(() => { tag.pos.y = npc.pos.y - 44; tag.z = npc.z + 0.5; });
   }
 
   // --- quiet-area extras ---

@@ -21,7 +21,7 @@ COMPANIONS.spawnFollowers = (player) => {
   const marker = add([
     sprite("glow"), anchor("center"), scale(0.62),
     color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]),
-    pos(-999, -999), opacity(0), z(46),
+    pos(-999, -999), opacity(0), z(39),   // a floor marker: under everyone
   ]);
   marker.onUpdate(() => {
     const f = G.followers[G.run.selected];
@@ -37,14 +37,16 @@ COMPANIONS.spawnFollowers = (player) => {
 COMPANIONS.addFollower = (player, id, spawnAt) => {
   const i = G.followers.length;
   const start = spawnAt || player.pos.add(-(i + 1) * G.charH(0.76), G.charH(0.38));
+  const h = G.charH(0.86);
   const f = add([
-    ...ART.charComps(id, G.charH(0.86)),   // a touch smaller than you, so you read as the lead
+    ...ART.charComps(id, h),   // a touch smaller than you, so you read as the lead
     pos(start),
     opacity(1),
     z(48),
     "follower",
-    { charId: id, idx: i, bobT: rand(0, 6) },
+    { charId: id, idx: i, bobT: rand(0, 6), lostT: 0, feet: ART.feetBox(h) },
   ]);
+  DEPTH.track(f);
 
   f.onUpdate(() => {
     if (G.paused) return;
@@ -52,10 +54,14 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
     if (!lead || !lead.exists()) return;
     const d = lead.pos.sub(f.pos);
     const gap = 38;
+    // Walls stop them too now, so one can be left behind a table while the
+    // lead walks off. After a beat of being far away they catch up.
+    if (d.len() > 260) { f.lostT += dt(); if (f.lostT > 1.5) { f.pos = lead.pos.clone(); f.lostT = 0; } }
+    else f.lostT = 0;
     if (d.len() > gap) {
       // proportional chase: snappy when far behind, settles when close
       const sp = Math.min(d.len() * 4, 460);
-      f.pos = f.pos.add(d.unit().scale(sp * dt()));
+      COLLIDE.moveBy(f, d.unit().scale(sp * dt()));
       if (ART.hasAnims(f.charId)) {
         if (d.x < -6) f.flipX = true;
         else if (d.x > 6) f.flipX = false;

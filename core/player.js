@@ -15,14 +15,14 @@ PLAYER.make = (spawnPos) => {
   const p = add([
     ...ART.charComps(c.id, G.charH()),
     pos(spawnPos),
-    area({ scale: 0.6 }),
-    body(),
+    area({ scale: 0.6 }),   // the body: what bullets, enemies and pickups touch
     opacity(1),
     z(50),
     "player",
-    { iframes: 0, fireCd: 0, bobT: 0, actionT: 0, faceAimT: 0 },
+    { iframes: 0, fireCd: 0, bobT: 0, actionT: 0, faceAimT: 0, feet: ART.feetBox(G.charH()) },
   ]);
   G.playerObj = p;   // so companions can find the player on the field
+  DEPTH.track(p);
 
   p.onUpdate(() => {
     if (G.paused) return;
@@ -36,7 +36,8 @@ PLAYER.make = (spawnPos) => {
     if (isKeyDown("s") || isKeyDown("down")) dir.y += 1;
     dir = dir.add(G.joy);
     if (dir.len() > 1) dir = dir.unit();
-    p.move(dir.scale(s.moveSpeed));
+    // walls stop the feet box, x then y, so you slide along edges
+    COLLIDE.moveBy(p, dir.scale(s.moveSpeed * dt()));
 
     // real animation sheet: swap between the walk cycle and the idle
     // breathe. actionT holds an attack / hurt pose for a beat first, and
@@ -119,7 +120,7 @@ PLAYER.fire = (p, dir, s) => {
     : [rect(G.charH(0.26), G.charH(0.26), { radius: 3 }),
        color(c.weapon.color[0], c.weapon.color[1], c.weapon.color[2]),
        outline(1, rgb(20, 20, 25))];
-  add([
+  const b = add([
     ...look,
     pos(p.pos.add(dir.scale(G.charH(0.62)))),   // leaves the hand, not the chest
     anchor("center"),
@@ -132,6 +133,7 @@ PLAYER.fire = (p, dir, s) => {
     "pbullet",
     { dmg: s.damage, crit: s.crit },
   ]);
+  DEPTH.track(b, 0);
 };
 
 // Wire up all combat collisions. Called once per gameplay scene.

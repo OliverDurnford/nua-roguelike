@@ -39,7 +39,8 @@ scene("tutorial", () => {
     const p = i === 0
       ? batterPos
       : spots[(i - 1) % spots.length].add(rand(-7, 7), rand(-7, 7));
-    const f = add([...ART.charComps(c.id, G.charH(0.95)), pos(p), z(44), opacity(1), "friend", { charId: c.id }]);
+    const f = add([...ART.charComps(c.id, G.charH(0.95)), pos(p), z(44), opacity(1), "friend", { charId: c.id, feet: ART.feetBox(G.charH(0.95)) }]);
+    DEPTH.track(f);
     // Everyone watches the plate. The sprites are drawn facing right,
     // so anyone stood to the right of home plate gets flipped; the
     // catcher and centre field are dead in line and stay as they are.
@@ -72,7 +73,7 @@ scene("tutorial", () => {
     st = 2;
     setPrompt("");
     if (batterMark) destroy(batterMark);
-    const ball = add([sprite("ball"), pos(player.pos), anchor("center"), scale(1.5), z(48), rotate(0), opacity(1), { phase: 0 }]);
+    const ball = add([sprite("ball"), pos(player.pos), anchor("center"), scale(1.5), z(61), rotate(0), opacity(1), { phase: 0 }]);
     ball.onUpdate(() => {
       ball.angle += 600 * dt();
       ballFocus = ball.pos.clone();
@@ -196,7 +197,7 @@ scene("tutorial", () => {
       setPrompt(isTouchscreen()
         ? "tap near the batter to throw them the ball"
         : "HOLD the mouse button to throw the ball to the batter");
-      batterMark = add([text("v", { size: 16, font: UI.PX }), pos(batterPos.add(0, -52)), anchor("center"), color(255, 220, 120), z(60), opacity(1)]);
+      batterMark = add([text("v", { size: 16, font: UI.PX }), pos(batterPos.add(0, -52)), anchor("center"), color(255, 220, 120), z(61), opacity(1)]);
       batterMark.onUpdate(() => { batterMark.pos.y = batterPos.y - 52 + Math.sin(time() * 4) * 6; });
     }
 
