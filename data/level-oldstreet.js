@@ -17,8 +17,7 @@
 // plate.jpg", imagine it cut into 32 columns and 18 rows, and read
 // off the column and row.
 //
-// solid: [x1, y1, x2, y2] - a rectangle you cannot walk through.
-//        Bullets stop on these too.
+// things: one entry per painted thing (footprint and outline); see below.
 //
 // THE SHAPE OF THE ROOM
 // The top two fifths are one sealed band: the curved tunnel wall
@@ -47,35 +46,26 @@ const OLDSTREET_PLATE = {
   // so a person is 83px down here.
   charScale: 1.15,
 
-  solid: [
-    // ---- the sealed half: tunnel wall, tunnel mouths, track bed ----
-    // One band, top of the picture down to the platform edge. The
-    // edge itself is walkable: the band stops on the dark line at the
-    // foot of the coping, just above the white nosing.
-    [0,     0,     32,    5.8],     // tunnel wall, tunnel mouths and track bed
-
-    // ---- the platform's end walls, left and right ----
-    // Thin, and they take in the dark panel painted on each end wall.
-    [0,     5.8,   0.58,  13.75],   // end wall, left
-    [31.55, 5.8,   32,    13.75],   // end wall, right
-
-    // ---- what is standing on the platform ----
-    [7.1,   10.65, 8.88,  13.3],    // vending machine
-    [11.5,  11.85, 14.8,  13.33],   // bench, left (the friend is on this one)
-    [16.68, 11.87, 17.63, 13.3],    // litter bin
-    [20.42, 11.85, 23.72, 13.33],   // bench, right
-
-    // ---- the tiled back wall, broken by the two arched passages ----
-    // The arches are painted with a curved head, so the gaps are cut
-    // at the width of the straight sides below it: everything from
-    // the platform down to the bottom edge is open.
-    [0,     13.75, 3.08,  18],      // wall, left of the near passage
-    [5.46,  13.75, 26.69, 18],      // the long run, roundel panels and all
-    [29.04, 13.75, 32,    18],      // wall, right of the far passage
-
-    // ---- the picture's own bottom edge, so nobody walks out of frame
-    // through a passage. The way out sits across this line.
-    [0,     17.82, 32,    18],      // bottom edge of the picture
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "tunnel wall, tunnel mouths and track bed", foot: [0, 0, 32, 5.8] },
+    { name: "end wall, left", foot: [0, 5.8, 0.58, 13.75] },
+    { name: "end wall, right", foot: [31.55, 5.8, 32, 13.75] },
+    { name: "vending machine", foot: [7.1, 12.77, 8.88, 13.3], over: [[7.1, 10.65], [8.88, 10.65], [8.88, 13.3], [7.1, 13.3]] },
+    { name: "bench, left (the friend is on this one)", foot: [11.5, 12.7, 14.8, 13.1], over: [[11.5, 11.85], [14.8, 11.85], [14.8, 13.33], [11.5, 13.33]], base: 13.33 },
+    { name: "litter bin", foot: [16.68, 13.01, 17.63, 13.3], over: [[16.68, 11.87], [17.63, 11.87], [17.63, 13.3], [16.68, 13.3]] },
+    { name: "bench, right", foot: [20.42, 12.7, 23.72, 13.1], over: [[20.42, 11.85], [23.72, 11.85], [23.72, 13.33], [20.42, 13.33]], base: 13.33 },
+    { name: "wall, left of the near passage", foot: [0, 13.75, 3.08, 18] },
+    { name: "the long run, roundel panels and all", foot: [5.46, 13.75, 26.69, 18] },
+    { name: "wall, right of the far passage", foot: [29.04, 13.75, 32, 18] },
+    { name: "bottom edge of the picture", foot: [0, 17.82, 32, 18] },
   ],
 
   // Up out of the left hand passage, at the head of it: the arch is

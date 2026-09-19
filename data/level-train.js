@@ -45,69 +45,37 @@ const TRAIN_PLATE = {
 
   charScale: 1.2,
 
-  solid: [
-    // ---- night outside, above and below the carriage: two big bands ----
-    [0, 0, 48, 2.5],
-    [0, 13.85, 48, 18],
-
-    // ---- carriage walls: windows, overhead luggage rack, valance. One
-    // band top and bottom runs the full length; thickness drifts a
-    // little between the two painted halves, so these are held to the
-    // shorter side and simply overlap the furniture below, which is
-    // solid anyway ----
-    [0, 2.5, 48, 4.9],
-    [0, 11.8, 48, 13.85],
-
-    // ---- left end wall: the front of the train, nothing before it, no
-    // aisle opening here (unlike the seam and the exit) ----
-    [0, 4.9, 1.0, 11.85],
-
-    // ---- top row, carriage 1, left of the vestibule: a beech table bay
-    // then two rows of paired seats, all one continuous run ----
-    [1.0, 4.9, 13.0, 8.0],
-
-    // ---- vestibule (carriage 1): shut sliding doors recessed into both
-    // walls, deeper than the plain wall, either side of the aisle ----
-    [13.0, 2.5, 17.4, 5.6],
-    [13.0, 11.75, 17.4, 13.85],
-    [13.6, 5.7, 14.6, 8.1],   // the bike, leant against the wall
-    [13.1, 10.1, 14.7, 11.8], // the bin, opposite the bike
-
-    // ---- top row, carriage 1, right of the vestibule to the carriage
-    // end: paired seats then another table bay, continuous ----
-    [17.4, 4.9, 29.6, 8.0],
-
-    // ---- bottom row, carriage 1: mirrors the top, left and right of
-    // the vestibule ----
-    [1.0, 10.1, 13.0, 11.85],
-    [17.4, 10.1, 29.6, 11.85],
-
-    // ---- the seam: carriage 1's rounded end wall, the gap between the
-    // two carriages, and carriage 2's own end wall, all together. Open
-    // across the aisle: that gap is the connecting door through to the
-    // next carriage ----
-    [29.6, 2.5, 32.1, 8.0],
-    [29.6, 10.1, 32.1, 13.85],
-
-    // ---- top row, carriage 2: seam to the cafe bar, seats and tables,
-    // continuous ----
-    [32.1, 4.9, 38.7, 8.0],
-
-    // ---- cafe bar counter: coffee machine, snacks, a fridge ----
-    [38.7, 3.0, 45.1, 7.6],
-
-    // ---- second luggage rack, bags stacked on it ----
-    [44.85, 3.0, 47.7, 7.85],
-
-    // ---- bottom row, carriage 2: seam to the toilet ----
-    [32.1, 10.1, 44.75, 12.7],
-
-    // ---- toilet cubicle, far right end: door, sink, cubicle ----
-    [44.75, 10.1, 47.7, 13.0],
-
-    // ---- right end wall, sealed either side of the exit gap ----
-    [47.6, 4.9, 48.0, 8.1],
-    [47.6, 9.8, 48.0, 11.8],
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "night sky, top", foot: [0, 0, 48, 2.5] },
+    { name: "night sky, bottom", foot: [0, 13.85, 48, 18] },
+    { name: "carriage wall: windows and luggage rack, top", foot: [0, 2.5, 48, 4.9] },
+    { name: "carriage wall: windows and luggage rack, bottom", foot: [0, 11.8, 48, 13.85] },
+    { name: "left end wall", foot: [0, 4.9, 1, 11.85] },
+    { name: "seats and table bay, carriage 1 top left", foot: [1, 4.9, 13, 8] },
+    { name: "vestibule doors, top recess", foot: [13, 2.5, 17.4, 5.6] },
+    { name: "vestibule doors, bottom recess", foot: [13, 11.75, 17.4, 13.85] },
+    { name: "the bike, leant against the wall", foot: [13.75, 7.3, 14.45, 8], over: [[13.85, 5.9], [14.35, 5.9], [14.5, 6.5], [14.45, 7.3], [13.75, 7.3], [13.7, 6.5]] },
+    { name: "the bin, opposite the bike", foot: [13.3, 11.1, 14.5, 11.65], over: [[13.3, 10.15], [14.5, 10.15], [14.6, 10.6], [14.5, 11.3], [14.3, 11.65], [13.5, 11.65], [13.2, 11.3], [13.2, 10.6]] },
+    { name: "seats, carriage 1 top right", foot: [17.4, 4.9, 29.6, 8] },
+    { name: "seats and table bay, carriage 1 bottom left", foot: [1, 10.1, 13, 11.85], over: [[1, 9.5], [13, 9.5], [13, 10.15], [1, 10.15]] },
+    { name: "seats, carriage 1 bottom right", foot: [17.4, 10.1, 29.6, 11.85], over: [[17.4, 9.5], [29.6, 9.5], [29.6, 10.15], [17.4, 10.15]] },
+    { name: "carriage seam, top", foot: [29.6, 2.5, 32.1, 8] },
+    { name: "carriage seam, bottom", foot: [29.6, 10.1, 32.1, 13.85] },
+    { name: "seats and table bay, carriage 2 top", foot: [32.1, 4.9, 38.7, 8] },
+    { name: "cafe bar counter", foot: [38.7, 4.9, 45.05, 7.65], over: [[38.7, 4.9], [45.05, 4.9], [45.05, 6], [44.5, 7.55], [39.9, 7.65], [39, 7.55], [38.7, 6]] },
+    { name: "second luggage rack", foot: [44.85, 3, 47.7, 7.85] },
+    { name: "seats and table bay, carriage 2 bottom", foot: [32.1, 10.1, 44.75, 12.7], over: [[32.1, 9.5], [44.75, 9.5], [44.75, 10.15], [32.1, 10.15]] },
+    { name: "toilet cubicle", foot: [44.75, 10.1, 47.7, 13] },
+    { name: "right end wall, top", foot: [47.6, 4.9, 48, 8.1] },
+    { name: "right end wall, bottom", foot: [47.6, 9.8, 48, 11.8] },
   ],
 
   // Left end of the aisle, just inside the carriage. Held a little clear

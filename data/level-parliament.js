@@ -17,8 +17,7 @@
 // plate.jpg", imagine it cut into 32 columns and 18 rows, and read
 // off the column and row.
 //
-// solid: [x1, y1, x2, y2] is a rectangle you cannot walk through.
-//        Bullets stop on these too.
+// things: one entry per painted thing (footprint and outline); see below.
 //
 // TUNING NOTE: this is a boss arena, so it is deliberately almost
 // empty. Four buildings box the square in, and inside that ring the
@@ -44,48 +43,33 @@ const PARLIAMENT_PLATE = {
   // on this pavement.
   charScale: 1.05,
 
-  solid: [
-    // ---- the Palace of Westminster, right across the top ----
-    // One band: the whole front plus the black railings along its foot.
-    // The pavement below the railings is open, and so is the road.
-    [0,     0,     25.12, 3.12],   // palace front and railings
-
-    // ---- the clock tower ----
-    [26.7,  0,     29.6,  3.15],   // base of the tower, standing in its own paving
-
-    // ---- the court building and its trees, down the left ----
-    // One band. The plane trees are counted in: the pavement strip
-    // between the building wall and the trunks is half a unit wide,
-    // too thin to be honest floor.
-    [0,     5.0,   4.32,  15.0],   // court building, forecourt and the whole row of trees
-
-    // ---- the six bronze statues, each with its plinth ----
-    [8.22,  6.2,   9.23,  7.35],   // statue 1, top of the rim, hands folded
-    [6.8,   9.64,  7.79,  10.77],  // statue 2, left rim, the hunched one
-    [7.82,  12.72, 9.15,  13.76],  // statue 3, bottom left, arms flung out
-    [22.1,  6.18,  23.1,  7.32],   // statue 4, top right, the one waving
-    [24.17, 9.66,  25.1,  10.75],  // statue 5, right rim
-    [21.68, 12.9,  22.28, 13.48],  // statue 6, bottom right: painted with no plinth,
-                                   // so this is the skirt of its coat and its boots
-
-    // ---- lamp posts: only the foot blocks, the column is drawn leaning in ----
-    [7.21,  8.05,  7.59,  8.33],   // lamp, top left corner of the rim
-    [7.18,  13.21, 7.55,  13.48],  // lamp, bottom left corner
-    [24.2,  8.06,  24.6,  8.33],   // lamp, top right corner
-    [24.18, 13.2,  24.56, 13.49],  // lamp, bottom right corner
-
-    // ---- the Abbey along the bottom, broken only by its doorway ----
-    // The gap is the arched west door, dead centre. It is 1.4 units
-    // wide: roomy for the player, far too tight for Covid, which is
-    // the point of standing in it.
-    [0,     15.0,  15.3,  18],     // abbey flank, west of the door
-    [16.7,  15.0,  32,    18],     // abbey flank, east of the door
-
-    // ---- outer edge, so nobody walks off the picture ----
-    // Only the three strips the buildings do not already seal.
-    [25.12, 0,     32,    0.45],   // paving in front of the tower
-    [0,     3.05,  0.4,   5.0],    // the west end of the Westminster road
-    [31.6,  0.45,  32,    15.0],   // the paving and ring road down the east side
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "palace front and railings", foot: [0, 0, 25.12, 3.12] },
+    { name: "base of the clock tower, standing in its own paving", foot: [26.7, 0, 29.6, 3.15] },
+    { name: "court building, forecourt and the whole row of trees", foot: [0, 5, 4.32, 15] },
+    { name: "statue 1, top of the rim, hands folded", foot: [8.22, 6.2, 9.23, 7.35], over: [[8.52, 4.65], [8.92, 4.65], [9.07, 5.15], [9.04, 6.2], [8.4, 6.2], [8.37, 5.15]] },
+    { name: "statue 2, left rim, the hunched one", foot: [6.8, 9.64, 7.79, 10.77], over: [[6.65, 8.5], [7, 8.35], [7.55, 8.7], [7.65, 9.64], [7.1, 9.64], [6.5, 9.5], [6.45, 9.1]] },
+    { name: "statue 3, bottom left, arms flung out", foot: [7.82, 12.72, 9.15, 13.76], over: [[8.3, 11.4], [8.65, 11.6], [9, 11.75], [8.95, 12.1], [8.5, 12.72], [7.95, 12.72], [7.15, 12.05], [6.75, 11.85], [6.95, 11.55], [7.55, 11.55]] },
+    { name: "statue 4, top right, the one waving", foot: [22.1, 6.18, 23.1, 7.32], over: [[21.5, 4.5], [21.75, 4.65], [22.3, 4.9], [22.95, 4.85], [23, 5.3], [22.92, 6.18], [22.28, 6.18], [22.1, 5.5], [21.75, 5]] },
+    { name: "statue 5, right rim", foot: [24.17, 9.66, 25.1, 10.75], over: [[25.25, 8.5], [24.9, 8.35], [24.35, 8.7], [24.25, 9.66], [24.8, 9.66], [25.4, 9.5], [25.45, 9.1]] },
+    { name: "statue 6, bottom right, painted with no plinth: the skirt of its coat and its boots", foot: [21.68, 12.9, 22.28, 13.48], over: [[21.85, 12], [22.12, 12], [22.25, 12.35], [22.22, 12.9], [21.75, 12.9], [21.72, 12.35]] },
+    { name: "lamp, top left corner of the rim", foot: [7.21, 8.05, 7.59, 8.33], over: [[7.28, 6.55], [7.52, 6.55], [7.56, 6.85], [7.47, 7], [7.47, 8.05], [7.33, 8.05], [7.33, 7], [7.24, 6.85]] },
+    { name: "lamp, bottom left corner", foot: [7.18, 13.21, 7.55, 13.48], over: [[7.25, 11.35], [7.49, 11.35], [7.53, 11.65], [7.44, 11.8], [7.44, 13.21], [7.3, 13.21], [7.3, 11.8], [7.21, 11.65]] },
+    { name: "lamp, top right corner", foot: [24.2, 8.06, 24.6, 8.33], over: [[24.28, 6.56], [24.52, 6.56], [24.56, 6.86], [24.47, 7], [24.47, 8.06], [24.33, 8.06], [24.33, 7], [24.24, 6.86]] },
+    { name: "lamp, bottom right corner", foot: [24.18, 13.2, 24.56, 13.49], over: [[24.25, 11.35], [24.49, 11.35], [24.53, 11.65], [24.44, 11.8], [24.44, 13.2], [24.3, 13.2], [24.3, 11.8], [24.21, 11.65]] },
+    { name: "abbey flank, west of the door", foot: [0, 15, 15.3, 18] },
+    { name: "abbey flank, east of the door", foot: [16.7, 15, 32, 18] },
+    { name: "paving in front of the tower", foot: [25.12, 0, 32, 0.45] },
+    { name: "the west end of the Westminster road", foot: [0, 3.05, 0.4, 5] },
+    { name: "the paving and ring road down the east side", foot: [31.6, 0.45, 32, 15] },
   ],
 
   // Standing in the Abbey doorway, just inside the arch, looking north
