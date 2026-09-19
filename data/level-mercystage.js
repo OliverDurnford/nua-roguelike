@@ -18,8 +18,7 @@
 // design.jpeg", imagine it cut into 26 columns and 24 rows, and
 // read off the column and row.
 //
-// solid: [x1, y1, x2, y2] is a rectangle you cannot walk through.
-//        Bullets stop on these too.
+// things: one entry per painted thing (footprint and outline); see below.
 //
 // TUNING NOTE: glow sticks, confetti, the broken glass by the ball
 // pit and the coats dumped on the booths are deliberately NOT solid.
@@ -49,57 +48,39 @@ const MERCYSTAGE_PLATE = {
   // boss needs the space to fill.
   charScale: 0.9,
 
-  solid: [
-    // ---- room shell ----
-    [0,     0,     26,    3.9],    // top wall: forest mural, lighting truss, spotlights
-    [0,     0,     0.6,   24],     // left wall
-    [25.5,  0,     26,    24],     // right wall
-    [0,     23.8,  26,    24],     // bottom edge, so nobody walks off the picture
-
-    // ---- the stage ----
-    // One slab: deck, DJ booth, laptop stand and both speaker stacks.
-    // The Obnoxious DJ goes in as a sprite, never baked into the plate.
-    [8.3,   3.55,  17.95, 6.55],   // the stage and everything on it
-    [6.0,   5.7,   8.4,   6.45],   // bowl-top railing, left of the stage
-    [17.7,  5.7,   20.05, 6.45],   // bowl-top railing, right of the stage
-
-    // ---- railing round the bowl, west side ----
-    // Segments follow the curve of the lamp dots. Broken at the
-    // top-left stairs (player-only) and the lower-left stairs.
-    [4.25,  4.95,  4.75,  7.3],    // upper west rail, beside the top-left stairs
-    [4.45,  7.3,   5.05,  9.3],    // west rail, starting to curve
-    [4.95,  9.3,   5.75,  10.75],  // curve down to the lower-left stair head
-
-    // ---- railing round the bowl, bottom arc ----
-    // The two lower staircases pass through the gaps either side.
-    [8.15,  11.25, 9.4,   12.1],   // rail between the lower-left stairs and the arc
-    [9.4,   11.9,  10.9,  12.6],   // arc, sinking towards the middle
-    [10.9,  12.4,  15.1,  13.1],   // arc, the lowest run under the bowl
-    [15.1,  11.9,  16.7,  12.6],   // arc, rising again
-    [16.7,  11.4,  17.95, 12.15],  // rail between the arc and the lower-right stairs
-
-    // ---- railing round the bowl, east side ----
-    [20.3,  9.3,   21.1,  10.75],  // curve up from the lower-right stair head
-    [21.0,  7.3,   21.6,  9.3],    // east rail, straightening out
-    [21.3,  4.95,  21.8,  7.3],    // upper east rail, beside the top-right stairs
-
-    // ---- sealed corners (you can see them, you can't reach them) ----
-    // The dancing cage, its podium, the open door and the rail below
-    // it, all one block. The alley between the cage and the bowl rail
-    // pinches to about one unit in the art, too tight to be honest
-    // floor, so the whole corner is sealed.
-    [0.3,   8.25,  4.4,   14.35],  // dancing cage corner
-    [22.25, 9.55,  25.75, 15.0],   // ball pit, padded sides included
-
-    // ---- mid floor ----
-    [7.0,   13.9,  19.2,  17.35],  // seating: all three booths, tables and lamps
-    [4.0,   13.6,  4.55,  17.6],   // wall run flanking the left steps down
-    [21.95, 14.4,  22.55, 17.65],  // wall run flanking the right steps down
-
-    // ---- the bar ----
-    // Counter, working area and the back shelves, one slab. The floor
-    // either side of it is how you round the bottom of the room.
-    [4.5,   20.25, 22.1,  23.8],
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "top wall: forest mural, lighting truss, spotlights", foot: [0, 0, 26, 3.9] },
+    { name: "left wall", foot: [0, 0, 0.6, 24] },
+    { name: "right wall", foot: [25.5, 0, 26, 24] },
+    { name: "bottom edge, so nobody walks off the picture", foot: [0, 23.8, 26, 24] },
+    { name: "the stage and everything on it", foot: [8.3, 3.55, 17.95, 6.55] },
+    { name: "bowl-top railing, left of the stage", foot: [6, 5.7, 8.4, 6.45] },
+    { name: "bowl-top railing, right of the stage", foot: [17.7, 5.7, 20.05, 6.45] },
+    { name: "upper west rail, beside the top-left stairs", foot: [4.25, 4.95, 4.75, 7.3] },
+    { name: "west rail, starting to curve", foot: [4.45, 7.3, 5.05, 9.3] },
+    { name: "curve down to the lower-left stair head", foot: [4.95, 9.3, 5.75, 10.75] },
+    { name: "rail between the lower-left stairs and the arc", foot: [8.15, 11.25, 9.4, 12.1] },
+    { name: "arc, sinking towards the middle", foot: [9.4, 11.9, 10.9, 12.6] },
+    { name: "arc, the lowest run under the bowl", foot: [10.9, 12.4, 15.1, 13.1] },
+    { name: "arc, rising again", foot: [15.1, 11.9, 16.7, 12.6] },
+    { name: "rail between the arc and the lower-right stairs", foot: [16.7, 11.4, 17.95, 12.15] },
+    { name: "curve up from the lower-right stair head", foot: [20.3, 9.3, 21.1, 10.75] },
+    { name: "east rail, straightening out", foot: [21, 7.3, 21.6, 9.3] },
+    { name: "upper east rail, beside the top-right stairs", foot: [21.3, 4.95, 21.8, 7.3] },
+    { name: "dancing cage corner", foot: [0.3, 8.25, 4.4, 14.35] },
+    { name: "ball pit, padded sides included", foot: [22.25, 9.55, 25.75, 15] },
+    { name: "seating: all three booths, tables and lamps", foot: [7, 14.3, 19.2, 17.35], over: [[7, 13.9], [19.2, 13.9], [19.2, 17.35], [7, 17.35]] },
+    { name: "wall run flanking the left steps down", foot: [4, 13.6, 4.55, 17.6] },
+    { name: "wall run flanking the right steps down", foot: [21.95, 14.4, 22.55, 17.65] },
+    { name: "the bar: counter, working area, back shelves", foot: [4.5, 20.25, 22.1, 23.8] },
   ],
 
   // Centre of the bar-end floor, facing the stage across the whole

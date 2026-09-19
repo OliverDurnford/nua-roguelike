@@ -23,8 +23,7 @@
 // deeper, and its drainage gully runs top to bottom, not along the
 // room. Everything here is measured from the actual image.
 //
-// solid: [x1, y1, x2, y2] - a rectangle you cannot walk through.
-//        Bullets stop on these too.
+// things: one entry per painted thing (footprint and outline); see below.
 //
 // TUNING NOTE: only the deep banked drifts are solid. They read as
 // chest deep, so blocking them is honest, and it stops the player
@@ -48,41 +47,39 @@ const FOAMPIT_PLATE = {
   // touch looser than Gonzo's furniture.
   charScale: 1.15,
 
-  solid: [
-    // ---- back wall and the drift banked against it ----
-    // One big run: ceiling band, panelled cladding, LED strip and the
-    // crest of the foam. The ragged edge below is handled piecemeal.
-    [0,    0,    28,   5.6 ],   // back wall + main drift, full width
-    [3.5,  5.6,  7.9,  6.2 ],   // crest sagging lower, left of centre
-    [7.9,  5.6,  16.7, 6.8 ],   // the wide shelf either side of the cannon
-    [10.1, 6.8,  16.0, 7.4 ],   // deep central lobe, upper step
-    [11.6, 7.4,  15.7, 7.95],   // deep central lobe, lower step
-    [12.9, 7.95, 15.2, 8.3 ],   // its toe, spilling onto the grille head
-    [16.7, 5.6,  19.0, 6.7 ],   // shoulder right of the cannon
-    [23.8, 5.6,  26.7, 6.6 ],   // bank piled into the top right corner
-    [25.2, 6.6,  26.7, 7.1 ],   // same bank, sagging down the corner LED
-
-    // ---- left wall stubs, either side of the entrance mouth ----
-    [0,    5.6,  1.3,  7.9 ],   // upper stub: angled face + LED strip
-    [1.3,  5.6,  3.3,  6.5 ],   // foam clinging to that stub
-    [0,    10.3, 1.3,  16  ],   // lower stub, down into the front drift
-    [0,    7.9,  0.3,  10.3],   // thin seal across the open mouth itself,
-                                // so nobody walks off the picture
-
-    // ---- right wall stubs, either side of the exit mouth ----
-    [26.7, 0,    28,   7.9 ],   // upper stub: angled face + LED strip
-    [26.8, 11.7, 28,   16  ],   // lower stub, down into the front drift
-    [27.7, 7.9,  28,   11.7],   // thin seal across the exit mouth
-
-    // ---- front wall and the drift banked against it ----
-    [0,    12.8, 3.2,  14.4],   // left bank, piled into the corner
-    [3.2,  13.3, 6.0,  14.4],   // left-mid run
-    [6.0,  13.7, 8.0,  14.4],   // left-mid run, tailing off
-    [13.3, 13.3, 14.7, 13.7],   // nub of foam where the gully drains in
-    [12.6, 13.7, 15.2, 14.4],   // tongue of foam around the gully foot
-    [21.3, 13.2, 24.0, 14.4],   // right-mid run
-    [24.0, 12.9, 26.8, 14.4],   // right bank, piled into the corner
-    [0,    14.4, 28,   16  ],   // front wall + drift base, full width
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "back wall + main drift, full width", foot: [0, 0, 28, 5.6] },
+    { name: "crest sagging lower, left of centre", foot: [3.5, 5.6, 7.9, 6.2] },
+    { name: "the wide shelf either side of the cannon", foot: [7.9, 5.6, 16.7, 6.8] },
+    { name: "deep central lobe, upper step", foot: [10.1, 6.8, 16, 7.4] },
+    { name: "deep central lobe, lower step", foot: [11.6, 7.4, 15.7, 7.95] },
+    { name: "its toe, spilling onto the grille head", foot: [12.9, 7.95, 15.2, 8.3] },
+    { name: "shoulder right of the cannon", foot: [16.7, 5.6, 19, 6.7] },
+    { name: "bank piled into the top right corner", foot: [23.8, 5.6, 26.7, 6.6] },
+    { name: "same bank, sagging down the corner LED", foot: [25.2, 6.6, 26.7, 7.1] },
+    { name: "left upper stub: angled face + LED strip", foot: [0, 5.6, 1.3, 7.9] },
+    { name: "foam clinging to that stub", foot: [1.3, 5.6, 3.3, 6.5] },
+    { name: "left lower stub, down into the front drift", foot: [0, 10.3, 1.3, 16] },
+    { name: "thin seal across the open mouth itself", foot: [0, 7.9, 0.3, 10.3] },
+    { name: "right upper stub: angled face + LED strip", foot: [26.7, 0, 28, 7.9] },
+    { name: "right lower stub, down into the front drift", foot: [26.8, 11.7, 28, 16] },
+    { name: "thin seal across the exit mouth", foot: [27.7, 7.9, 28, 11.7] },
+    { name: "left bank, piled into the corner", foot: [0, 12.8, 3.2, 14.4] },
+    { name: "left-mid run", foot: [3.2, 13.3, 6, 14.4] },
+    { name: "left-mid run, tailing off", foot: [6, 13.7, 8, 14.4] },
+    { name: "nub of foam where the gully drains in", foot: [13.3, 13.3, 14.7, 13.7] },
+    { name: "tongue of foam around the gully foot", foot: [12.6, 13.7, 15.2, 14.4] },
+    { name: "right-mid run", foot: [21.3, 13.2, 24, 14.4] },
+    { name: "right bank, piled into the corner", foot: [24, 12.9, 26.8, 14.4] },
+    { name: "front wall + drift base, full width", foot: [0, 14.4, 28, 16] },
   ],
 
   // Just inside the left-hand mouth, on the open wet floor where the
