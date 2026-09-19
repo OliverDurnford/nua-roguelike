@@ -55,6 +55,7 @@ const TSEQ = {
 };
 
 scene("title", () => {
+  SPEECH.endArea();   // no room loaded: nothing to test a line against
   G.paused = false;
   G.run = null;
   G.areaScale = 1;

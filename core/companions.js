@@ -176,33 +176,19 @@ COMPANIONS.recruit = (id) => {
     destroyAll("banner");
     G.paused = false;
     COMPANIONS.checkPairs();
+    // The banner has already printed their recruitLine; this is the first
+    // thing they say once they are actually stood next to you.
+    wait(0.8, () => SPEECH.fire("join", { by: id }));
   });
 };
 
-// ---------- companion pair interactions (CHARACTER_ROSTER.md) ----------
+// ---------- companion pair interactions ----------
+// The spoken pairs are lines in data/speech.js now, with a `with` clause
+// and their replies, so they come up in play rather than the instant the
+// second friend joins. Only the wordless moment is left here.
 COMPANIONS.checkPairs = () => {
   if (!G.run.pairsShown) G.run.pairsShown = [];
   const present = G.run.companions.concat([G.run.charId]);
-  const boys = ["ollie", "cal", "josh", "sam", "adam", "ethan"];
-
-  for (let i = 0; i < PAIR_LINES.length; i++) {
-    if (G.run.pairsShown.includes(i)) continue;
-    const pair = PAIR_LINES[i];
-    if (!pair.needs.every((id) => present.includes(id))) continue;
-    // "Silly boys!" only fires with more than one boy in the party
-    if (pair.needs.includes("annie") && pair.needs.includes("ana")) {
-      if (present.filter((id) => boys.includes(id)).length < 2) continue;
-    }
-    G.run.pairsShown.push(i);
-    // play the script as speech bubbles above the actual speakers
-    pair.script.forEach((ln, j) => {
-      wait(0.4 + j * 2.0, () => {
-        const speakers = Array.isArray(ln.who) ? ln.who : [ln.who];
-        speakers.forEach((id) => COMPANIONS.say(id, ln.text));
-      });
-    });
-    break;
-  }
 
   // Ollie + Lucy: sprites hug briefly when the second one joins
   if (!G.run.pairsShown.includes("hug") && present.includes("ollie") && present.includes("lucy")) {
@@ -216,9 +202,6 @@ COMPANIONS.trySpecial = () => {
   if (!G.run || G.paused) return;
   if (G.run.meter < 1 || G.run.companions.length === 0) return;
   const c = G.char(G.run.companions[G.run.selected]);
-
-  // Adam announces himself before the cutscene (CHARACTER_ROSTER.md)
-  if (c.id === "adam") COMPANIONS.say("adam", "Watch this.");
 
   G.run.meter = 0;
   G.run.specialsUsed++;
@@ -314,7 +297,7 @@ COMPANIONS.applyEffect = (c) => {
   if (sp.type === "heal") {
     G.run.hp = G.stats().maxHp;
     G.run.shield = sp.power;
-    if (c.id === "lucy") COMPANIONS.say("lucy", "PUT A COAT ON!");
+    SPEECH.fire("special", { by: c.id });
     return;
   }
 
@@ -338,14 +321,12 @@ COMPANIONS.applyEffect = (c) => {
     else ENEMIES.hit(t, sp.power, 0);
   }
 
-  // character-specific flourishes
-  if (c.id === "ollie") {
-    // the failed chat-up lines come out of Ollie himself, one after another
-    for (let i = 0; i < 3; i++) {
-      wait(i * 1.1, () => COMPANIONS.say("ollie", choose(CHAT_UP_LINES)));
-    }
-  }
-  if (c.id === "adam") COMPANIONS.say("adam", "KA-CHOW!");
+  // Whatever this friend says over their own special is a line on the
+  // board, tagged to the `special` moment; the moment names them as its
+  // subject so nobody else answers for them.
+  SPEECH.fire("special", { by: c.id });
+
+  // character-specific flourishes that are not speech
   if (c.id === "ethan") UI.subtitleSeq(["Tara has entered the chat"]);
   if (c.id === "annie") {
     for (let i = 0; i < 10; i++) {
@@ -358,24 +339,13 @@ COMPANIONS.applyEffect = (c) => {
 };
 
 // ---------- ambient easter eggs while companions are active ----------
-// Called once per area scene; sets up a slow timer of small character moments.
+// The talking itself now lives in core/speech.js, driven by data/speech.js
+// and the speech board. What stays here is the wordless stuff, which is
+// not speech and has no line to write.
 COMPANIONS.ambient = () => {
   loop(9, () => {
     if (G.paused || !G.run) return;
-    const pl = get("player")[0];
-    if (!pl) return;
     const ids = G.run.companions;
-    if (ids.includes("josh") && chance(0.3)) {
-      COMPANIONS.say("josh", choose(JOSH_NON_SEQUITURS));
-    } else if (ids.includes("annie") && chance(0.25)) {
-      COMPANIONS.say("annie", "meow~");
-    } else if (ids.includes("lucy") && chance(0.2)) {
-      COMPANIONS.say("lucy", choose(LUCY_LINES));
-    } else if (ids.includes("jess") && chance(0.2)) {
-      COMPANIONS.say("jess", choose(JESS_LINES));
-    } else if (ids.includes("ana") && G.areaWater && chance(0.35)) {
-      COMPANIONS.say("ana", choose(ANA_OCEAN_LINES));
-    }
     // Josh + Sam sneak a kiss - rare, wordless, easy to miss (per the roster)
     if (ids.includes("josh") && ids.includes("sam") && chance(0.03)) {
       COMPANIONS.heartsBetween("josh", "sam");
@@ -383,21 +353,16 @@ COMPANIONS.ambient = () => {
   });
 };
 
-// Hooks for area enter / exit easter eggs
+// Hooks for area enter / exit. Both just raise the moment; which line
+// comes out, and whether anybody speaks at all, is the speech system's call.
 COMPANIONS.onAreaEnter = () => {
   if (!G.run) return;
-  if (G.run.companions.includes("cal") && chance(0.15)) {
-    wait(1.2, () => COMPANIONS.say("cal", choose(CAL_DETOURS)));
-  }
+  wait(1.2, () => SPEECH.fire("enter"));
 };
 
 // Returns true if someone spoke, so the area can hold the exit for a
 // beat and the line is actually seen before the screen cuts.
 COMPANIONS.onAreaExit = () => {
   if (!G.run) return false;
-  if (G.run.companions.includes("adam") && chance(0.5)) {
-    COMPANIONS.say("adam", "Smell ya later!");
-    return true;
-  }
-  return false;
+  return SPEECH.fire("exit");
 };

@@ -255,13 +255,24 @@ scene("area", ({ chapter, area: areaNum }) => {
 
   const m = a.plate ? MAPS.buildPlate(a.plate) : MAPS.build(a.map, a.palette);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
-  G.areaWater = !!a.water;   // lets Ana's ocean lines trigger near water
+  G.areaWater = !!a.water;   // kept for anything still reading it directly
+
+  // Tell the speech system what room this is. Every `when` clause on a
+  // line is tested against this, and the spot trigger walks these things.
+  SPEECH.beginArea({
+    roomId: SPEECH.roomIdOf(a.plate),
+    chapter, area: areaNum,
+    tags: ["water", "quiet", "boss", "finale", "sidescroll", "dread", "foam"].filter((t) => a[t]),
+    things: a.plate ? MAPS.things(a.plate) : [],
+    unit: (a.plate && a.plate.unit) || G.TILE,
+  });
 
   const player = PLAYER.make(m.playerSpawn);
   player.iframes = 1.6;   // brief spawn protection while you get your bearings
   COMPANIONS.spawnFollowers(player);
   let dead = false;
   let exiting = false;
+  let clearedSaid = false;
 
   // --- enemies (randomised placement each run) ---
   // They come in once the room has been revealed (see the camera below),
@@ -274,7 +285,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       if (pts.length < a.enemyBudget) pts = m.enemySpawns;
       pts = MAPS.shuffle(pts).slice(0, a.enemyBudget);
       pts.forEach((p, i) => wait(i * 0.14, () => { if (!dead && !exiting) ENEMIES.spawnIn(choose(ch.enemySet), p); }));
-      wait(pts.length * 0.14, () => { spawned = true; });
+      wait(pts.length * 0.14, () => { spawned = true; SPEECH.fire("fightStart"); });
     } else {
       spawned = true;
     }
@@ -316,6 +327,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       ? { finale: true, name: "OLD " + G.playerChar().name.toUpperCase() }
       : {};
     ENEMIES.spawnBoss(ch, m.bossSpawn, finaleOpts);
+    wait(0.6, () => SPEECH.fire("bossStart"));
 
     // boss health bar: a paper card at the foot of the screen, the name in
     // pixel type over a wristband meter like the HUD's, in red, with a pink
@@ -348,6 +360,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       G.onBossDeath = null;
       if (dead) return;   // a last bullet in flight can land after you've dropped
       if (ART.hasAnims(G.run.charId)) { player.play("victory"); player.actionT = 1.6; }
+      SPEECH.fire("bossDown");
       if (a.finale) {
         FINALE.win(player);
       } else {
@@ -366,7 +379,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       : vec2(m.w * 0.5, m.h * 0.3);
     const npc = add([
       sprite(a.npc.spr), anchor("center"), pos(npcPos), z(44), opacity(1),
-      { t: rand(0, 5), said: false },
+      "npc", { t: rand(0, 5), said: false, npcId: a.npc.name.split(" ")[0] },
     ]);
     DEPTH.track(npc, npc.height / 2);
     npc.onUpdate(() => {
@@ -439,6 +452,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     reveal.apply(vec2(cx, cy));
 
     const cleared = spawned && get("enemy").length === 0 && get("boss").length === 0;
+    if (cleared && !clearedSaid) { clearedSaid = true; SPEECH.fire("cleared"); }
     for (const d of m.exits) {
       if (cleared && !d.unlocked) {
         d.unlocked = true;

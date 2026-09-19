@@ -150,6 +150,7 @@ PLAYER.wireCombat = (onDeath) => {
     G.run.hp = Math.min(G.stats().maxHp, G.run.hp + 1);
     UI.floatText(p.pos, "+1", [120, 230, 120]);
     SFX.play("pickup");
+    SPEECH.fire("healed");
   });
 };
 
@@ -167,5 +168,12 @@ PLAYER.hurt = (p, dmg, onDeath) => {
   UI.flash([220, 50, 50], 0.12);
   SFX.play("hurt");
 
-  if (G.run.hp <= 0 && onDeath) onDeath();
+  // On your last heart is its own moment, and it beats a general "ouch".
+  if (G.run.hp === 1) SPEECH.fire("lastHeart");
+  else if (G.run.hp > 0) SPEECH.fire("hurt");
+
+  if (G.run.hp <= 0) {
+    SPEECH.fire("death");
+    if (onDeath) onDeath();
+  }
 };

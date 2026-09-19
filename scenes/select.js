@@ -8,6 +8,7 @@
 // ============================================================
 
 scene("select", () => {
+  SPEECH.endArea();   // no room loaded: nothing to test a line against
   G.paused = false;
   SOUNDTRACK.playForKey("select");   // blank slot: the title song carries on
 

@@ -161,75 +161,13 @@ const CHARACTERS = [
 ];
 
 // ------------------------------------------------------------
-// Easter egg lines. All affectionate-silly, all PLACEHOLDER -
-// Ollie reviews and rewrites these with real inside jokes.
+// Speech has moved. Every line anybody says on the field now lives in
+// data/speech.js, written by the speech board (tools/speech/board.html)
+// and chosen at runtime by core/speech.js. The arrays that used to sit
+// here - CHAT_UP_LINES, JOSH_NON_SEQUITURS, LUCY_LINES, JESS_LINES,
+// ANA_OCEAN_LINES, CAL_DETOURS and PAIR_LINES - were migrated by
+// tools/speech/migrate.js on 19 Sep 2026.
+//
+// `recruitLine` above stays here: it is printed on the join banner,
+// which is a different beat from anything said on the field.
 // ------------------------------------------------------------
-
-const CHAT_UP_LINES = [
-  "Do you come here often?",
-  "Is it hot in here or is it just the boss fight?",
-  "I've got a camera, you've got a face. Think about it.",
-  "You + me + the smoking area?",
-];
-
-const JOSH_NON_SEQUITURS = [
-  "What's your mate Kinga up to?",
-  "Is that a perfectly good leg of lamb in here?!",
-  "I'd survive a bear attack. Easily.",
-  "Anyone else smell crisps?",
-];
-
-// Lucy's Geordie dialect companion dialogue (CHARACTER_ROSTER.md)
-const LUCY_LINES = [
-  "Howay, keep up!",
-  "Are ye not cold? Ye look cold.",
-  "Gan canny, pet.",
-  "Ye cannit fight on an empty stomach!",
-];
-
-// Jess's blunt one-liners (CHARACTER_ROSTER.md)
-const JESS_LINES = [
-  "That was a terrible plan.",
-  "No. Next room.",
-  "I've seen scarier in Burgess Hill.",
-  "Just hit it harder.",
-];
-
-// Ana's ocean dialogue, triggers near water (Thames walk, Regent's Canal)
-const ANA_OCEAN_LINES = [
-  "¡El mar! ...well. Sort of.",
-  "This is NOT Spanish water.",
-  "I miss the sea...",
-];
-
-const CAL_DETOURS = [
-  "Actually, I think we should go the other way.",
-  "Actually, the other route's faster.",
-];
-
-// Companion pair interactions (from CHARACTER_ROSTER.md).
-// Triggered when the second (or third) of the group is recruited.
-// Each script line names its speaker - the line appears as a speech
-// bubble above that character's sprite on the field. `who` can be an
-// array for lines spoken in unison.
-const PAIR_LINES = [
-  {
-    needs: ["cal", "sam", "lucy"],
-    script: [
-      { who: "cal", text: "That's one milky lady" },
-      { who: "lucy", text: "SAM!" },
-      { who: "sam", text: "That wasn't me!" },
-    ],
-  },
-  { needs: ["josh", "ana"], script: [{ who: "josh", text: "What's your mate Kinga up to?" }] },
-  { needs: ["josh", "annie"], script: [{ who: "josh", text: "How's Gee Underwood doin?" }] },
-  { needs: ["annie", "ana"], script: [{ who: ["annie", "ana"], text: "Silly boys!" }] },
-  // "haircut gone wrong" - PLACEHOLDER lines, Ollie supplies the real story
-  {
-    needs: ["sam", "josh"],
-    script: [
-      { who: "josh", text: "My hair's never recovered, Sam." },
-      { who: "sam", text: "It was ONE haircut!" },
-    ],
-  },
-];

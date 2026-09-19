@@ -185,6 +185,7 @@ ENEMIES.hit = (e, dmg, critChance) => {
     G.run.kills++;
     UI.pop(e.pos, [200, 200, 210], 24);
     SFX.play("kill");
+    SPEECH.fire("kill");
     if (chance(0.08)) {
       add([sprite("heart"), pos(e.pos), anchor("center"), area(), scale(1.6), z(30), "heart"]);
     }

@@ -6,6 +6,7 @@
 // ============================================================
 
 scene("ending", () => {
+  SPEECH.endArea();   // no room loaded: nothing to test a line against
   // The finale is a boss area, so without this the boss track ("White
   // Noise") would keep looping under Ollie's closing message. If he has
   // pinned a song to the "ending" slot it plays here; otherwise the ending
