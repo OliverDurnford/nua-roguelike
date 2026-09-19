@@ -54,6 +54,13 @@ G.CHAR_H = 72;
 // 1 everywhere else. Gonzo's runs at 1.3.
 G.areaScale = 1;
 
+// Height of the current room in world pixels (set by the map builders).
+// DEPTH.z turns a foot position into a draw order with it.
+G.worldH = 1;
+
+// F2 in a room: show footprints, outlines and spawns over the artwork.
+G.showBlocks = false;
+
 // Field size as a multiple of a person. G.charH() is one person tall,
 // G.charH(2) is a boss twice their height, G.charH(0.62) is a scrawny runner.
 // Only sizes that go through here follow the room. Pass ART.charComps a
