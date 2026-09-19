@@ -220,13 +220,12 @@ scene("tutorial", () => {
   UI.sceneFade();
   onKeyPress("]", () => go("area", { chapter: 1, area: 1 }));
 
-  // --- F2: show the collision blocks over the artwork ---
-  // Same dev aid as the plate areas in scenes/area.js: the park's walls
-  // are invisible and hand-measured against a painting. Off by default.
-  let showBlocks = false;
+  // --- F2: show the geometry over the artwork ---
+  // Same dev aid as the plate areas in scenes/area.js. Off by default.
+  G.showBlocks = false;
   onKeyPress("f2", () => {
-    showBlocks = !showBlocks;
-    for (const b of get("plateSolid")) b.opacity = showBlocks ? 0.35 : 0;
+    G.showBlocks = !G.showBlocks;
+    for (const b of get("plateSolid")) b.opacity = G.showBlocks ? 0.35 : 0;
   });
 
   UI.titleCard({ num: "00", name: "VICTORIA PARK", sub: "PRESENT DAY · 2026" });

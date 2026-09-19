@@ -21,6 +21,8 @@ MAPS.build = (rows, pal) => {
   const T = G.TILE;
   const H = rows.length;
   const W = Math.max(...rows.map((r) => r.length));
+  G.worldH = H * T;
+  COLLIDE.reset();
 
   // one big floor + light speckle so big rooms aren't flat
   add([rect(W * T, H * T), pos(0, 0), color(pal.floor[0], pal.floor[1], pal.floor[2]), z(0)]);
@@ -52,8 +54,9 @@ MAPS.build = (rows, pal) => {
         add([
           rect((x2 - x) * T, T), pos(x * T, y * T),
           color(pal.wall[0], pal.wall[1], pal.wall[2]),
-          area(), body({ isStatic: true }), z(10), "solid",
+          area(), z(10), "solid",
         ]);
+        COLLIDE.add(x * T, y * T, x2 * T, (y + 1) * T);
         x = x2;
         continue;
       }
@@ -62,8 +65,9 @@ MAPS.build = (rows, pal) => {
         add([
           rect(T * 0.78, T * 0.78, { radius: 5 }), pos(cx, cy), anchor("center"),
           color(obsCol[0], obsCol[1], obsCol[2]), outline(2, rgb(15, 15, 18)),
-          area(), body({ isStatic: true }), z(12), "solid",
+          area(), z(12), "solid",
         ]);
+        COLLIDE.add(cx - T * 0.39, cy - T * 0.39, cx + T * 0.39, cy + T * 0.39);
       } else if (ch === "E") out.enemySpawns.push(vec2(cx, cy));
       else if (ch === "P") out.playerSpawn = vec2(cx, cy);
       else if (ch === "C") out.companionSpawn = vec2(cx, cy);
@@ -72,15 +76,74 @@ MAPS.build = (rows, pal) => {
         const door = add([
           rect(T, T), pos(x * T, y * T),
           color(180, 60, 60), outline(3, rgb(20, 20, 25)),
-          area(), body({ isStatic: true }), z(10),
+          area(), z(10),
           "door", { unlocked: false },
         ]);
+        COLLIDE.add(x * T, y * T, (x + 1) * T, (y + 1) * T, { open: () => door.unlocked });
         out.exits.push(door);
       }
       x++;
     }
   }
   return out;
+};
+
+// The list of painted things in a plate. New files carry `things` (one
+// entry per thing: name, footprint, optional outline); older ones still
+// carry `solid`, a bare list of footprints, which is read as things with
+// no outlines so nothing has to be converted by hand.
+MAPS.things = (plate) => {
+  if (plate.things) return plate.things;
+  return (plate.solid || []).map((r, i) => ({ name: "wall " + (i + 1), foot: r }));
+};
+
+// Where a thing's base line is, in units: `base` if given, else the
+// bottom of its footprint, else the lowest point of its outline.
+MAPS.baseOf = (t) => {
+  if (t.base != null) return t.base;
+  if (t.foot) return t.foot[3];
+  return Math.max(...t.over.map((p) => p[1]));
+};
+
+// An outline: the same painting redrawn over the field, clipped to the
+// traced polygon, at the depth of the thing's base line. Actors whose feet
+// are above the base draw under it (DEPTH), so they stand behind it. Only
+// the outline's bounding box of the plate is drawn, one patch per tile it
+// touches, so the cost is the patch and not the whole picture.
+MAPS.addOver = (t, tiles, plate) => {
+  const U = plate.unit;
+  const pts = t.over.map(([x, y]) => vec2(x * U, y * U));
+  const base = MAPS.baseOf(t) * U;
+  const xs = t.over.map((p) => p[0]), ys = t.over.map((p) => p[1]);
+  const bx1 = Math.min(...xs), bx2 = Math.max(...xs);
+  const by1 = Math.min(...ys), by2 = Math.max(...ys);
+  const patches = [];
+  for (const tile of tiles) {
+    const x1 = Math.max(bx1, tile.x0), x2 = Math.min(bx2, tile.x1);
+    if (x2 <= x1) continue;
+    const tw = tile.x1 - tile.x0;
+    patches.push({
+      sprite: tile.sprite,
+      pos: vec2(x1 * U, by1 * U),
+      quad: quad((x1 - tile.x0) / tw, by1 / plate.rows, (x2 - x1) / tw, (by2 - by1) / plate.rows),
+    });
+  }
+  return add([
+    pos(0, 0), z(DEPTH.z(base)), "plateOver",
+    {
+      thing: t,
+      draw() {
+        drawMasked(
+          () => { for (const p of patches) drawSprite({ sprite: p.sprite, pos: p.pos, quad: p.quad }); },
+          () => drawPolygon({ pts }),
+        );
+        if (G.showBlocks) {
+          drawPolygon({ pts, color: rgb(80, 140, 255), opacity: 0.35 });
+          drawLines({ pts: [vec2(bx1 * U, base), vec2(bx2 * U, base)], color: rgb(255, 255, 255), width: 2, opacity: 0.8 });
+        }
+      },
+    },
+  ]);
 };
 
 // ---------- plate builder ----------
@@ -92,22 +155,33 @@ MAPS.buildPlate = (plate) => {
   const U = plate.unit;
   const W = plate.cols * U;
   const H = plate.rows * U;
+  G.worldH = H;
+  COLLIDE.reset();
 
   // The painting. Long plates come as two tiles side by side, because
   // Kaboom refuses a texture wider than 2048 px; `x` is in grid units.
-  if (plate.tiles) {
-    for (const t of plate.tiles) add([sprite(t.sprite), pos(t.x * U, 0), z(0)]);
-  } else {
-    add([sprite(plate.sprite), pos(0, 0), z(0)]);
-  }
+  // Each tile runs from its x to the next tile's x (the last to cols).
+  const tiles = plate.tiles
+    ? plate.tiles.map((t, i) => ({
+        sprite: t.sprite, x0: t.x,
+        x1: i + 1 < plate.tiles.length ? plate.tiles[i + 1].x : plate.cols,
+      }))
+    : [{ sprite: plate.sprite, x0: 0, x1: plate.cols }];
+  for (const t of tiles) add([sprite(t.sprite), pos(t.x0 * U, 0), z(0)]);
 
-  // Collision blocks. Invisible in play; press F2 to see them.
-  for (const [x1, y1, x2, y2] of plate.solid) {
-    add([
-      rect((x2 - x1) * U, (y2 - y1) * U), pos(x1 * U, y1 * U),
-      color(255, 60, 90), opacity(0),
-      area(), body({ isStatic: true }), z(10), "solid", "plateSolid",
-    ]);
+  // Footprints block feet and bullets; outlines draw over you. Both are
+  // invisible in play; press F2 to see them.
+  for (const t of MAPS.things(plate)) {
+    if (t.foot) {
+      const [x1, y1, x2, y2] = t.foot;
+      COLLIDE.add(x1 * U, y1 * U, x2 * U, y2 * U);
+      add([
+        rect((x2 - x1) * U, (y2 - y1) * U), pos(x1 * U, y1 * U),
+        color(255, 60, 90), opacity(0),
+        area(), z(10), "solid", "plateSolid",
+      ]);
+    }
+    if (t.over && t.over.length >= 3) MAPS.addOver(t, tiles, plate);
   }
 
   const out = {
@@ -137,9 +211,11 @@ MAPS.buildPlate = (plate) => {
     const door = add([
       rect(dw, dh, { radius: 4 }), pos(x1 * U, y1 * U),
       color(180, 60, 60), outline(3, rgb(20, 20, 25)), opacity(0.85),
-      area(), body({ isStatic: true }), z(10),
+      area(), z(10),
       "door", { unlocked: false },
     ]);
+    // Solid until the room is cleared, then you walk through it.
+    COLLIDE.add(x1 * U, y1 * U, x2 * U, y2 * U, { open: () => door.unlocked });
     const lbl = add([
       text("WAY OUT", { size: 8, font: UI.PX }), anchor("center"),
       pos(mid.x, y1 * U - 13),
@@ -364,7 +440,6 @@ scene("area", ({ chapter, area: areaNum }) => {
       if (cleared && !d.unlocked) {
         d.unlocked = true;
         d.color = rgb(90, 200, 110);
-        d.unuse("body");
         UI.floatText(d.pos.add(24, -10), "open!", [120, 230, 140]);
         SFX.play("door");
       }
@@ -447,16 +522,17 @@ scene("area", ({ chapter, area: areaNum }) => {
     if (!exiting) { exiting = true; G.advance(); }
   };
 
-  // --- F2: show the collision blocks over the artwork ---
-  // Only useful on plate areas, where the walls are invisible and
-  // hand-measured against a painting. Off by default.
-  let showBlocks = false;
+  // --- F2: show the geometry over the artwork ---
+  // Footprints red, outlines blue with their base lines, spawns as dots.
+  // Only useful on plate areas, where all of it is invisible and measured
+  // against a painting. Off by default.
+  G.showBlocks = false;
   onKeyPress("f2", () => {
-    showBlocks = !showBlocks;
-    for (const b of get("plateSolid")) b.opacity = showBlocks ? 0.35 : 0;
+    G.showBlocks = !G.showBlocks;
+    for (const b of get("plateSolid")) b.opacity = G.showBlocks ? 0.35 : 0;
   });
   onDraw(() => {
-    if (!showBlocks) return;
+    if (!G.showBlocks) return;
     drawCircle({ pos: m.playerSpawn, radius: 14, color: rgb(90, 220, 255), opacity: 0.6 });
     for (const p of m.enemySpawns) {
       drawCircle({ pos: p, radius: 12, color: rgb(255, 210, 80), opacity: 0.6 });
@@ -478,14 +554,17 @@ FINALE.setup = (m) => {
   const base = m.bossSpawn.add(0, 110);
   caged.forEach((c, i) => {
     const p = base.add((i - 2) * 110, Math.abs(i - 2) * 26);
-    add([...ART.charComps(c.id, G.charH(0.9)), pos(p), z(20), opacity(0.55), "cagedFriend", { charId: c.id }]);
+    const h = G.charH(0.9);
+    const zc = DEPTH.z(p.y + h * 0.5);   // the friend's feet; the cage sits just over them
+    add([...ART.charComps(c.id, h), pos(p), z(zc), opacity(0.55), "cagedFriend", { charId: c.id, feet: ART.feetBox(h) }]);
     // cage bars (obstacles the player has to fight around)
-    add([
+    const cage = add([
       rect(56, 56), pos(p), anchor("center"), color(40, 40, 48), opacity(0.35),
-      outline(4, rgb(25, 25, 30)), area(), body({ isStatic: true }), z(21), "solid", "cageBars",
+      outline(4, rgb(25, 25, 30)), area(), z(zc + 0.1), "solid", "cageBars",
     ]);
+    COLLIDE.add(p.x - 28, p.y - 28, p.x + 28, p.y + 28, { open: () => !cage.exists() });
     for (let bx = -18; bx <= 18; bx += 12) {
-      add([rect(4, 56), pos(p.add(bx, 0)), anchor("center"), color(70, 70, 80), z(22), "cageBars"]);
+      add([rect(4, 56), pos(p.add(bx, 0)), anchor("center"), color(70, 70, 80), z(zc + 0.2), "cageBars"]);
     }
   });
 };
