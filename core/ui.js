@@ -295,7 +295,11 @@ UI.floatText = (p, str, col, big = false) => {
 // site; the kit's note is plain white, so it is not drawn.
 UI._bubbles = [];
 
-UI.speech = (ent, str, accent = [255, 255, 255]) => {
+// o (optional): { fixed } puts the note in screen space and skips the map
+// clamp, for a note inside a collection screen; { z } overrides the layer;
+// { dur } overrides how long it stays up; { tag } tags it for teardown;
+// { whilePaused } keeps its clock running while G.paused is true.
+UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   if (!ent || !ent.exists()) return;
   // one bubble per character - a new line replaces the old one
   if (ent._bubble && ent._bubble.exists()) destroy(ent._bubble);
@@ -305,7 +309,7 @@ UI.speech = (ent, str, accent = [255, 255, 255]) => {
   const fmt = UI.measure(str, UI.VT, 16, { width: wrapW, align: "center" });
   const w = Math.ceil(fmt.width) + 28;
   const h = Math.ceil(fmt.height) + 17;
-  const dur = 1.7 + Math.min(2, str.length * 0.035);
+  const dur = o.dur || (1.7 + Math.min(2, str.length * 0.035));
 
   // if a neighbour is already speaking, stack this note above theirs
   let lift = 0;
@@ -316,7 +320,10 @@ UI.speech = (ent, str, accent = [255, 255, 255]) => {
     }
   }
 
-  const root = add([pos(ent.pos), z(140), { t: 0, ent, bh: h, lift }]);
+  const rootComps = [pos(ent.pos), z(o.z || 140), { t: 0, ent, bh: h, lift }];
+  if (o.fixed) rootComps.push(fixed());
+  if (o.tag) rootComps.push(o.tag);
+  const root = add(rootComps);
   ent._bubble = root;
   UI._bubbles.push(root);
 
@@ -340,12 +347,15 @@ UI.speech = (ent, str, accent = [255, 255, 255]) => {
     if (!gone) {
       root.pos = ent.pos.add(0, -50 - h / 2 - root.lift);
       // keep the note inside the map so it never clips off the edges
-      if (G.mapBounds) {
+      if (G.mapBounds && !o.fixed) {
         root.pos.x = G.clamp(root.pos.x, w / 2 + 10, Math.max(w / 2 + 10, G.mapBounds.x2 - w / 2 - 10));
         root.pos.y = Math.max(root.pos.y, h / 2 + 10);
       }
     }
-    if (!G.paused) root.t += dt();
+    // A collection screen raises G.paused while it plays, so its own note
+    // has to keep running or it never fades up. Field bubbles still freeze
+    // behind the pause menu.
+    if (!G.paused || o.whilePaused) root.t += dt();
     if (gone) root.t = Math.max(root.t, dur - 0.25);
 
     let op;

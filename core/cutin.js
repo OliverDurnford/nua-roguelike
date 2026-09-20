@@ -220,6 +220,21 @@ CUTIN.play = (opts, onDone) => {
     UI.label(opts.special, r, TY + 206, { size: 16, color: UI.SILVER, anchor: "topright", opacity: op });
   });
 
+  // ----- the bubble: the game's own sticky note, in screen space -----
+  // An invisible anchor rides the foreground layer's motion and the note
+  // hangs off it, so it travels with the friend in and out.
+  if (opts.bubble) {
+    const bx = scene.bubble[0], by = scene.bubble[1];
+    const mouth = add([pos(bx, by), fixed(), z(CUTIN.Z + 8), "cutin"]);
+    mouth.onUpdate(() => { mouth.pos = vec2(bx + CUTIN.offsetAt(0, t), by); });
+    wait(0.85, () => {
+      if (!mouth.exists()) return;
+      const c = G.char(opts.id);
+      UI.speech(mouth, opts.bubble, c ? c.colors.top : UI.SILVER,
+        { fixed: true, whilePaused: true, z: CUTIN.Z + 9, dur: CUTIN.TOTAL - 0.85, tag: "cutin" });
+    });
+  }
+
   wait(CUTIN.TOTAL, () => {
     destroyAll("cutin");
     CUTIN.active = false;
