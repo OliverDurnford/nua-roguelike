@@ -29,7 +29,7 @@ CUTIN.ENTER_DUR = 0.44;   // how long a layer takes to come in
 CUTIN.EXIT_DUR = 0.45;    // how long its acceleration away lasts
 CUTIN.STAGGER = 0.06;     // gap between consecutive layers
 CUTIN.EXIT_MULT = 1.6;    // exit travel, as a multiple of entry travel
-CUTIN.TOTAL = 3.0;        // the whole screen, in seconds
+CUTIN.TOTAL = 5.0;        // the whole screen, in seconds (Ollie, 20 Sep)
 
 // True while a screen is playing. The pause chip sits at z 230, above the
 // cut-in, so it reads it and stands down rather than drawing over the art.
@@ -185,7 +185,9 @@ CUTIN.play = (opts, onDone) => {
   // The stat slab is the loud one, so it takes 24 where it fits and drops to
   // 16 where it does not. Three of the ten need the smaller size.
   const STAT_MAX = 500;
-  const statSize = Math.ceil(UI.measure(opts.stat, UI.PX, 24).width) + 28 <= STAT_MAX ? 24 : 16;
+  const fit = (str) => (Math.ceil(UI.measure(str, UI.PX, 24).width) + 28 <= STAT_MAX ? 24 : 16);
+  const statSize = fit(opts.stat);
+  const specSize = fit(opts.special);
 
   const type = add([fixed(), z(CUTIN.Z + 7), "cutin"]);
   type.onDraw(() => {
@@ -214,10 +216,22 @@ CUTIN.play = (opts, onDone) => {
         { size: statSize, color: UI.SILVER, anchor: "center", opacity: op });
     }
 
-    // the special move: the same face as the name but flat, never chromed,
-    // so it reads as a label and a value rather than competing with it
-    UI.label("SPECIAL MOVE", r, TY + 190, { size: 8, color: UI.BLUE, anchor: "topright", opacity: op });
-    UI.label(opts.special, r, TY + 206, { size: 16, color: UI.SILVER, anchor: "topright", opacity: op });
+    // The special move is loud too, but in the opposite treatment to the stat:
+    // ink type on a pale paper card with the kit's notched corners, against
+    // the stat's silver type on a solid blue square-cornered slab. Same
+    // weight, unmistakably a different thing.
+    UI.label("SPECIAL MOVE", r, TY + 186, { size: 8, color: UI.BLUE, anchor: "topright", opacity: op });
+    const pw = Math.ceil(UI.measure(opts.special, UI.PX, specSize).width);
+    const k2 = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.18)) / 0.12));
+    const sc2 = t < TYPE_IN + 0.18 ? 0 : 1.25 - 0.25 * UI.ease(k2);
+    if (sc2 > 0) {
+      const w2 = (pw + 28) * sc2, h2 = (specSize + 16) * sc2;
+      const cx2 = r - w2 / 2, cy2 = TY + 208 + h2 / 2;
+      UI.card(vec2(cx2, cy2), w2, h2,
+        { center: true, fill: UI.PAPER, shade: UI.PAPER_SHADE, drop: 3, opacity: op });
+      UI.label(opts.special, cx2, cy2 + 1,
+        { size: specSize, color: UI.TEXT, anchor: "center", shadow: false, opacity: op });
+    }
   });
 
   // ----- the bubble: the game's own sticky note, in screen space -----
