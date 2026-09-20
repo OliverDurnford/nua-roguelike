@@ -199,38 +199,38 @@ CUTIN.play = (opts, onDone) => {
     const nw = Math.ceil(UI.measure(opts.name, UI.PX, 48).width);
     UI.chromeText(opts.name, r - nw, TY, 48, op);
 
-    // their passive, wrapped: Josh's runs to forty-two characters
-    UI.label(opts.headline, r, TY + 64,
-      { size: 16, color: UI.SILVER, width: 420, align: "right", anchor: "topright", opacity: op });
-
-    // the stat boost on a slab, with a punch as it lands
-    const sw = Math.ceil(UI.measure(opts.stat, UI.PX, statSize).width);
-    const k = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.08)) / 0.12));
-    const sc = t < TYPE_IN + 0.08 ? 0 : 1.25 - 0.25 * UI.ease(k);
-    if (sc > 0) {
-      const w = (sw + 28) * sc, h = (statSize + 16) * sc;
-      const cx = r - w / 2, cy = TY + 132 + h / 2;
-      UI.card(vec2(cx, cy), w, h,
-        { center: true, fill: UI.BLUE_DEEP, shade: UI.INK, notch: false, opacity: op });
-      UI.label(opts.stat, cx, cy + 1,
-        { size: statSize, color: UI.SILVER, anchor: "center", opacity: op });
-    }
-
-    // The special move is loud too, but in the opposite treatment to the stat:
-    // ink type on a pale paper card with the kit's notched corners, against
-    // the stat's silver type on a solid blue square-cornered slab. Same
-    // weight, unmistakably a different thing.
-    UI.label("SPECIAL MOVE", r, TY + 186, { size: 8, color: UI.BLUE, anchor: "topright", opacity: op });
+    // The special move comes FIRST, straight under the name (Ollie, 20 Sep):
+    // ink type on a pale notched paper card, the opposite treatment to the
+    // stat's silver type on a solid blue square-cornered slab. Same weight,
+    // unmistakably a different thing.
+    UI.label("SPECIAL MOVE", r, TY + 62, { size: 8, color: UI.BLUE, anchor: "topright", opacity: op });
     const pw = Math.ceil(UI.measure(opts.special, UI.PX, specSize).width);
-    const k2 = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.18)) / 0.12));
-    const sc2 = t < TYPE_IN + 0.18 ? 0 : 1.25 - 0.25 * UI.ease(k2);
+    const k2 = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.08)) / 0.12));
+    const sc2 = t < TYPE_IN + 0.08 ? 0 : 1.25 - 0.25 * UI.ease(k2);
     if (sc2 > 0) {
       const w2 = (pw + 28) * sc2, h2 = (specSize + 16) * sc2;
-      const cx2 = r - w2 / 2, cy2 = TY + 208 + h2 / 2;
+      const cx2 = r - w2 / 2, cy2 = TY + 84 + h2 / 2;
       UI.card(vec2(cx2, cy2), w2, h2,
         { center: true, fill: UI.PAPER, shade: UI.PAPER_SHADE, drop: 3, opacity: op });
       UI.label(opts.special, cx2, cy2 + 1,
         { size: specSize, color: UI.TEXT, anchor: "center", shadow: false, opacity: op });
+    }
+
+    // then their passive, wrapped: Josh's runs to forty-two characters
+    UI.label(opts.headline, r, TY + 146,
+      { size: 16, color: UI.SILVER, width: 420, align: "right", anchor: "topright", opacity: op });
+
+    // and the stat boost on its slab, landing last
+    const sw = Math.ceil(UI.measure(opts.stat, UI.PX, statSize).width);
+    const k = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.18)) / 0.12));
+    const sc = t < TYPE_IN + 0.18 ? 0 : 1.25 - 0.25 * UI.ease(k);
+    if (sc > 0) {
+      const w = (sw + 28) * sc, h = (statSize + 16) * sc;
+      const cx = r - w / 2, cy = TY + 214 + h / 2;
+      UI.card(vec2(cx, cy), w, h,
+        { center: true, fill: UI.BLUE_DEEP, shade: UI.INK, notch: false, opacity: op });
+      UI.label(opts.stat, cx, cy + 1,
+        { size: statSize, color: UI.SILVER, anchor: "center", opacity: op });
     }
   });
 
