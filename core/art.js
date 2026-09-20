@@ -376,8 +376,17 @@ ART.genPolaroidPark = () => {
     px("#1b2c18", X, Y, 4, 1);                            // its shadow
     px("#f2f2ea", X, Y - 3, 4, 3); px("#2a2a30", X + 1, Y - 2, 2, 1);
   };
-  bench(114, HZ + 1); lamp(206, HZ + 1); bench(332, HZ + 1);
-  bin(500, HZ + 2); ball(528, H - 13); bench(608, HZ + 1);
+  const kite = (X, Y) => {
+    px("#3f5f96", X, Y - 4, 1, 9); px("#3f5f96", X - 4, Y, 9, 1);   // spars
+    px("#e8eef8", X - 3, Y - 1, 7, 3); px("#e8eef8", X - 1, Y - 3, 3, 7);
+    px("#7f9fd0", X - 2, Y, 5, 1); px("#7f9fd0", X, Y - 2, 1, 5);
+    px("#c9d6e8", X + 2, Y + 5, 1, 1); px("#c9d6e8", X + 4, Y + 8, 1, 1);
+    px("#c9d6e8", X + 3, Y + 11, 1, 1);                              // its tail
+  };
+  // one per card, in the margin that friend does not stand in
+  lamp(50, HZ + 1); bench(114, HZ + 1); bin(176, HZ + 2);
+  lamp(206, HZ + 1); bench(264, HZ + 1); bench(332, HZ + 1);
+  kite(436, 9); bin(500, HZ + 2); ball(528, H - 13); bench(622, HZ + 1);
 
   // the foreground drops into shadow, which keeps the friends' feet readable
   const g = x.createLinearGradient(0, H - 14, 0, H);
@@ -585,3 +594,9 @@ ART.charComps = (id, hPx, old = false) => {
 
 // True if this character has a real animation sheet loaded.
 ART.hasAnims = (id) => !!(G.SPR["ch-" + id] && G.SPR["ch-" + id].anims);
+
+// The feet box for a character drawn hPx tall through charComps: half a
+// person wide, a fifth tall, sitting on the foot line (pos is the body's
+// centre, so the feet end 0.5 h below it). Walls stop this box; the body's
+// area() is still what bullets and pickups touch.
+ART.feetBox = (hPx) => ({ dx: -0.25 * hPx, dy: 0.28 * hPx, w: 0.5 * hPx, h: 0.22 * hPx });
