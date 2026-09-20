@@ -599,6 +599,13 @@ ART.init = () => {
   loadSprite("cutin-ph-2", ART.genCutinHill(1400, 360, 300, "#415a52"));
   loadSprite("cutin-ph-3", ART.genCutinClouds(1400, 220, "#dfe7f5"));
 
+  // Real collection screen layers (core/cutins-real.js), when present
+  if (typeof REAL_CUTINS !== "undefined") {
+    for (const k in REAL_CUTINS) {
+      REAL_CUTINS[k].forEach((src, i) => { if (src) loadSprite("cutin-" + k + "-" + i, src); });
+    }
+  }
+
   // The spinning vinyl that announces a new song (core/record-real.js)
   if (typeof REAL_RECORD !== "undefined") {
     loadSprite("record", REAL_RECORD);
