@@ -195,6 +195,31 @@ CUTIN.play = (opts, onDone) => {
     if (t < TYPE_IN) return;
     const r = RX + typeX();
 
+    // A scrim under the type, the way a lower third works. Without it the
+    // chrome name vanishes on a light background: ANA disappeared into her
+    // own sun and ADAM was barely there against a floodlit fence. It has to
+    // fall off on ALL FOUR sides or it reads as a panel laid over the art
+    // (a first pass with a hard top and bottom edge did exactly that). So
+    // it is a coarse grid with a smooth 2D weight: strongest at the right
+    // edge behind the name, gone by a third of the way across and gone
+    // above and below the block. Drawn rather than a sprite so it costs
+    // nothing and stays in the kit's flat language.
+    const SC_X0 = 300, SC_MAX = 0.58;
+    const sy = TY - 40, sh = 320;
+    const nx = 24, ny = 10;
+    const cw = (G.W - SC_X0) / nx, ch = sh / ny;
+    for (let ix = 0; ix < nx; ix++) {
+      const kx = (ix + 0.5) / nx;                    // 0 at the left, 1 at the right
+      const wx = kx * kx;                            // hugs the right edge
+      for (let iy = 0; iy < ny; iy++) {
+        const ky = (iy + 0.5) / ny;
+        const wy = Math.sin(Math.PI * ky);           // nothing at the top or bottom
+        const w = wx * wy * SC_MAX * op;
+        if (w < 0.004) continue;
+        UI.R(SC_X0 + ix * cw + typeX(), sy + iy * ch, cw + 1, ch + 1, UI.INK, w);
+      }
+    }
+
     // the name, in the title lettering's chrome
     const nw = Math.ceil(UI.measure(opts.name, UI.PX, 48).width);
     UI.chromeText(opts.name, r - nw, TY, 48, op);
