@@ -47,6 +47,11 @@
   <!-- Engine: Kaboom.js, pinned version, loaded from CDN (needs internet) -->
   <script src="https://unpkg.com/kaboom@3000.1.17/dist/kaboom.js"></script>
 
+  <!-- Idle: goes quiet when the window is not the one being looked at.
+       Must load BEFORE boot.js, because kaboom() starts the frame loop
+       the moment it is called and this wraps the frame request. -->
+  <script src="core/idle.js"></script>
+
   <!-- Boot: starts the engine, sets up shared game state -->
   <script src="core/boot.js"></script>
   <script src="core/collide.js"></script>
