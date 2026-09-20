@@ -164,6 +164,62 @@ CUTIN.play = (opts, onDone) => {
     });
   }
 
+  // ----- the type: bottom right, opposite the friend -----
+  // Everything hangs off the RIGHT margin, because the lines vary wildly in
+  // length: names run CAL to ANNIE, and the stat boosts run "+2 MAX HP" to
+  // "SMALL BOOST TO EVERYTHING". Right-aligned, a long one grows leftwards
+  // into empty sky instead of off the edge.
+  // In at 0.62 with the friend's landing, out at 2.37 with them, and creeping
+  // at 4px/s in between: slow enough to read, never actually still.
+  const TYPE_IN = 0.62, TYPE_OUT = CUTIN.exitAt(0);
+  const RX = 928, TY = 250;      // right margin, and the top of the block
+
+  const typeX = () => {
+    if (t < TYPE_IN) return 520;                                   // off to the right
+    if (t < TYPE_IN + 0.18) return 520 - 520 * UI.ease((t - TYPE_IN) / 0.18);
+    if (t < TYPE_OUT) return (t - TYPE_IN - 0.18) * 4;             // the slow creep
+    const u = (t - TYPE_OUT) / CUTIN.EXIT_DUR;
+    return (TYPE_OUT - TYPE_IN - 0.18) * 4 + 900 * u * u * u;      // and away
+  };
+
+  // The stat slab is the loud one, so it takes 24 where it fits and drops to
+  // 16 where it does not. Three of the ten need the smaller size.
+  const STAT_MAX = 500;
+  const statSize = Math.ceil(UI.measure(opts.stat, UI.PX, 24).width) + 28 <= STAT_MAX ? 24 : 16;
+
+  const type = add([fixed(), z(CUTIN.Z + 7), "cutin"]);
+  type.onDraw(() => {
+    const op = alpha();
+    if (t < TYPE_IN) return;
+    const r = RX + typeX();
+
+    // the name, in the title lettering's chrome
+    const nw = Math.ceil(UI.measure(opts.name, UI.PX, 48).width);
+    UI.chromeText(opts.name, r - nw, TY, 48, op);
+
+    // their passive, wrapped: Josh's runs to forty-two characters
+    UI.label(opts.headline, r, TY + 64,
+      { size: 16, color: UI.SILVER, width: 420, align: "right", anchor: "topright", opacity: op });
+
+    // the stat boost on a slab, with a punch as it lands
+    const sw = Math.ceil(UI.measure(opts.stat, UI.PX, statSize).width);
+    const k = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.08)) / 0.12));
+    const sc = t < TYPE_IN + 0.08 ? 0 : 1.25 - 0.25 * UI.ease(k);
+    if (sc > 0) {
+      const w = (sw + 28) * sc, h = (statSize + 16) * sc;
+      const cx = r - w / 2, cy = TY + 132 + h / 2;
+      UI.card(vec2(cx, cy), w, h,
+        { center: true, fill: UI.BLUE_DEEP, shade: UI.INK, notch: false, opacity: op });
+      UI.label(opts.stat, cx, cy + 1,
+        { size: statSize, color: UI.SILVER, anchor: "center", opacity: op });
+    }
+
+    // the special move: the same face as the name but flat, never chromed,
+    // so it reads as a label and a value rather than competing with it
+    UI.label("SPECIAL MOVE", r, TY + 190, { size: 8, color: UI.BLUE, anchor: "topright", opacity: op });
+    UI.label(opts.special, r, TY + 206, { size: 16, color: UI.SILVER, anchor: "topright", opacity: op });
+  });
+
   wait(CUTIN.TOTAL, () => {
     destroyAll("cutin");
     CUTIN.active = false;
