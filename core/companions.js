@@ -123,61 +123,15 @@ COMPANIONS.recruit = (id) => {
   SAVE.write("area");   // re-checkpoint on the spot: a found friend is never lost
   STORY.foundCompanion(id);   // and remember them across runs, forever
 
-  G.paused = true;
   SFX.play("recruit");
 
-  // dim + vignette fade in
-  const dim = add([rect(G.W, G.H), color(0, 0, 0), opacity(0), fixed(), z(200), "banner"]);
-  UI.fadeObj(dim, 0.72, 0.25);
-  const vin = add([sprite("vignette"), pos(0, 0), scale(G.W / 480, G.H / 270), opacity(0), fixed(), z(200), "banner"]);
-  UI.fadeObj(vin, 0.8, 0.25);
-
-  // glow + portrait slide in from the left
-  const glow = add([
-    sprite("glow"), pos(G.W * 0.28, G.H * 0.46), anchor("center"), scale(4.4),
-    color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0), fixed(), z(201), "banner",
-  ]);
-  UI.fadeObj(glow, 0.3, 0.4, 0.1);
-  const por = add([...ART.charComps(c.id, 170), pos(0, 0), fixed(), z(202), opacity(1), "banner"]);
-  UI.slideIn(por, vec2(G.W * 0.16, G.H * 0.46), vec2(G.W * 0.28, G.H * 0.46), 0.45, 0.05);
-
-  // gold hairlines sweeping out
-  for (const dy of [-72, 112]) {
-    const line = add([rect(0, 2), pos(G.W * 0.42, G.H * 0.46 + dy), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0.85), fixed(), z(201), "banner"]);
-    let lt = -0.15;
-    line.onUpdate(() => { lt += dt(); if (lt > 0) line.width = 430 * UI.ease(lt / 0.5); });
-  }
-
-  // staggered text
-  const t1 = add([text(c.name + " has joined the party!", { size: 16, font: UI.PX, width: 480 }), pos(G.W * 0.44, G.H * 0.33), fixed(), z(202), opacity(0), "banner"]);
-  const t2 = add([
-    text(c.passive.name + "\n" + c.passive.desc, { size: 16, font: UI.VT, width: 420 }),
-    pos(G.W * 0.44, G.H * 0.43), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(202), opacity(0), "banner",
-  ]);
-  const t3 = add([
-    text("“" + c.recruitLine + "”", { size: 16, font: UI.VT, width: 420 }),
-    pos(G.W * 0.44, G.H * 0.57), color(178, 198, 228), fixed(), z(202), opacity(0), "banner",
-  ]);
-  UI.fadeObj(t1, 1, 0.35, 0.2);
-  UI.fadeObj(t2, 1, 0.35, 0.38);
-  UI.fadeObj(t3, 1, 0.35, 0.56);
-
-  // a few gold sparks rising
-  for (let i = 0; i < 8; i++) {
-    add([
-      circle(rand(1.5, 3)), pos(rand(G.W * 0.18, G.W * 0.85), G.H * rand(0.65, 0.8)),
-      color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(rand(0.3, 0.7)),
-      move(vec2(0, -1), rand(20, 50)), lifespan(2.4, { fade: 1.2 }),
-      fixed(), z(201), "banner",
-    ]);
-  }
-
-  wait(2.6, () => {
-    destroyAll("banner");
-    G.paused = false;
+  // The collection screen: four parallax layers, their name in the title's
+  // chrome, their stat boost and their line. core/cutin.js raises and drops
+  // G.paused itself.
+  CUTIN.play(CUTIN.forJoin(c), () => {
     COMPANIONS.checkPairs();
-    // The banner has already printed their recruitLine; this is the first
-    // thing they say once they are actually stood next to you.
+    // The screen has already given them their recruit line; this is the
+    // first thing they say once they are actually stood next to you.
     wait(0.8, () => SPEECH.fire("join", { by: id }));
   });
 };
