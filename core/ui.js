@@ -733,6 +733,7 @@ UI.wireControls = () => {
   onKeyPress("m", () => { if (G.run) G.run.meter = 1; });
   onKeyPress("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });
   onKeyPress("]", () => { if (G.devSkip) G.devSkip(); });
+  onKeyPress("c", () => { if (G.run && !G.paused) CUTIN.play(CUTIN.forJoin(G.char(G.run.charId))); });
 };
 
 // ---------- pause menu ----------
@@ -803,6 +804,8 @@ UI.pause = () => {
 
   const menu = add([fixed(), z(230), pos(0, 0)]);
   menu.onDraw(() => {
+    // a collection screen owns the whole frame while it plays
+    if (typeof CUTIN !== "undefined" && CUTIN.active) return;
     const b = UI.PAUSE_BTN;
     if (!UI.pauseOpen) {
       UI.card(vec2(b.x, b.y), b.w, b.h, { fill: UI.CHIP, shade: null, notch: false, opacity: 0.85 });

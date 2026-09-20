@@ -241,6 +241,47 @@ ART.genHGrad = (left, right) => {
   return cv.toDataURL();
 };
 
+// ---------- collection screen placeholders ----------
+// Stand-in layers so the parallax can be reviewed before the real art is
+// generated. Replaced per friend by core/cutins-real.js, and never shown
+// once a friend has real layers.
+
+ART.genCutinHill = (w, h, rise, hex) => {
+  const cv = document.createElement("canvas");
+  cv.width = w; cv.height = h;
+  const x = cv.getContext("2d");
+  x.fillStyle = hex;
+  x.beginPath();
+  x.moveTo(0, h);
+  for (let px = 0; px <= w; px += 4) {
+    const k = px / w;
+    x.lineTo(px, h - rise * Math.sin(Math.PI * k));
+  }
+  x.lineTo(w, h);
+  x.closePath();
+  x.fill();
+  // the road over the middle, the one bit of detail the scenes call for
+  x.fillStyle = "rgba(0,0,0,0.22)";
+  x.fillRect(w / 2 - 18, h - rise * 0.98, 36, rise);
+  return cv.toDataURL();
+};
+
+ART.genCutinClouds = (w, h, hex) => {
+  const cv = document.createElement("canvas");
+  cv.width = w; cv.height = h;
+  const x = cv.getContext("2d");
+  x.fillStyle = hex;
+  const puffs = [[0.10, 0.55, 46], [0.16, 0.66, 34], [0.22, 0.58, 40],
+                 [0.44, 0.40, 52], [0.51, 0.52, 38], [0.57, 0.44, 44],
+                 [0.78, 0.62, 42], [0.85, 0.70, 30], [0.91, 0.60, 36]];
+  for (const [fx, fy, r] of puffs) {
+    x.beginPath();
+    x.arc(fx * w, fy * h, r, 0, Math.PI * 2);
+    x.fill();
+  }
+  return cv.toDataURL();
+};
+
 ART.genBall = () => {
   const cv = document.createElement("canvas");
   cv.width = 12; cv.height = 12;
@@ -551,6 +592,12 @@ ART.init = () => {
   if (typeof REAL_SPLASH !== "undefined") {
     for (const k in REAL_SPLASH) loadSprite("splash-" + k, REAL_SPLASH[k]);
   }
+
+  // Collection screen placeholder layers. A friend with real layers in
+  // core/cutins-real.js never sees these.
+  loadSprite("cutin-ph-1", ART.genCutinHill(1400, 300, 190, "#5c7a5e"));
+  loadSprite("cutin-ph-2", ART.genCutinHill(1400, 360, 300, "#415a52"));
+  loadSprite("cutin-ph-3", ART.genCutinClouds(1400, 220, "#dfe7f5"));
 
   // The spinning vinyl that announces a new song (core/record-real.js)
   if (typeof REAL_RECORD !== "undefined") {
