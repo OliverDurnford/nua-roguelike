@@ -7,6 +7,9 @@
 //
 //   sky     the two colours of the backdrop behind everything,
 //           top then bottom. Taken from that friend's own palette.
+//           Usually a sky, but for an indoor scene it is the room's
+//           wall: Lucy's is warm plaster, and her far layer is only
+//           what hangs on it (window, print, light).
 //   park    where each layer rests, centre of the image, index 0
 //           (the friend, from the left) to index 3 (far, from the
 //           right). The friend sits left of centre so the type has
@@ -19,7 +22,7 @@
 
 const CUTINS = {
   ollie: { sky: [[54, 62, 96], [186, 150, 122]], park: [[215, 265], [470, 440], [470, 340], [470, 150]], bubble: [200, 92] },
-  lucy: { sky: [[96, 74, 104], [228, 186, 156]], park: [[210, 355], [448, 360], [470, 340], [470, 130]], bubble: [195, 165] },
+  lucy: { sky: [[178, 150, 132], [222, 198, 176]], park: [[210, 355], [448, 360], [470, 340], [470, 130]], bubble: [195, 165] },
   cal: { sky: [[88, 132, 186], [206, 226, 240]], park: [[250, 375], [470, 450], [470, 355], [470, 150]], bubble: [235, 195] },
   josh: { sky: [[62, 60, 84], [200, 168, 132]], park: [[235, 355], [470, 455], [470, 320], [470, 130]], bubble: [205, 178] },
   annie: { sky: [[84, 44, 76], [214, 158, 176]], park: [[200, 355], [470, 452], [470, 290], [470, -30]], bubble: [195, 168] },
