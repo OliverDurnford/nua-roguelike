@@ -76,6 +76,8 @@ While playing:
 - `k` — kill everything in the room
 - `h` — full heal
 - `m` — fill the special meter
+- `c` — play your own collection screen
+- `v` — play the selected friend's special screen (no attack, no meter)
 - `g` — god mode on/off
 - `]` — skip to the next area
 - `F2` — show the invisible geometry on a painted level. Red boxes are
@@ -89,6 +91,7 @@ From the browser console (right-click → Inspect → Console):
 - `dev.area(5, 5)` — jump to the finale
 - `dev.tutorial()` — jump to Victoria Park
 - `dev.ending()` — jump to the ending screen
+- `dev.special("cal")` — play any friend's special screen (from inside a level)
 - `dev.wipe()` — forget the saved run AND the long-term memory, reload
 
 ---

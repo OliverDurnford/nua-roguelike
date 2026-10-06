@@ -606,6 +606,13 @@ ART.init = () => {
     }
   }
 
+  // Real special attack screen layers (core/specials-real.js), when present
+  if (typeof REAL_SPECIALS !== "undefined") {
+    for (const k in REAL_SPECIALS) {
+      REAL_SPECIALS[k].forEach((src, i) => { if (src) loadSprite("special-" + k + "-" + i, src); });
+    }
+  }
+
   // The spinning vinyl that announces a new song (core/record-real.js)
   if (typeof REAL_RECORD !== "undefined") {
     loadSprite("record", REAL_RECORD);

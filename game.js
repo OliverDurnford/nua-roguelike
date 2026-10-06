@@ -22,6 +22,8 @@ window.dev = {
     if (!G.run) G.newRun(charId || "ollie");
     go("ending");
   }),
+  // any friend's special screen, from inside a level: dev.special("cal")
+  special: (id) => { if (G.run && !G.paused) CUTIN.play(CUTIN.forSpecial(G.char(id || G.run.charId))); },
   god: () => { G.godMode = !G.godMode; },
   wipe: () => { SAVE.clear(); STORY.clear(); location.reload(); },
 };

@@ -159,78 +159,12 @@ COMPANIONS.trySpecial = () => {
 
   G.run.meter = 0;
   G.run.specialsUsed++;
-  G.paused = true;
   SFX.play("riser");
 
-  // PLACEHOLDER cutscene frame - real illustrated frames come later.
-  // Fast cinematic: letterbox bars snap in, portrait + name slam across.
-  const dim = add([rect(G.W, G.H), color(0, 0, 0), opacity(0), fixed(), z(200), "banner"]);
-  UI.fadeObj(dim, 0.82, 0.12);
-
-  // letterbox bars sliding in from top and bottom
-  const barH = G.H * 0.16;
-  const barTop = add([rect(G.W, barH), pos(0, 0), color(4, 4, 8), fixed(), z(203), "banner"]);
-  const barBot = add([rect(G.W, barH), pos(0, G.H), color(4, 4, 8), fixed(), z(203), "banner"]);
-  UI.slideIn(barTop, vec2(0, -barH), vec2(0, 0), 0.22, 0, false);
-  UI.slideIn(barBot, vec2(0, G.H), vec2(0, G.H - barH), 0.22, 0, false);
-  for (const y of [barH, G.H - barH]) {
-    const line = add([rect(0, 2.5), pos(0, y), color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0.9), fixed(), z(204), "banner"]);
-    let lt = -0.08;
-    line.onUpdate(() => { lt += dt(); if (lt > 0) line.width = G.W * UI.ease(lt / 0.35); });
-  }
-
-  // glow + portrait from the left, name from the right
-  const glow = add([
-    sprite("glow"), pos(G.W * 0.28, G.H * 0.49), anchor("center"), scale(5),
-    color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0), fixed(), z(201), "banner",
-  ]);
-  UI.fadeObj(glow, 0.38, 0.25, 0.05);
-
-  // speed-line burst behind illustrated cut-ins only, fanning from the portrait anchor
-  if (typeof REAL_SPLASH !== "undefined" && REAL_SPLASH[c.id]) {
-    for (let i = 0; i < 10; i++) {
-      const beam = add([
-        rect(0, 2), pos(G.W * 0.28, G.H * 0.49), anchor("left"), rotate(rand(-25, 25)),
-        color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0.18), fixed(), z(201), "banner",
-      ]);
-      let lt = 0;
-      beam.onUpdate(() => { lt += dt(); if (lt > 0) beam.width = G.W * 0.5 * UI.ease(lt / 0.25); });
-    }
-  }
-
-  let por;
-  if (typeof REAL_SPLASH !== "undefined" && REAL_SPLASH[c.id]) {
-    // Illustrated cut-in: fills the letterboxed band, anchored centre-left
-    por = add([
-      sprite("splash-" + c.id), anchor("center"), scale((G.H - barH * 2) * 0.96 / 512),
-      pos(0, 0), fixed(), z(202), opacity(1), "banner",
-    ]);
-  } else {
-    por = add([...ART.charComps(c.id, 200), pos(0, 0), fixed(), z(202), opacity(1), "banner"]);
-  }
-  UI.slideIn(por, vec2(G.W * 0.12, G.H * 0.49), vec2(G.W * 0.28, G.H * 0.49), 0.3);
-
-  const nameT = add([
-    text(c.name.toUpperCase(), { size: 16, font: UI.PX }), pos(0, 0),
-    color(178, 186, 208), fixed(), z(202), opacity(1), "banner",
-  ]);
-  UI.slideIn(nameT, vec2(G.W * 0.58, G.H * 0.33), vec2(G.W * 0.44, G.H * 0.33), 0.3, 0.05);
-  const specT = add([
-    text(c.special.name.toUpperCase(), { size: 24, font: UI.PX, width: 500 }), pos(0, 0),
-    color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), fixed(), z(202), opacity(1), "banner",
-  ]);
-  UI.slideIn(specT, vec2(G.W * 0.6, G.H * 0.41), vec2(G.W * 0.44, G.H * 0.41), 0.32, 0.1);
-  const lineT = add([
-    text(c.special.line, { size: 16, font: UI.VT, width: 430 }), pos(0, 0),
-    color(200, 202, 222), fixed(), z(202), opacity(1), "banner",
-  ]);
-  UI.slideIn(lineT, vec2(G.W * 0.5, G.H * 0.56), vec2(G.W * 0.44, G.H * 0.56), 0.3, 0.16);
-
-  wait(1.4, () => {
-    destroyAll("banner");
-    G.paused = false;
-    COMPANIONS.applyEffect(c);
-  });
+  // The special screen: four parallax layers of this friend doing their
+  // move, then a hard cut into the attack's own flash and shake.
+  // core/cutin.js raises and drops G.paused itself.
+  CUTIN.play(CUTIN.forSpecial(c), () => COMPANIONS.applyEffect(c));
 };
 
 COMPANIONS.applyEffect = (c) => {

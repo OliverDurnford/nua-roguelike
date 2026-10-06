@@ -744,6 +744,12 @@ UI.wireControls = () => {
   onKeyPress("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });
   onKeyPress("]", () => { if (G.devSkip) G.devSkip(); });
   onKeyPress("c", () => { if (G.run && !G.paused) CUTIN.play(CUTIN.forJoin(G.char(G.run.charId))); });
+  // the selected friend's special screen, without spending the meter or attacking
+  onKeyPress("v", () => {
+    if (!G.run || G.paused) return;
+    const id = G.run.companions.length ? G.run.companions[G.run.selected] : G.run.charId;
+    CUTIN.play(CUTIN.forSpecial(G.char(id)));
+  });
 };
 
 // ---------- pause menu ----------
