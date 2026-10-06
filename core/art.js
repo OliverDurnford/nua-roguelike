@@ -588,11 +588,6 @@ ART.init = () => {
     for (let i = 0; i < 3; i++) loadSprite("crack" + i, ART.genCrack(i));
   }
 
-  // Illustrated special-attack cut-ins (core/splash-real.js), when present
-  if (typeof REAL_SPLASH !== "undefined") {
-    for (const k in REAL_SPLASH) loadSprite("splash-" + k, REAL_SPLASH[k]);
-  }
-
   // Collection screen placeholder layers. A friend with real layers in
   // core/cutins-real.js never sees these.
   loadSprite("cutin-ph-1", ART.genCutinHill(1400, 300, 190, "#5c7a5e"));

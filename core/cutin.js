@@ -129,17 +129,14 @@ CUTIN.Z = 200;          // the whole screen sits above everything on the field
 
 // Which sprite draws layer i of this friend's screen. Real art when it
 // exists, otherwise the shared placeholder hills, and for layer 0 a null,
-// which means "draw the friend's own sprite". Until a friend's special art
-// is wired, their old chibi cut-in (core/splash-real.js) stands in for them.
+// which means "draw the friend's own sprite".
 CUTIN.spriteFor = (id, i, kind = "join") => {
   const special = kind === "special";
   const real = special
     ? (typeof REAL_SPECIALS !== "undefined" ? REAL_SPECIALS : null)
     : (typeof REAL_CUTINS !== "undefined" ? REAL_CUTINS : null);
   if (real && real[id] && real[id][i]) return (special ? "special-" : "cutin-") + id + "-" + i;
-  if (i > 0) return "cutin-ph-" + i;
-  if (special && typeof REAL_SPLASH !== "undefined" && REAL_SPLASH[id]) return "splash-" + id;
-  return null;
+  return i > 0 ? "cutin-ph-" + i : null;
 };
 
 // Each screen's content, built from a character entry.
@@ -369,13 +366,8 @@ CUTIN.play = (opts, onDone) => {
     const name = CUTIN.spriteFor(opts.id, i, opts.kind);
     // Real and placeholder layers are centred. A friend drawn through
     // charComps is anchored on their body centre instead, which sits a
-    // little above the image centre, so their park y is tuned by eye. The
-    // old chibi splash is drawn 512 tall, so it comes down to the real
-    // figures' 360.
-    let comps;
-    if (!name) comps = ART.charComps(opts.id, 300);
-    else if (name.startsWith("splash-")) comps = [sprite(name), anchor("center"), scale(360 / 512)];
-    else comps = [sprite(name), anchor("center")];
+    // little above the image centre, so their park y is tuned by eye.
+    const comps = name ? [sprite(name), anchor("center")] : ART.charComps(opts.id, 300);
     const layer = add([
       ...comps, pos(px, py), opacity(1), fixed(), z(CUTIN.Z + 2 + (3 - i)), "cutin",
     ]);
