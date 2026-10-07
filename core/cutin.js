@@ -155,8 +155,23 @@ CUTIN.forSpecial = (c) => ({
   id: c.id,
   name: c.name.toUpperCase(),
   move: c.special.name.toUpperCase(),
-  desc: c.special.line,          // what the attack does, from data/characters.js
+  desc: CUTIN.effectText(c.special),
 });
+
+// What a special actually does, in plain words, written from its own
+// numbers in data/characters.js so it can never fall out of step with the
+// balance (Ollie, 7 Oct: "the description should just be what the effect
+// does"). The mechanics are COMPANIONS.applyEffect's: a stun and the
+// shield are both seconds, "near you" is the 250px ring round the player,
+// "in front of you" the cone in the direction you are aiming.
+CUTIN.effectText = (sp) => {
+  const secs = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1)) + (n === 1 ? " second" : " seconds");
+  const where = { aoe: "every enemy in the room", radius: "everything near you", directional: "everything in front of you" }[sp.shape];
+  if (sp.type === "heal") return "Heals you fully, then nothing can hurt you for " + secs(sp.power) + ".";
+  if (sp.type === "stun") return "Stuns " + where + " for " + secs(sp.power) + ".";
+  const strength = sp.power >= 12 ? "Massive" : sp.power >= 10 ? "Heavy" : "Big";
+  return strength + " damage to " + where + ".";
+};
 
 // A scrim under the type, the way a lower third works. Without it the
 // chrome name vanishes on a light background: ANA disappeared into her
@@ -260,7 +275,7 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
 
 // ----- the special screen's type: who, the move, what it does -----
 // The friend's name small in yellow, the move's name big in GOLD chrome,
-// and under it a line saying what the attack does (Ollie, 7 Oct: the
+// and under it what the attack does (CUTIN.effectText) (Ollie, 7 Oct: the
 // special screens are yellow, keeping the chrome's gloss). Bottom right
 // over the same scrim, anchored at the bottom so a two-line move name or
 // a wrapped description grows upwards. Each row slides in from the right a
