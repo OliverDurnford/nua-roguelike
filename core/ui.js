@@ -37,8 +37,8 @@ UI.PHOTO = [36, 20, 18];           // #241412  behind a portrait
 UI.STICK_RING = [216, 207, 187];   // #d8cfbb  the joystick's inner ring
 // The accent family is the title lettering's own chrome (Ollie, 18 Sep 2026:
 // keep the UI within the silver and blue of the title, no yellow anywhere).
-// The meter, the tape on the chosen polaroid, the number block, the stick,
-// the SP button, the GO chip, the toast and the pause menu all draw from it.
+// The tape on the chosen polaroid, the number block, the stick, the SP
+// button, the GO chip, the toast and the pause menu all draw from it.
 UI.SILVER = [231, 236, 255];       // #e7ecff
 UI.STEEL = [185, 196, 232];        // #b9c4e8
 UI.BLUE = [138, 151, 201];         // #8a97c9
@@ -48,10 +48,10 @@ UI.GOLD = UI.ACCENT;               // older call sites (glows, sparks, hairlines
 // the chrome of the room's name on the title card, top band to bottom band
 UI.CHROME = [[255, 255, 255], UI.STEEL, UI.BLUE_DEEP, UI.SILVER, UI.STEEL, UI.BLUE];
 
-// The special attack screens are the one place yellow comes back (Ollie,
-// 7 Oct): a gold version of the same chrome, banded the same way so the
-// gloss reads identically, with a yellow and a cream to go with it.
-// Everything else in the UI stays silver and blue.
+// The special attack screens, and the meter that fills towards one, are
+// where yellow comes back (Ollie, 7 Oct): a gold version of the same chrome,
+// banded the same way so the gloss reads identically, with a yellow and a
+// cream to go with it. Everything else in the UI stays silver and blue.
 UI.SPECIAL_YELLOW = [255, 214, 64];
 UI.SPECIAL_CREAM = [255, 243, 204];
 UI.SPECIAL_CHROME = [[255, 253, 232], [255, 222, 89], [190, 112, 16], [255, 244, 170], [255, 200, 46], [212, 136, 22]];
@@ -577,17 +577,34 @@ UI.hud = () => {
     }
 
     // the wristband meter: white track in a 2px ink border, filled with
-    // 8px blocks a pixel apart, each in the title's chrome (silver over
-    // steel over blue)
+    // 8px blocks a pixel apart. It fills in the special screens' gold
+    // chrome, not the UI's silver and blue (Ollie, 7 Oct), banded the same
+    // way, with a glint that sweeps along whatever is filled.
     const mx = 24, my = 68, mw = cw - 20, mh = 13;
     UI.R(mx - 2, my - 2, mw + 4, mh + 4, UI.INK);
     UI.R(mx, my, mw, mh, UI.WHITE);
     const fw = Math.round((mw - 2) * hud.meterDisp);
+    const SC = UI.SPECIAL_CHROME;
     for (let off = 0; off < fw; off += 9) {
       const bw = Math.min(8, fw - off), bx = mx + 1 + off;
-      UI.R(bx, my + 1, bw, 3, UI.SILVER);
-      UI.R(bx, my + 4, bw, 4, UI.STEEL);
-      UI.R(bx, my + 8, bw, 4, UI.BLUE_DEEP);
+      UI.R(bx, my + 1, bw, 1, SC[0]);
+      UI.R(bx, my + 2, bw, 2, SC[3]);
+      UI.R(bx, my + 4, bw, 4, SC[1]);
+      UI.R(bx, my + 8, bw, 3, SC[5]);
+      UI.R(bx, my + 11, bw, 1, SC[2]);
+    }
+    // the glint: a slanted sliver of light, quicker once the meter is full
+    if (fw > 0) {
+      const period = r.meter >= 1 ? 1.1 : 2.4;
+      const gx = mx + 1 - 12 + ((time() % period) / period) * (fw + 24);
+      for (let row = 1; row < 12; row++) {
+        const sx = Math.round(gx + (12 - row) * 0.5);
+        for (let off = 0; off < fw; off += 9) {
+          const bx = mx + 1 + off, bw = Math.min(8, fw - off);
+          const a = Math.max(sx, bx), b = Math.min(sx + 3, bx + bw);
+          if (b > a) UI.R(a, my + row, b - a, 1, SC[0], 0.85);
+        }
+      }
     }
     if (r.shield > 0) {
       UI.label("cosy shield " + r.shield.toFixed(1) + "s", 26, L.y + L.h + 6, { color: [140, 185, 235] });

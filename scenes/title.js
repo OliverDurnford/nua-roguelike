@@ -20,7 +20,7 @@
 
 const TSEQ = {
   // ---- the beat map. Ollie's marks, off the timeline. Each is a LANDING. ----
-  PARK: 5.500,        // the camera stops moving
+  PARK: 5.500,        // the camera stops moving, and the song has faded up to full
   TOP_AT: 6.458,      // 01:00:06:11 - "NOW THAT'S WHAT I CALL" lands, from the right
   BOTTOM_AT: 6.958,   // 01:00:06:23 - "10 YEARS" lands, from the left, one beat later
   WAVE_FROM: 7.458,   // 01:00:07:11 - the third drop begins; the first of the ten starts to rise
@@ -370,13 +370,18 @@ scene("title", () => {
     placeBottom((clock - (TSEQ.BOTTOM_AT - TSEQ.SLIDE)) / TSEQ.SLIDE);
     placeWave(clock);
     lifeK = Math.min(1, Math.max(lifeK, (clock - TSEQ.PARK) / 0.8));
+
+    // The song fades up with the push-in and is at full as the camera lands
+    // on the record (Ollie, 7 Oct). Squared, so the rise sounds even rather
+    // than loud early and flat after. Off the song's own clock, like the rest.
+    if (song !== null && !skipped) SOUNDTRACK.level(Math.pow(Math.min(1, clock / TSEQ.PARK), 2));
   });
 
   const begin = () => {
     phase = "running";
     prompt.opacity = 0;
     TITLEVIDEO.seen = true;
-    SOUNDTRACK.playById("dare-8-bit", TSEQ.MUSIC_LEAD);
+    SOUNDTRACK.playById("dare-8-bit", TSEQ.MUSIC_LEAD, null);
     video.currentTime = 0;
     const p = video.play();
     if (p && p.catch) p.catch(() => {});
@@ -384,10 +389,12 @@ scene("title", () => {
 
   // Skipping. Held off for a moment after the start so the same press that
   // begins the sequence cannot also skip it.
-  let sinceStart = 0;
+  let sinceStart = 0, skipped = false;
   onUpdate(() => { if (phase === "running") sinceStart += dt(); });
   const skip = () => {
     if (sinceStart < 0.7) return;
+    skipped = true;
+    SOUNDTRACK.level(1, 0.4);
     TITLEVIDEO.toEnd(TSEQ.END);
     settle();
   };

@@ -77,10 +77,20 @@ scene("select", () => {
     const tape = card.add([rect(36, 10), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.STEEL)), opacity(1)]);
     const kids = [figure, name, tapeInk, tape];
 
+    // The chosen one strikes the first frame of their throw, item up and
+    // ready to go (Ollie, 7 Oct); everyone else stays on their idle.
+    const throwFrame = ART.hasAnims(c.id) ? G.SPR["ch-" + c.id].anims.throw.from : null;
+    let posed = false;
+
     // staggered entrance
     UI.slideIn(card, p.add(0, 36), p, 0.45, delay);
 
     card.onUpdate(() => {
+      if (throwFrame !== null && posed !== (selected === i)) {
+        posed = selected === i;
+        if (posed) { figure.stop(); figure.frame = throwFrame; }
+        else figure.play("idle");
+      }
       // hover lift + selected bob, once the entrance has landed
       const want = (card.isHovering() || selected === i) ? 1 : 0;
       card.lift += (want - card.lift) * Math.min(1, dt() * 10);

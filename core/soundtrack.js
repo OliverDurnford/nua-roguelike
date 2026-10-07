@@ -93,7 +93,9 @@ SOUNDTRACK.syncMute = () => {
 // `at` seeks the track before it starts, in seconds. The title sequence needs
 // it: the video was cut against an export whose audio sits 148ms behind this
 // m4a, so starting the song 148ms in is what puts the beat under the picture.
-SOUNDTRACK.play = (track, at = 0) => {
+// `fadeIn` is how long the volume takes to come up. null leaves it silent for
+// the caller to ride with SOUNDTRACK.level, which is what the title does.
+SOUNDTRACK.play = (track, at = 0, fadeIn = SOUNDTRACK.FADE) => {
   if (!track) return;
   // Checks _requested, not current: see the note by _requested's
   // declaration above for why. This is what stops a second play() call
@@ -142,7 +144,7 @@ SOUNDTRACK.play = (track, at = 0) => {
         window.addEventListener("keydown", retry);
       });
     }
-    SOUNDTRACK._rampTo(SOUNDTRACK.volume);
+    if (fadeIn !== null) SOUNDTRACK._rampTo(SOUNDTRACK.volume, fadeIn);
   };
 
   if (SOUNDTRACK.current) SOUNDTRACK._rampTo(0, 0.35, start);
@@ -223,10 +225,19 @@ SOUNDTRACK.playForArea = (chapter, areaNum, a) => {
 };
 
 // Named track by id, for the title screen.
-SOUNDTRACK.playById = (id, at = 0) => {
+SOUNDTRACK.playById = (id, at = 0, fadeIn = SOUNDTRACK.FADE) => {
   if (typeof TRACKS === "undefined") return;
   const t = TRACKS.filter((x) => x.id === id)[0];
-  if (t) SOUNDTRACK.play(t, at);
+  if (t) SOUNDTRACK.play(t, at, fadeIn);
+};
+
+// Set the volume as a fraction of full (0 to 1): outright, cancelling any
+// ramp, or over `secs` when given.
+SOUNDTRACK.level = (k, secs) => {
+  const v = SOUNDTRACK.volume * Math.max(0, Math.min(1, k));
+  if (secs) return SOUNDTRACK._rampTo(v, secs);
+  if (SOUNDTRACK._fade) { clearInterval(SOUNDTRACK._fade); SOUNDTRACK._fade = null; }
+  SOUNDTRACK._audio().volume = v;
 };
 
 // The track Ollie pinned to a slot that is not a room: "select",
