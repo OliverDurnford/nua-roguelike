@@ -215,7 +215,7 @@ COMPANIONS.applyEffect = (c) => {
   SPEECH.fire("special", { by: c.id });
 
   // character-specific flourishes that are not speech
-  if (c.id === "ethan") UI.subtitleSeq(["Tara has entered the chat"]);
+  if (c.id === "ethan") UI.subtitleSeq(["Tala has entered the chat"]);
   if (c.id === "annie") {
     for (let i = 0; i < 10; i++) {
       add([

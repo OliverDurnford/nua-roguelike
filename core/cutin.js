@@ -155,6 +155,7 @@ CUTIN.forSpecial = (c) => ({
   id: c.id,
   name: c.name.toUpperCase(),
   move: c.special.name.toUpperCase(),
+  desc: c.special.line,          // what the attack does, from data/characters.js
 });
 
 // A scrim under the type, the way a lower third works. Without it the
@@ -257,15 +258,26 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
   });
 };
 
-// ----- the special screen's type: who, then the move, big -----
-// The friend's name small in silver, the move's name in the title's chrome
-// under it (Ollie, 6 Oct), bottom right over the same scrim. Each row slides
-// in from the right a beat after the one above as the friend lands, creeps
-// like everything else, and leaves with them.
+// ----- the special screen's type: who, the move, what it does -----
+// The friend's name small in yellow, the move's name big in GOLD chrome,
+// and under it a line saying what the attack does (Ollie, 7 Oct: the
+// special screens are yellow, keeping the chrome's gloss). Bottom right
+// over the same scrim, anchored at the bottom so a two-line move name or
+// a wrapped description grows upwards. Each row slides in from the right a
+// beat after the one above as the friend lands, creeps like everything
+// else, and leaves with them.
+CUTIN.DESC_SIZE = 32;      // VT323, rasterised at 16, so 16 or 32 only
+// Narrower than the move name, so a long line wraps onto two further
+// right, where the scrim behind it is strongest, instead of running into
+// the friend (Lucy's ran into her boot at the full width).
+CUTIN.DESC_W = 440;
 CUTIN._specialType = (opts, P, clock, alpha) => {
-  const RX = 928, BOTTOM = 474, GAP = 8;
+  const RX = 928, BOTTOM = 492, GAP = 8;
   const fit = CUTIN.fitMove(opts.move);
-  const moveTop = BOTTOM - fit.lines.length * (fit.size + GAP) + GAP;
+  const desc = opts.desc || "";
+  const descH = desc ? UI.measure(desc, UI.VT, CUTIN.DESC_SIZE, { width: CUTIN.DESC_W }).height : 0;
+  const descTop = BOTTOM - descH;
+  const moveTop = descTop - (desc ? 6 : 0) - fit.lines.length * (fit.size + GAP) + GAP;
   const nameY = moveTop - 28;
   const IN = CUTIN.parkedAt(0, P), OUT = CUTIN.exitAt(0, P);
 
@@ -283,13 +295,20 @@ CUTIN._specialType = (opts, P, clock, alpha) => {
   type.onDraw(() => {
     const t = clock(), op = alpha();
     if (t < IN) return;
-    CUTIN._scrim(nameY - 40, BOTTOM - nameY + 80, slideX(t, 0), op);
+    CUTIN._scrim(nameY - 40, BOTTOM - nameY + 70, slideX(t, 0), op);
     UI.label(opts.name, RX + slideX(t, 0), nameY,
-      { size: 16, color: UI.SILVER, anchor: "topright", opacity: op });
+      { size: 16, color: UI.SPECIAL_YELLOW, anchor: "topright", opacity: op });
     fit.lines.forEach((line, k) => {
       const w = Math.ceil(UI.measure(line, UI.PX, fit.size).width);
-      UI.chromeText(line, RX + slideX(t, 0.05 * (k + 1)) - w, moveTop + k * (fit.size + GAP), fit.size, op);
+      UI.chromeText(line, RX + slideX(t, 0.05 * (k + 1)) - w, moveTop + k * (fit.size + GAP),
+        fit.size, op, UI.SPECIAL_CHROME);
     });
+    if (desc) {
+      UI.label(desc, RX + slideX(t, 0.05 * (fit.lines.length + 1)), descTop, {
+        font: UI.VT, size: CUTIN.DESC_SIZE, color: UI.SPECIAL_CREAM, width: CUTIN.DESC_W,
+        align: "right", anchor: "topright", opacity: op,
+      });
+    }
   });
 };
 
@@ -350,13 +369,14 @@ CUTIN.play = (opts, onDone) => {
   for (let i = 0; i < 22; i++) {
     LINES.push({ y: rand(0, G.H), w: rand(90, 320), sp: rand(260, 620), o: rand(0.05, 0.16), x: rand(-400, G.W) });
   }
+  const lineColour = special ? UI.SPECIAL_YELLOW : UI.SILVER;
   const lines = add([fixed(), z(CUTIN.Z + 1), "cutin"]);
   lines.onDraw(() => {
     const op = alpha();
     for (const L of LINES) {
       let x = L.x + L.sp * P.LINES * t;
       x = ((x % (G.W + 800)) + (G.W + 800)) % (G.W + 800) - 400;
-      UI.R(x, L.y, L.w, 2, UI.SILVER, L.o * op);
+      UI.R(x, L.y, L.w, 2, lineColour, L.o * op);
     }
   });
 

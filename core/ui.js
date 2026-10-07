@@ -48,6 +48,14 @@ UI.GOLD = UI.ACCENT;               // older call sites (glows, sparks, hairlines
 // the chrome of the room's name on the title card, top band to bottom band
 UI.CHROME = [[255, 255, 255], UI.STEEL, UI.BLUE_DEEP, UI.SILVER, UI.STEEL, UI.BLUE];
 
+// The special attack screens are the one place yellow comes back (Ollie,
+// 7 Oct): a gold version of the same chrome, banded the same way so the
+// gloss reads identically, with a yellow and a cream to go with it.
+// Everything else in the UI stays silver and blue.
+UI.SPECIAL_YELLOW = [255, 214, 64];
+UI.SPECIAL_CREAM = [255, 243, 204];
+UI.SPECIAL_CHROME = [[255, 253, 232], [255, 222, 89], [190, 112, 16], [255, 244, 170], [255, 200, 46], [212, 136, 22]];
+
 // ---------- type ----------
 // Press Start 2P is an 8px grid: keep its sizes to multiples of 8 and it
 // stays pixel-perfect (its atlas is rasterised at 8, see ART.init). VT323
@@ -121,14 +129,15 @@ UI.label = (str, x, y, o = {}) => {
 
 // The room's name in chrome: the kit's five-stop gradient, as horizontal
 // bands shown through the letters (a stencil mask), over a 2px ink shadow.
-UI.chromeText = (str, x, y, size, op = 1) => {
+// `bands` swaps the palette (the special screens pass UI.SPECIAL_CHROME).
+UI.chromeText = (str, x, y, size, op = 1, bands = UI.CHROME) => {
   const tw = Math.ceil(UI.measure(str, UI.PX, size).width);
   UI.text(str, x + 2, y + 2, { font: UI.PX, size, color: UI.INK, opacity: op });
   const stops = [0, 5, 7, 8, 10, 13, 16];
   drawMasked(() => {
-    for (let i = 0; i < UI.CHROME.length; i++) {
+    for (let i = 0; i < bands.length; i++) {
       const a = stops[i] * size / 16, b = stops[i + 1] * size / 16;
-      UI.R(x, y + a, tw, b - a, UI.CHROME[i], op);
+      UI.R(x, y + a, tw, b - a, bands[i], op);
     }
   }, () => {
     UI.text(str, x, y, { font: UI.PX, size, color: UI.WHITE });

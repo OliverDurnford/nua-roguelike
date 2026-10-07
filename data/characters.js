@@ -147,15 +147,15 @@ const CHARACTERS = [
     id: "ethan", name: "Ethan", height: 39, real: true,  // DRAFT sprite, in for play-testing (16 Sep 2026), not yet approved
     colors: { hair: [50, 40, 35], skin: [230, 190, 155], top: [60, 60, 70], bottom: [35, 35, 45] },
     weapon: { name: "Shoes", color: [200, 170, 140] },
-    flavour: "Understated. Until Tara arrives.",
+    flavour: "Understated. Until Tala arrives.",
     passive: {
       name: "Silence", desc: "+15% dodge chance",
       apply: (s) => { s.dodge += 0.15; },
     },
     recruitLine: "...hey.",
     special: {
-      name: "Tara's Entrance", type: "stun", shape: "aoe", power: 4,
-      line: "Tara has entered the chat.",
+      name: "Tala's Entrance", type: "stun", shape: "aoe", power: 4,
+      line: "Tala has entered the chat.",
     },
   },
 ];
