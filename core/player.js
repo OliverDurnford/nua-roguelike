@@ -134,6 +134,15 @@ PLAYER.fire = (p, dir, s) => {
     { dmg: s.damage, crit: s.crit },
   ]);
   DEPTH.track(b, 0);
+  // It leaves the hand in FRONT of the thrower. Sorted by its own height
+  // alone, anything thrown sideways or upwards sits higher up the screen
+  // than his feet and so came out from behind his head (Ollie, 7 Oct
+  // 2026). Once it has cleared him it sorts against the room as before.
+  const inFront = () => {
+    if (p.exists() && b.pos.dist(p.pos) < G.charH(0.9)) b.z = Math.max(b.z, p.z + 0.01);
+  };
+  inFront();            // it may be drawn once before its first update
+  b.onUpdate(inFront);
 };
 
 // Wire up all combat collisions. Called once per gameplay scene.
