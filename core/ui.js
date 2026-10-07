@@ -37,8 +37,8 @@ UI.PHOTO = [36, 20, 18];           // #241412  behind a portrait
 UI.STICK_RING = [216, 207, 187];   // #d8cfbb  the joystick's inner ring
 // The accent family is the title lettering's own chrome (Ollie, 18 Sep 2026:
 // keep the UI within the silver and blue of the title, no yellow anywhere).
-// The tape on the chosen polaroid, the number block, the stick, the SP
-// button, the GO chip, the toast and the pause menu all draw from it.
+// The tape on the chosen polaroid, the number block, the stick, the toast
+// and the pause menu all draw from it.
 UI.SILVER = [231, 236, 255];       // #e7ecff
 UI.STEEL = [185, 196, 232];        // #b9c4e8
 UI.BLUE = [138, 151, 201];         // #8a97c9
@@ -48,10 +48,11 @@ UI.GOLD = UI.ACCENT;               // older call sites (glows, sparks, hairlines
 // the chrome of the room's name on the title card, top band to bottom band
 UI.CHROME = [[255, 255, 255], UI.STEEL, UI.BLUE_DEEP, UI.SILVER, UI.STEEL, UI.BLUE];
 
-// The special attack screens, and the meter that fills towards one, are
-// where yellow comes back (Ollie, 7 Oct): a gold version of the same chrome,
-// banded the same way so the gloss reads identically, with a yellow and a
-// cream to go with it. Everything else in the UI stays silver and blue.
+// The special attack screens, and the meter, GO chip and SP button that
+// lead to one, are where yellow comes back (Ollie, 7 Oct): a gold version
+// of the same chrome, banded the same way so the gloss reads identically,
+// with a yellow and a cream to go with it. Everything else in the UI stays
+// silver and blue.
 UI.SPECIAL_YELLOW = [255, 214, 64];
 UI.SPECIAL_CREAM = [255, 243, 204];
 UI.SPECIAL_CHROME = [[255, 253, 232], [255, 222, 89], [190, 112, 16], [255, 244, 170], [255, 200, 46], [212, 136, 22]];
@@ -156,7 +157,8 @@ UI.chip = (str, x, y, o = {}) => {
   else if (o.anchor === "center") { cx = x - w / 2; cy = y - h / 2; }
   const op = o.opacity === undefined ? 1 : o.opacity;
   UI.card(vec2(cx, cy), w, h, {
-    fill: o.fill || UI.CHIP, shade: o.shade === undefined ? null : o.shade, notch: false, opacity: op,
+    fill: o.fill || UI.CHIP, shade: o.shade === undefined ? null : o.shade,
+    highlight: o.highlight, notch: false, opacity: op,
   });
   UI.text(str, cx + w / 2, cy + h / 2 + 1, { font, size, anchor: "center", color: o.color || UI.TEXT, opacity: op });
   return { w, h };
@@ -559,7 +561,10 @@ UI.hud = () => {
         const go = isTouchscreen() ? "GO ON THEN · SP" : "GO ON THEN · SPACE";
         UI.chip(go, rightX, 16, {
           anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 3,
-          fill: UI.BLUE_DEEP, color: UI.SILVER, opacity: 0.8 + Math.sin(time() * 5) * 0.2,
+          // solid, so the strap's clip never shows through; it pulses
+          // brighter and back instead of fading
+          fill: UI.SPECIAL_CHROME[1].map((v, k) => Math.round(v + (UI.SPECIAL_CHROME[3][k] - v) * (0.5 + Math.sin(time() * 5) * 0.5))),
+          highlight: UI.SPECIAL_CHROME[0], shade: UI.SPECIAL_CHROME[5], color: UI.INK,
         });
       } else {
         UI.label(sel.name.toUpperCase() + "'S GO", rightX, 22, { anchor: "topright", color: UI.NAVY, shadow: false });
@@ -705,8 +710,10 @@ UI.hud = () => {
       const op = ready ? 0.85 + Math.sin(time() * 5) * 0.15 : 0.35;
       drawCircle({ pos: bp, radius: 46, color: UI.rgb(UI.WHITE), opacity: op });
       drawCircle({ pos: bp, radius: 45, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op });
-      drawCircle({ pos: bp, radius: 41.5, fill: false, outline: { width: 5, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op });
-      UI.label("SP", bp.x, bp.y + 1, { size: 16, anchor: "center", color: UI.NAVY, shadow: false, opacity: op });
+      // a gold ring: yellow, with an amber edge inside it
+      drawCircle({ pos: bp, radius: 41.5, fill: false, outline: { width: 5, color: UI.rgb(UI.SPECIAL_CHROME[1]) }, opacity: op });
+      drawCircle({ pos: bp, radius: 38.5, fill: false, outline: { width: 1.5, color: UI.rgb(UI.SPECIAL_CHROME[5]) }, opacity: op });
+      UI.label("SP", bp.x, bp.y + 1, { size: 16, anchor: "center", color: UI.SPECIAL_CHROME[2], shadow: false, opacity: op });
     }
 
     // ===== desktop crosshair: ring + dot =====
