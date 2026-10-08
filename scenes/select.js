@@ -68,6 +68,13 @@ scene("select", () => {
       });
     });
     const figure = card.add([...ART.charComps(c.id, 84), pos(0, feetY - 42), opacity(1)]);
+    // At rest everyone poses for the photo, in a way that is theirs (Ollie,
+    // 8 Oct). A pose sheet of their own, so each breathe starts at its own
+    // moment and the ten never move in step.
+    const poser = ART.hasPose(c.id)
+      ? card.add([...ART.poseComps(c.id, 84), pos(0, feetY - 42), opacity(1)])
+      : null;
+    if (poser) wait((i * 0.37) % 1.05, () => poser.play("pose"));
     const name = card.add([
       text(c.name.toLowerCase(), { size: 32, font: UI.VT }), pos(0, CH / 2 - 21), anchor("center"),
       color(UI.rgb(UI.TEXT)), opacity(1),
@@ -75,10 +82,10 @@ scene("select", () => {
     // a strip of silver tape holds the chosen one down
     const tapeInk = card.add([rect(40, 14), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.INK)), opacity(1)]);
     const tape = card.add([rect(36, 10), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.STEEL)), opacity(1)]);
-    const kids = [figure, name, tapeInk, tape];
+    const kids = [figure, name, tapeInk, tape].concat(poser ? [poser] : []);
 
     // The chosen one strikes the first frame of their throw, item up and
-    // ready to go (Ollie, 7 Oct); everyone else stays on their idle.
+    // ready to go (Ollie, 7 Oct); everyone else holds their pose.
     const throwFrame = ART.hasAnims(c.id) ? G.SPR["ch-" + c.id].anims.throw.from : null;
     let posed = false;
 
@@ -86,10 +93,15 @@ scene("select", () => {
     UI.slideIn(card, p.add(0, 36), p, 0.45, delay);
 
     card.onUpdate(() => {
-      if (throwFrame !== null && posed !== (selected === i)) {
-        posed = selected === i;
+      const sel = selected === i;
+      if (throwFrame !== null && posed !== sel) {
+        posed = sel;
         if (posed) { figure.stop(); figure.frame = throwFrame; }
-        else figure.play("idle");
+        else if (!poser) figure.play("idle");
+      }
+      if (poser) {
+        poser.hidden = sel && throwFrame !== null;
+        figure.hidden = !poser.hidden;
       }
       // hover lift + selected bob, once the entrance has landed
       const want = (card.isHovering() || selected === i) ? 1 : 0;

@@ -479,6 +479,14 @@ ART.init = () => {
       loadSprite("ch-" + c.id, ART.genChar(c));
       G.SPR["ch-" + c.id] = { name: "ch-" + c.id, h: c.height };
     }
+    // the select screen's polaroid pose (core/sprites-pose.js): a sheet of its
+    // own, so a wide pose never widens the field sprite's cell or hitbox
+    if (typeof REAL_POSES !== "undefined" && REAL_POSES[c.id]) {
+      const rp = REAL_POSES[c.id];
+      const key = "ch-" + c.id + "-pose";
+      loadSprite(key, rp.src, { sliceX: rp.sliceX, anims: rp.anims });
+      G.SPR[key] = { name: key, h: rp.charH, anchorY: rp.anchorY, anims: rp.anims };
+    }
     // old-age variant (used by the final boss): the generated elderly version
     // of the approved sprite when core/old-real.js has one, else the
     // code-drawn grey-haired placeholder
@@ -623,6 +631,14 @@ ART.charComps = (id, hPx, old = false) => {
 
 // True if this character has a real animation sheet loaded.
 ART.hasAnims = (id) => !!(G.SPR["ch-" + id] && G.SPR["ch-" + id].anims);
+
+// The select screen's pose, sized and anchored like charComps. Not started:
+// the caller plays "pose" when it wants that card's breathe to begin.
+ART.poseComps = (id, hPx) => {
+  const reg = G.SPR["ch-" + id + "-pose"];
+  return [sprite(reg.name), scale(hPx / reg.h), anchor(vec2(0, reg.anchorY))];
+};
+ART.hasPose = (id) => !!G.SPR["ch-" + id + "-pose"];
 
 // The feet box for a character drawn hPx tall through charComps: half a
 // person wide, a fifth tall, sitting on the foot line (pos is the body's
