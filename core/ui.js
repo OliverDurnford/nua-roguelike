@@ -510,8 +510,9 @@ UI.reveal = (mapW, mapH, opts = {}) => {
 // The companions' polaroids, top right. Screen positions from the kit.
 UI.PORTRAIT = { x: 712, y: 8, w: 54, h: 64, gap: 58 };
 
-// The lanyard card, top left: hearts and the special meter
-UI.LANYARD = { x: 14, y: 14, w: 250, h: 76 };
+// The lanyard card, top left: hearts and the special meter. 16px wider than
+// the kit's 250 so the SPECIAL MOVE chip clears the strap's clip (8 Oct).
+UI.LANYARD = { x: 14, y: 14, w: 266, h: 76 };
 
 UI.hud = () => {
   const hud = add([fixed(), z(170), pos(0, 0), {
@@ -554,16 +555,17 @@ UI.hud = () => {
     UI.label(ch.lanyard || ch.title, 26, 22, { color: UI.BLUE_DEEP, shadow: false });
 
     // whose go it is, top right of the card; the SPECIAL MOVE chip once the
-    // meter is full (Ollie, 8 Oct). It is 112px wide and sits clear of the
-    // longest lanyard (12 characters) with 20px to spare. There is no room
+    // meter is full (Ollie, 8 Oct). It is 112 x 16, sits 2px under the card's
+    // top edge and 6px right of the strap's clip, so it clears the longest
+    // lanyard (12 characters) by a wide margin. There is no room
     // for the key beside it, so on a keyboard a SPACE key cap hangs under
     // the card's corner instead; phones have the SP button.
     const rightX = L.x + cw - 10;
     if (r.companions.length > 0) {
       const sel = G.char(r.companions[r.selected]);
       if (r.meter >= 1) {
-        UI.chip("SPECIAL MOVE", rightX, 16, {
-          anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 3,
+        UI.chip("SPECIAL MOVE", rightX, 18, {
+          anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 2,
           // solid, so the strap's clip never shows through; it pulses
           // brighter and back instead of fading
           fill: UI.SPECIAL_CHROME[1].map((v, k) => Math.round(v + (UI.SPECIAL_CHROME[3][k] - v) * (0.5 + Math.sin(time() * 5) * 0.5))),
@@ -571,7 +573,7 @@ UI.hud = () => {
         });
         if (!isTouchscreen()) {
           UI.chip("SPACE", L.x + cw - 4, L.y + L.h + 4, {
-            anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 3, shade: UI.PAPER_SHADE, color: UI.INK,
+            anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 2, shade: UI.PAPER_SHADE, color: UI.INK,
           });
         }
       } else {
