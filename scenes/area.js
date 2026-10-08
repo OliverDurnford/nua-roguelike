@@ -431,16 +431,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       "Hurry.",
     ]);
   }
-  if (a.finale) {
-    // Clear of each other and of the fissures painted into the plate.
-    const placed = [];
-    for (let i = 0; i < 12; i++) {
-      const at = CRACKS.spot([0, 0, m.w, m.h], { variant: i, placed, plate: a.plate });
-      if (!at) continue;
-      placed.push(at);
-      add([...CRACKS.comps(at.variant, { flip: at.flip, delay: i * 0.15 }), pos(at.pos), opacity(0.9), z(2)]);
-    }
-  }
+  // No cracks added in the finale: its plate has them painted in.
 
   // --- the reveal: pulled back over the whole room, then in to the player ---
   // Nothing moves through the hold; control comes back as the push starts

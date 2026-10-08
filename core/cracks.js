@@ -1,17 +1,16 @@
 // ============================================================
 // CRACKS: the fissures that open in Victoria Park and follow you
-// to the end (the tutorial, the canal's dread, the finale).
+// (the tutorial and the canal's dread). The finale needs none: its
+// plate has them painted in, and these are drawn to match those.
 //
 // Drawn in code, not generated, for three reasons Ollie raised
 // (8 Oct 2026):
 //   1. Which way is up. The light is worked out on screen (the
-//      shadowed wall under the top lip, the glow catching the
-//      bottom lip), so a crack can run in any direction and still
-//      read right. The old art was rotated at random, so its
+//      bright lip along the top, the dimmer one along the bottom),
+//      so a crack can run in any direction and still read right. The old art was rotated at random, so its
 //      lighting came out upside down and sideways.
 //   2. No grass. Nothing around the fissure but a faint purple
-//      glow, so it sits on any ground: park grass, canal paving,
-//      the ruined park.
+//      glow, so it sits on any ground: park grass or canal paving.
 //   3. They grow. Each crack is baked as STAGES frames, from a
 //      hairline at its centre to fully open, and plays through
 //      them: the line races out first, then the middle splits and
@@ -19,8 +18,8 @@
 //      rather than swapping pictures.
 // And (8 Oct, second pass): like the finale's painted fissures, the
 // wide parts are dark inside with glowing lips and pale glyphs down
-// the middle, and no crack is ever placed over another one, painted
-// or not (CRACKS.spot).
+// the middle, and no crack is ever placed over another one
+// (CRACKS.spot).
 //
 // The colours are sampled from the painted fissures on the ruined
 // park plate (data/level-parkruined.js), so the tutorial's cracks
@@ -323,40 +322,6 @@ const CRACKS = (() => {
   };
 
   const OCC = [];   // per variant: where its crack lies
-  const PAINTED = {};   // per plate: where cracks are already painted
-
-  // The finale's plate has fissures painted in, glowing magenta. Mark
-  // where, so a growing crack never lands across one. The image is a
-  // data URL, so reading it back is allowed even from file://.
-  const markPainted = (key) => {
-    if (typeof PLATES === "undefined" || !PLATES[key]) return;
-    const img = new Image();
-    img.onload = () => {
-      const C = 4;   // image pixels per cell
-      const cols = Math.ceil(img.width / C), rows = Math.ceil(img.height / C);
-      const cv = document.createElement("canvas");
-      cv.width = cols; cv.height = rows;
-      const x = cv.getContext("2d");
-      x.drawImage(img, 0, 0, cols, rows);
-      const d = x.getImageData(0, 0, cols, rows).data;
-      const hot = new Uint8Array(cols * rows);
-      for (let i = 0; i < cols * rows; i++) {
-        const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
-        hot[i] = r > 150 && b > 165 && g < 150 && r - g > 45 ? 1 : 0;
-      }
-      const grid = new Uint8Array(cols * rows);
-      const R = 4;   // and a little room round them
-      for (let y = 0; y < rows; y++) for (let x2 = 0; x2 < cols; x2++) {
-        if (!hot[y * cols + x2]) continue;
-        for (let yy = Math.max(0, y - R); yy <= Math.min(rows - 1, y + R); yy++) {
-          for (let xx = Math.max(0, x2 - R); xx <= Math.min(cols - 1, x2 + R); xx++) grid[yy * cols + xx] = 1;
-        }
-      }
-      PAINTED[key] = { cols, rows, imgW: img.width, grid };
-    };
-    img.src = PLATES[key];
-  };
-
   const load = () => {
     VARIANTS.forEach((v, n) => {
       const { W, H, frames, occ } = bake(v);
@@ -367,7 +332,6 @@ const CRACKS = (() => {
       frames.forEach((f, k) => x.putImageData(new ImageData(f, W, H), k * W, 0));
       loadSprite("crack" + n, cv.toDataURL(), { sliceX: STAGES });
     });
-    markPainted("parkruined");
   };
 
   // Plays a crack open: hidden for `delay` seconds, then grows over
@@ -397,9 +361,8 @@ const CRACKS = (() => {
   // Where crack `variant` can open with its centre inside box
   // [x1, y1, x2, y2]: every part of it on open floor, clear of the
   // room's solids (walls, water, furniture), of the plate's painted
-  // things (a moored boat has an outline but no solid footprint), of
-  // any crack painted into the plate, and of every crack in `placed`,
-  // so no two ever cross. If the shape asked for will not fit, the
+  // things (a moored boat has an outline but no solid footprint), and
+  // of every crack in `placed`, so no two ever cross. If the shape asked for will not fit, the
   // smaller ones are tried. Returns { pos, variant, flip }, or null
   // when nothing fits (a tight room just gets fewer cracks).
   const spot = ([x1, y1, x2, y2], { variant = 0, placed = [], plate = null } = {}) => {
@@ -412,9 +375,6 @@ const CRACKS = (() => {
         blocks.push({ x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) });
       }
     }
-    const key = plate && plate.sprite && plate.sprite.replace(/^plate-/, "");
-    const painted = key && PAINTED[key];
-    const worldW = plate ? plate.cols * plate.unit : 1;
 
     // Does crack c ({ pos, variant, flip }) touch any of the above?
     const clashes = (c) => {
@@ -422,11 +382,6 @@ const CRACKS = (() => {
       for (const [dx, dy] of o.pts) {
         const wx = c.pos.x + (c.flip ? -dx : dx) * k, wy = c.pos.y + dy * k;
         for (const r of blocks) if (wx > r.x1 - 4 && wx < r.x2 + 4 && wy > r.y1 - 4 && wy < r.y2 + 4) return true;
-        if (painted) {
-          const s = painted.imgW / worldW / 4;
-          const cx = Math.floor(wx * s), cy = Math.floor(wy * s);
-          if (cx >= 0 && cy >= 0 && cx < painted.cols && cy < painted.rows && painted.grid[cy * painted.cols + cx]) return true;
-        }
         for (const q of placed) {
           const qo = OCC[q.variant];
           let lx = Math.round((wx - q.pos.x) / k), ly = Math.round((wy - q.pos.y) / k);
