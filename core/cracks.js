@@ -17,12 +17,17 @@
 //      them: the line races out first, then the middle splits and
 //      starts to glow. Every frame is the same crack, so it grows
 //      rather than swapping pictures.
+// And (8 Oct, second pass): like the finale's painted fissures, the
+// wide parts are dark inside with glowing lips and pale glyphs down
+// the middle, and no crack is ever placed over another one, painted
+// or not (CRACKS.spot).
 //
 // The colours are sampled from the painted fissures on the ruined
 // park plate (data/level-parkruined.js), so the tutorial's cracks
 // are the same ones you find waiting at the end.
 //
-// Use:  add([...CRACKS.comps(variant, { delay, dur }), pos(p), z(3)])
+// Use:  const at = CRACKS.spot(box, { variant, placed, plate });
+//       if (at) { placed.push(at); add([...CRACKS.comps(at.variant, { flip: at.flip, delay }), pos(at.pos), z(3)]); }
 // The sprite's centre is the crack's epicentre, so anything pulled
 // into a crack goes to its pos.
 // ============================================================
@@ -34,24 +39,43 @@ const CRACKS = (() => {
 
   // Sampled from the ruined park's painted fissures.
   const PAL = {
-    edge: [18, 0, 26],      // the black lip
-    wallTop: [44, 12, 60],  // the wall face just under the top lip
-    wall: [72, 26, 98],     // the rest of that wall, glow catching it
-    glow: [214, 92, 236],   // the light down in the crack
-    hot: [242, 120, 244],   // brightest, where it is widest
-    rim: [244, 206, 244],   // the bottom lip, lit from inside
-    halo: [176, 86, 226],   // spill on the ground around it
+    edge: [18, 0, 26],       // the black lip
+    seam: [214, 92, 236],    // a thin crack: all light
+    hot: [248, 156, 252],    // the very edge of that lip
+    lip: [232, 112, 244],    // the top lip of a wide one, glowing
+    lipFade: [150, 58, 182], // just under it
+    lipLow: [170, 64, 204],  // the bottom lip
+    mid: [112, 44, 142],     // a crack too narrow to be dark inside
+    body: [40, 18, 56],      // the dark inside of a wide one
+    deep: [28, 10, 40],      // streaks down that dark face
+    lift: [56, 26, 76],
+    glyph: [250, 214, 255],  // the glyphs, pale and lit
+    glyphGlow: [138, 60, 178],
+    halo: [176, 86, 226],    // spill on the ground around it
   };
+
+  // The glyphs, 5 x 7, in the spirit of the runes painted down the
+  // finale's cracks. Invented, so a mirrored one is still a glyph.
+  const GLYPHS = [
+    ["#####", "..#..", ".###.", "#.#.#", ".###.", "..#..", "#####"],
+    ["#.#.#", "#.#.#", ".###.", "..#..", "..#..", "..#..", "..#.."],
+    ["###..", "#..#.", "#..#.", "###..", "#.#..", "#..#.", "#...#"],
+    [".##..", "#..#.", "#..#.", ".####", "...#.", "..#..", ".#..."],
+    ["#...#", "##.##", "#.#.#", "#.#.#", "#.#.#", "##.##", "#...#"],
+    ["#####", "#...#", ".#.#.", ".#.#.", "..#..", ".....", "..#.."],
+    ["#....", "#.##.", "##..#", "#...#", "#..#.", "#.#..", "##..."],
+    ["..#..", ".#.#.", "#...#", ".#.#.", "..#..", "..#..", ".###."],
+  ];
 
   // Six shapes, biggest first. len is each arm's length and w the
   // half-width at the epicentre, both in crack pixels.
   const VARIANTS = [
-    { seed: 11, len: 56, w: 5.5 },
-    { seed: 23, len: 52, w: 5.5 },
-    { seed: 37, len: 46, w: 5 },
-    { seed: 41, len: 42, w: 5 },
-    { seed: 53, len: 36, w: 4.5 },
-    { seed: 67, len: 32, w: 4 },
+    { seed: 11, len: 58, w: 8 },
+    { seed: 23, len: 54, w: 7.5 },
+    { seed: 37, len: 48, w: 7 },
+    { seed: 41, len: 44, w: 6.5 },
+    { seed: 53, len: 38, w: 6 },
+    { seed: 67, len: 32, w: 5 },
   ];
 
   // A small seeded generator, so every crack is the same every run.
@@ -91,6 +115,7 @@ const CRACKS = (() => {
         const k = Math.min(1, run / len);
         pts.push({ x, y, d: d + run, w: w0 * Math.pow(1 - k, 0.4) * span(0.6, 1.1) });
       }
+      pts.trunk = depth === 0;
       lines.push(pts);
       if (depth >= 2) return;
       // Branches off the trunk, and hairline twigs off the branches.
@@ -103,16 +128,16 @@ const CRACKS = (() => {
       }
     };
 
-    const course = span(-0.45, 0.45);
+    const course = span(-0.75, 0.75);
     walk(0, 0, 0, course, v.len * span(0.85, 1), v.w, 0);
     walk(0, 0, 0, course + Math.PI, v.len * span(0.85, 1), v.w, 0);
     let dMax = 0;
     for (const l of lines) for (const p of l) dMax = Math.max(dMax, p.d);
-    return { lines, dMax };
+    return { lines, dMax, pick: (n) => Math.floor(r() * n) };
   };
 
   // --- one growth stage, s from 0 to 1, as RGBA pixels ---
-  const stage = (sh, s, W, H, ox, oy) => {
+  const stage = (sh, s, W, H, ox, oy, glyphs) => {
     const inner = new Uint8Array(W * H);
     const hair = new Uint8Array(W * H);
     const front = sh.dMax * Math.min(1, 0.06 + s / 0.55);   // the line races out first
@@ -172,34 +197,71 @@ const CRACKS = (() => {
       glow = out;
     }
 
+    // What each open pixel is: 0 outside, 1 a lip or a thin crack,
+    // 2 the dark inside of a wide one (where glyphs can go).
+    const kind = new Uint8Array(W * H);
+    const col = new Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (!inner[i]) continue;
+      // How far to the top lip and the bottom lip, straight up and down.
+      let up = 1; while (at(inner, x, y - up)) up++;
+      let dn = 1; while (at(inner, x, y + dn)) dn++;
+      const tall = up + dn - 1;
+      let c, k = 1;
+      if (tall <= 3) c = up === 1 && tall === 3 ? PAL.lip : PAL.seam;
+      else if (tall <= 6) c = up === 1 ? PAL.lip : dn === 1 ? PAL.lipLow : PAL.mid;
+      else if (up === 1) c = PAL.hot;
+      else if (up === 2) c = PAL.lip;
+      else if (up === 3) c = PAL.lipFade;
+      else if (dn === 1) c = PAL.lipLow;
+      else if (dn === 2 && tall >= 11) c = PAL.lipFade;
+      else {
+        // Streaks down the dark face, like the painted ones.
+        const h = (Math.imul(x + 101, 2654435761) >>> 24) % 13;
+        c = h === 0 || (h === 1 && dn > 2) ? PAL.deep : h === 7 && up > 3 ? PAL.lift : PAL.body;
+        k = 2;
+      }
+      col[i] = c;
+      kind[i] = k;
+    }
+
+    // Glyphs, each only once the crack has opened wide enough round it.
+    for (const g of glyphs) {
+      let fits = true;
+      for (let y = -1; y <= 7 && fits; y++) for (let x = -1; x <= 5 && fits; x++) {
+        const k = at(kind, g.x + x, g.y + y);
+        if (y >= 0 && y < 7 && x >= 0 && x < 5 ? k !== 2 : k === 0) fits = false;
+      }
+      if (!fits) continue;
+      const rows = GLYPHS[g.n];
+      const on = (x, y) => y >= 0 && y < 7 && x >= 0 && x < 5 && rows[y][x] === "#";
+      for (let y = -1; y <= 7; y++) for (let x = -1; x <= 5; x++) {
+        const i = (g.y + y) * W + g.x + x;
+        if (on(x, y)) col[i] = PAL.glyph;
+        else if (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1)) col[i] = PAL.glyphGlow;
+      }
+    }
+
     const px = new Uint8ClampedArray(W * H * 4);
     const put = (i, c, a) => { px[i * 4] = c[0]; px[i * 4 + 1] = c[1]; px[i * 4 + 2] = c[2]; px[i * 4 + 3] = a; };
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x;
-      if (inner[i]) {
-        // How far to the top lip and the bottom lip, straight up and down.
-        let up = 1; while (at(inner, x, y - up)) up++;
-        let dn = 1; while (at(inner, x, y + dn)) dn++;
-        const tall = up + dn - 1;
-        let c;
-        if (tall <= 2) c = up === 1 && tall === 2 ? PAL.wall : PAL.glow;   // a thin seam: just light
-        else if (up === 1) c = PAL.wallTop;
-        else if (up <= Math.max(1, Math.round(tall * 0.42))) c = (x * 7 + up * 3) % 5 === 0 ? PAL.wallTop : PAL.wall;
-        else if (dn === 1) c = PAL.rim;
-        else c = tall >= 7 && dn <= 3 ? PAL.hot : PAL.glow;
-        put(i, c, 255);
-      } else if (hair[i] || at(inner, x - 1, y) || at(inner, x + 1, y) || at(inner, x, y - 1) || at(inner, x, y + 1)) {
+      if (inner[i]) put(i, col[i], 255);
+      else if (hair[i] || at(inner, x - 1, y) || at(inner, x + 1, y) || at(inner, x, y - 1) || at(inner, x, y + 1)) {
         put(i, PAL.edge, 255);
       } else {
         // Stepped, so the spill reads as pixel art rather than airbrush.
-        const a = Math.round(Math.min(0.5, glow[i] * 1.5) * 12) / 12;
+        const a = Math.round(Math.min(0.58, glow[i] * 1.8) * 12) / 12;
         if (a > 0) put(i, PAL.halo, Math.round(a * 255));
       }
     }
-    return px;
+    return { px, kind };
   };
 
-  // Every stage of one variant, side by side in one strip.
+  // Every stage of one variant, side by side in one strip, plus where
+  // the crack itself lies (for keeping cracks apart).
+  const MARGIN = 6;   // crack pixels kept clear between two cracks
   const bake = (v) => {
     const sh = shape(v);
     let mx = 0, my = 0;
@@ -210,22 +272,102 @@ const CRACKS = (() => {
     // Centred on the epicentre, so anchor("center") puts it at pos.
     const hw = Math.ceil(mx) + HALO + 2, hh = Math.ceil(my) + HALO + 2;
     const W = hw * 2 + 1, H = hh * 2 + 1;
+    const ox = hw + 0.5, oy = hh + 0.5;
+
+    // Glyph slots: down the trunk from the middle out, wherever the
+    // fully open crack is dark inside, at least a glyph apart.
+    const open = stage(sh, 1, W, H, ox, oy, []);
+    const glyphs = [];
+    const fitsAt = (gx, gy) => {
+      for (let y = -1; y <= 7; y++) for (let x = -1; x <= 5; x++) {
+        const xx = gx + x, yy = gy + y;
+        if (xx < 0 || yy < 0 || xx >= W || yy >= H) return false;
+        const k = open.kind[yy * W + xx];
+        if (y >= 0 && y < 7 && x >= 0 && x < 5 ? k !== 2 : k === 0) return false;
+      }
+      return true;
+    };
+    for (const l of sh.lines) {
+      if (!l.trunk) continue;
+      for (const p of l) {
+        let best = null;
+        for (let dy = -2; dy <= 2 && !best; dy++) for (let dx = -1; dx <= 1 && !best; dx++) {
+          const gx = Math.round(p.x + ox) - 2 + dx, gy = Math.round(p.y + oy) - 3 + dy;
+          if (fitsAt(gx, gy)) best = { x: gx, y: gy };
+        }
+        if (best && glyphs.every((g) => Math.abs(g.x - best.x) > 9 || Math.abs(g.y - best.y) > 10)) {
+          glyphs.push({ ...best, n: sh.pick(GLYPHS.length) });
+        }
+      }
+    }
+
     const frames = [];
-    for (let k = 0; k < STAGES; k++) frames.push(stage(sh, (k + 1) / STAGES, W, H, hw + 0.5, hh + 0.5));
-    return { W, H, frames, reach: { x: mx, y: my } };
+    for (let k = 0; k < STAGES; k++) frames.push(stage(sh, (k + 1) / STAGES, W, H, ox, oy, glyphs).px);
+
+    // Where the open crack lies: one of its pixels from every 2 x 2 block
+    // it touches (so a one pixel hairline is never skipped), and a grid
+    // of all of them grown by MARGIN, both from the epicentre.
+    const last = frames[STAGES - 1];
+    const pts = [];
+    const seen = new Set();
+    const near = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (last[(y * W + x) * 4 + 3] !== 255) continue;
+      const block = (y >> 1) * W + (x >> 1);
+      if (!seen.has(block)) { seen.add(block); pts.push([x - hw, y - hh]); }
+      for (let yy = Math.max(0, y - MARGIN); yy <= Math.min(H - 1, y + MARGIN); yy++) {
+        for (let xx = Math.max(0, x - MARGIN); xx <= Math.min(W - 1, x + MARGIN); xx++) near[yy * W + xx] = 1;
+      }
+    }
+    return { W, H, frames, glyphs: glyphs.length, occ: { hw, hh, W, H, pts, near } };
   };
 
-  const REACH = [];   // each variant's half extent, in crack pixels
+  const OCC = [];   // per variant: where its crack lies
+  const PAINTED = {};   // per plate: where cracks are already painted
+
+  // The finale's plate has fissures painted in, glowing magenta. Mark
+  // where, so a growing crack never lands across one. The image is a
+  // data URL, so reading it back is allowed even from file://.
+  const markPainted = (key) => {
+    if (typeof PLATES === "undefined" || !PLATES[key]) return;
+    const img = new Image();
+    img.onload = () => {
+      const C = 4;   // image pixels per cell
+      const cols = Math.ceil(img.width / C), rows = Math.ceil(img.height / C);
+      const cv = document.createElement("canvas");
+      cv.width = cols; cv.height = rows;
+      const x = cv.getContext("2d");
+      x.drawImage(img, 0, 0, cols, rows);
+      const d = x.getImageData(0, 0, cols, rows).data;
+      const hot = new Uint8Array(cols * rows);
+      for (let i = 0; i < cols * rows; i++) {
+        const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+        hot[i] = r > 150 && b > 165 && g < 150 && r - g > 45 ? 1 : 0;
+      }
+      const grid = new Uint8Array(cols * rows);
+      const R = 4;   // and a little room round them
+      for (let y = 0; y < rows; y++) for (let x2 = 0; x2 < cols; x2++) {
+        if (!hot[y * cols + x2]) continue;
+        for (let yy = Math.max(0, y - R); yy <= Math.min(rows - 1, y + R); yy++) {
+          for (let xx = Math.max(0, x2 - R); xx <= Math.min(cols - 1, x2 + R); xx++) grid[yy * cols + xx] = 1;
+        }
+      }
+      PAINTED[key] = { cols, rows, imgW: img.width, grid };
+    };
+    img.src = PLATES[key];
+  };
+
   const load = () => {
     VARIANTS.forEach((v, n) => {
-      const { W, H, frames, reach } = bake(v);
-      REACH[n] = reach;
+      const { W, H, frames, occ } = bake(v);
+      OCC[n] = occ;
       const cv = document.createElement("canvas");
       cv.width = W * STAGES; cv.height = H;
       const x = cv.getContext("2d");
       frames.forEach((f, k) => x.putImageData(new ImageData(f, W, H), k * W, 0));
       loadSprite("crack" + n, cv.toDataURL(), { sliceX: STAGES });
     });
+    markPainted("parkruined");
   };
 
   // Plays a crack open: hidden for `delay` seconds, then grows over
@@ -252,16 +394,16 @@ const CRACKS = (() => {
     grow(opts.delay || 0, opts.dur || 1.1, opts.flip !== undefined ? opts.flip : Math.random() < 0.5),
   ];
 
-  // A centre inside box [x1, y1, x2, y2] for crack `variant` to open on
-  // open floor: the whole crack (not just its middle) clear of the room's
-  // solids (walls, water, furniture) and of the plate's painted things
-  // (a moored boat has an outline but no solid footprint), and away from
-  // the cracks already in `taken`, so nine read as nine rather than one
-  // knot. null when nothing fits.
-  const spot = ([x1, y1, x2, y2], { variant = 0, taken = [], plate = null } = {}) => {
-    const reach = REACH[variant % VARIANTS.length];
+  // Where crack `variant` can open with its centre inside box
+  // [x1, y1, x2, y2]: every part of it on open floor, clear of the
+  // room's solids (walls, water, furniture), of the plate's painted
+  // things (a moored boat has an outline but no solid footprint), of
+  // any crack painted into the plate, and of every crack in `placed`,
+  // so no two ever cross. If the shape asked for will not fit, the
+  // smaller ones are tried. Returns { pos, variant, flip }, or null
+  // when nothing fits (a tight room just gets fewer cracks).
+  const spot = ([x1, y1, x2, y2], { variant = 0, placed = [], plate = null } = {}) => {
     const k = PX * G.areaScale;
-    const hx = reach.x * k, hy = reach.y * k * 0.6;   // branch tips may stray a little
     const blocks = COLLIDE.solids.filter((r) => !(r.open && r.open())).slice();
     if (plate && plate.things) {
       for (const t of plate.things) {
@@ -270,13 +412,39 @@ const CRACKS = (() => {
         blocks.push({ x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) });
       }
     }
-    const onFloor = (p) => !blocks.some((r) => p.x + hx > r.x1 && p.x - hx < r.x2 && p.y + hy > r.y1 && p.y - hy < r.y2);
-    const apart = (p) => !taken.some((c) => Math.abs(c.x - p.x) < 150 && Math.abs(c.y - p.y) < 70);
-    for (let i = 0; i < 120; i++) {
-      const p = vec2(rand(x1, x2), rand(y1, y2));
-      if (onFloor(p) && apart(p)) return p;
+    const key = plate && plate.sprite && plate.sprite.replace(/^plate-/, "");
+    const painted = key && PAINTED[key];
+    const worldW = plate ? plate.cols * plate.unit : 1;
+
+    // Does crack c ({ pos, variant, flip }) touch any of the above?
+    const clashes = (c) => {
+      const o = OCC[c.variant];
+      for (const [dx, dy] of o.pts) {
+        const wx = c.pos.x + (c.flip ? -dx : dx) * k, wy = c.pos.y + dy * k;
+        for (const r of blocks) if (wx > r.x1 - 4 && wx < r.x2 + 4 && wy > r.y1 - 4 && wy < r.y2 + 4) return true;
+        if (painted) {
+          const s = painted.imgW / worldW / 4;
+          const cx = Math.floor(wx * s), cy = Math.floor(wy * s);
+          if (cx >= 0 && cy >= 0 && cx < painted.cols && cy < painted.rows && painted.grid[cy * painted.cols + cx]) return true;
+        }
+        for (const q of placed) {
+          const qo = OCC[q.variant];
+          let lx = Math.round((wx - q.pos.x) / k), ly = Math.round((wy - q.pos.y) / k);
+          if (q.flip) lx = -lx;
+          lx += qo.hw; ly += qo.hh;
+          if (lx >= 0 && ly >= 0 && lx < qo.W && ly < qo.H && qo.near[ly * qo.W + lx]) return true;
+        }
+      }
+      return false;
+    };
+
+    for (let v = variant % VARIANTS.length; v < VARIANTS.length; v++) {
+      for (let i = 0; i < 70; i++) {
+        const c = { pos: vec2(rand(x1, x2), rand(y1, y2)), variant: v, flip: Math.random() < 0.5 };
+        if (!clashes(c)) return c;
+      }
     }
-    return null;   // a narrow room just gets fewer cracks
+    return null;
   };
 
   return { STAGES, VARIANTS, bake, load, comps, spot };

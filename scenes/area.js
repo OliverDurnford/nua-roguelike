@@ -417,12 +417,13 @@ scene("area", ({ chapter, area: areaNum }) => {
   if (a.dread) {
     // Only ever on the floor (core/cracks.js spot): with no grass round
     // them any more, a crack in the canal or across a boat would show.
-    const taken = [];
+    // ...and never across each other.
+    const placed = [];
     for (let i = 0; i < 6; i++) {
-      const p = CRACKS.spot([m.w * 0.4, 0, m.w, m.h], { variant: i, taken, plate: a.plate });
-      if (!p) continue;
-      taken.push(p);
-      add([...CRACKS.comps(i, { delay: 0.6 + i * 0.5, dur: 1.4 }), pos(p), opacity(0.85), z(2)]);
+      const at = CRACKS.spot([m.w * 0.4, 0, m.w, m.h], { variant: i, placed, plate: a.plate });
+      if (!at) continue;
+      placed.push(at);
+      add([...CRACKS.comps(at.variant, { flip: at.flip, delay: 0.6 + i * 0.5, dur: 1.4 }), pos(at.pos), opacity(0.85), z(2)]);
     }
     UI.subtitleSeq([
       "...do you feel that?",
@@ -431,12 +432,13 @@ scene("area", ({ chapter, area: areaNum }) => {
     ]);
   }
   if (a.finale) {
-    const taken = [];
+    // Clear of each other and of the fissures painted into the plate.
+    const placed = [];
     for (let i = 0; i < 12; i++) {
-      const p = CRACKS.spot([0, 0, m.w, m.h], { variant: i, taken, plate: a.plate });
-      if (!p) continue;
-      taken.push(p);
-      add([...CRACKS.comps(i, { delay: i * 0.15 }), pos(p), opacity(0.9), z(2)]);
+      const at = CRACKS.spot([0, 0, m.w, m.h], { variant: i, placed, plate: a.plate });
+      if (!at) continue;
+      placed.push(at);
+      add([...CRACKS.comps(at.variant, { flip: at.flip, delay: i * 0.15 }), pos(at.pos), opacity(0.9), z(2)]);
     }
   }
 

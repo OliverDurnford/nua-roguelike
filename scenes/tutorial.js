@@ -102,7 +102,8 @@ scene("tutorial", () => {
   };
 
   // --- the cracks ---
-  const cracks = [];
+  const cracks = [];   // where each one opened, to pull people into
+  const placed = [];   // what CRACKS.spot needs to keep them apart
   const quake = () => {
     st = 3;
     UI.subtitleSeq(["...that wasn't the car.", "What IS that?!"]);
@@ -110,11 +111,15 @@ scene("tutorial", () => {
       wait(i * 0.18, () => {
         shake(8);
         if (i % 3 === 0) SFX.play("rumble");
+        // Never across another crack: once the diamond is full, the
+        // rest of the rumbles just shake (the first always fits).
         const [cx1, cy1, cx2, cy2] = PARK_PLATE.crackBox;
-        const p = CRACKS.spot([cx1 * U, cy1 * U, cx2 * U, cy2 * U], { variant: i, taken: cracks, plate: PARK_PLATE })
-          || vec2(rand(cx1, cx2) * U, rand(cy1, cy2) * U);   // the field is open, so never needed
-        cracks.push(p);
-        add([...CRACKS.comps(i), pos(p), z(3)]);   // grows open, see core/cracks.js
+        const at = CRACKS.spot([cx1 * U, cy1 * U, cx2 * U, cy2 * U], { variant: i, placed, plate: PARK_PLATE })
+          || (cracks.length ? null : { pos: vec2((cx1 + cx2) / 2 * U, (cy1 + cy2) / 2 * U), variant: 0, flip: false });
+        if (!at) return;
+        placed.push(at);
+        cracks.push(at.pos);
+        add([...CRACKS.comps(at.variant, { flip: at.flip }), pos(at.pos), z(3)]);   // grows open, see core/cracks.js
       });
     }
     wait(2.2, pullFriendsIn);
