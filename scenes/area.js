@@ -415,8 +415,14 @@ scene("area", ({ chapter, area: areaNum }) => {
     }
   }
   if (a.dread) {
+    // Only ever on the floor (core/cracks.js spot): with no grass round
+    // them any more, a crack in the canal or across a boat would show.
+    const taken = [];
     for (let i = 0; i < 6; i++) {
-      add([sprite("crack" + (i % 3)), pos(rand(m.w * 0.4, m.w), rand(60, m.h - 60)), anchor("center"), rotate(rand(0, 360)), opacity(0.85), z(2)]);
+      const p = CRACKS.spot([m.w * 0.4, 0, m.w, m.h], { variant: i, taken, plate: a.plate });
+      if (!p) continue;
+      taken.push(p);
+      add([...CRACKS.comps(i, { delay: 0.6 + i * 0.5, dur: 1.4 }), pos(p), opacity(0.85), z(2)]);
     }
     UI.subtitleSeq([
       "...do you feel that?",
@@ -425,8 +431,12 @@ scene("area", ({ chapter, area: areaNum }) => {
     ]);
   }
   if (a.finale) {
+    const taken = [];
     for (let i = 0; i < 12; i++) {
-      add([sprite("crack" + (i % 3)), pos(rand(60, m.w - 60), rand(60, m.h - 60)), anchor("center"), rotate(rand(0, 360)), opacity(0.9), z(2)]);
+      const p = CRACKS.spot([0, 0, m.w, m.h], { variant: i, taken, plate: a.plate });
+      if (!p) continue;
+      taken.push(p);
+      add([...CRACKS.comps(i, { delay: i * 0.15 }), pos(p), opacity(0.9), z(2)]);
     }
   }
 

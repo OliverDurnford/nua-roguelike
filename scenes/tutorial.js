@@ -111,9 +111,10 @@ scene("tutorial", () => {
         shake(8);
         if (i % 3 === 0) SFX.play("rumble");
         const [cx1, cy1, cx2, cy2] = PARK_PLATE.crackBox;
-        const p = vec2(rand(cx1, cx2) * U, rand(cy1, cy2) * U);
+        const p = CRACKS.spot([cx1 * U, cy1 * U, cx2 * U, cy2 * U], { variant: i, taken: cracks, plate: PARK_PLATE })
+          || vec2(rand(cx1, cx2) * U, rand(cy1, cy2) * U);   // the field is open, so never needed
         cracks.push(p);
-        add([sprite("crack" + (i % 3)), pos(p), anchor("center"), rotate(rand(0, 360)), scale(1.3), opacity(1), z(3)]);
+        add([...CRACKS.comps(i), pos(p), z(3)]);   // grows open, see core/cracks.js
       });
     }
     wait(2.2, pullFriendsIn);

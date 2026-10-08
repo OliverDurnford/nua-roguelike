@@ -454,30 +454,6 @@ ART.genCar = () => {
   return cv.toDataURL();
 };
 
-ART.genCrack = (seed) => {
-  const cv = document.createElement("canvas");
-  cv.width = 90; cv.height = 36;
-  const x = cv.getContext("2d");
-  x.strokeStyle = "#0a0a0d";
-  x.lineWidth = 5;
-  x.lineCap = "round";
-  x.beginPath();
-  let px = 4, py = 18 + (seed % 3) * 3 - 3;
-  x.moveTo(px, py);
-  for (let i = 0; i < 6; i++) {
-    px += 14;
-    py += (i + seed) % 2 === 0 ? -8 : 8;
-    x.lineTo(px, py);
-  }
-  x.stroke();
-  x.lineWidth = 2;
-  x.beginPath();
-  x.moveTo(30, 18); x.lineTo(38, 4);
-  x.moveTo(56, 16); x.lineTo(66, 30);
-  x.stroke();
-  return cv.toDataURL();
-};
-
 // ---------- load everything ----------
 ART.init = () => {
   // The UI kit's two pixel faces (core/fonts-real.js). Press Start 2P is
@@ -581,12 +557,9 @@ ART.init = () => {
   } else {
     loadSprite("car", ART.genCar());
   }
-  // Real Victoria Park fissures (core/cracks-real.js) when present
-  if (typeof REAL_CRACKS !== "undefined") {
-    REAL_CRACKS.forEach((d, i) => loadSprite("crack" + i, d));
-  } else {
-    for (let i = 0; i < 3; i++) loadSprite("crack" + i, ART.genCrack(i));
-  }
+  // Victoria Park's fissures, drawn in code with every growth stage
+  // (core/cracks.js).
+  CRACKS.load();
 
   // Collection screen placeholder layers. A friend with real layers in
   // core/cutins-real.js never sees these.
