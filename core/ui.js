@@ -553,19 +553,27 @@ UI.hud = () => {
     const ch = CHAPTERS[r.chapter - 1];
     UI.label(ch.lanyard || ch.title, 26, 22, { color: UI.BLUE_DEEP, shadow: false });
 
-    // whose go it is, top right of the card; the GO chip once the meter is full
+    // whose go it is, top right of the card; the SPECIAL MOVE chip once the
+    // meter is full (Ollie, 8 Oct). It is 112px wide and sits clear of the
+    // longest lanyard (12 characters) with 20px to spare. There is no room
+    // for the key beside it, so on a keyboard a SPACE key cap hangs under
+    // the card's corner instead; phones have the SP button.
     const rightX = L.x + cw - 10;
     if (r.companions.length > 0) {
       const sel = G.char(r.companions[r.selected]);
       if (r.meter >= 1) {
-        const go = isTouchscreen() ? "GO ON THEN · SP" : "GO ON THEN · SPACE";
-        UI.chip(go, rightX, 16, {
+        UI.chip("SPECIAL MOVE", rightX, 16, {
           anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 3,
           // solid, so the strap's clip never shows through; it pulses
           // brighter and back instead of fading
           fill: UI.SPECIAL_CHROME[1].map((v, k) => Math.round(v + (UI.SPECIAL_CHROME[3][k] - v) * (0.5 + Math.sin(time() * 5) * 0.5))),
           highlight: UI.SPECIAL_CHROME[0], shade: UI.SPECIAL_CHROME[5], color: UI.INK,
         });
+        if (!isTouchscreen()) {
+          UI.chip("SPACE", L.x + cw - 4, L.y + L.h + 4, {
+            anchor: "topright", font: UI.PX, size: 8, padX: 6, padY: 3, shade: UI.PAPER_SHADE, color: UI.INK,
+          });
+        }
       } else {
         UI.label(sel.name.toUpperCase() + "'S GO", rightX, 22, { anchor: "topright", color: UI.NAVY, shadow: false });
       }
