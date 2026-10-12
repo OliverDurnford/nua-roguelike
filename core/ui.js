@@ -113,14 +113,21 @@ UI.text = (str, x, y, o = {}) => {
   drawText({
     text: str, font: o.font || UI.VT, size: o.size || 16,
     pos: vec2(x, y), anchor: o.anchor || "topleft", align: o.align, width: o.width,
-    letterSpacing: o.letterSpacing, color: UI.rgb(o.color || UI.TEXT),
+    letterSpacing: o.letterSpacing, lineSpacing: o.lineSpacing, color: UI.rgb(o.color || UI.TEXT),
     opacity: o.opacity === undefined ? 1 : o.opacity,
   });
 };
 
 // Press Start 2P labels, with the kit's hard 2px ink shadow unless o.shadow is false.
+// o.outline (px) also rings the letters in ink, for type over busy art.
 UI.label = (str, x, y, o = {}) => {
   const base = Object.assign({ font: UI.PX, size: 8, color: UI.WHITE }, o);
+  if (o.outline) {
+    const d = o.outline, ink = Object.assign({}, base, { color: UI.INK });
+    for (const [ox, oy] of [[-d, -d], [0, -d], [d, -d], [-d, 0], [d, 0], [-d, d], [0, d], [d, d]]) {
+      UI.text(str, x + ox, y + oy, ink);
+    }
+  }
   if (o.shadow !== false) {
     const d = o.shadowOff || 2;
     UI.text(str, x + d, y + d, Object.assign({}, base, { color: UI.INK }));

@@ -242,7 +242,8 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
     // ink type on a pale notched paper card, the opposite treatment to the
     // stat's silver type on a solid blue square-cornered slab. Same weight,
     // unmistakably a different thing.
-    UI.label("SPECIAL MOVE", r, TY + 62, { size: 8, color: UI.BLUE, anchor: "topright", opacity: op });
+    UI.label("SPECIAL MOVE", r, TY + 58,
+      { size: 16, color: UI.SILVER, outline: 2, shadowOff: 4, anchor: "topright", opacity: op });
     const pw = Math.ceil(UI.measure(opts.special, UI.PX, specSize).width);
     const k2 = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.08)) / 0.12));
     const sc2 = t < TYPE_IN + 0.08 ? 0 : 1.25 - 0.25 * UI.ease(k2);
@@ -255,9 +256,10 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
         { size: specSize, color: UI.TEXT, anchor: "center", shadow: false, opacity: op });
     }
 
-    // then their passive, wrapped: Josh's runs to forty-two characters
+    // then their passive, wrapped: Josh's runs to forty-two characters.
+    // Ringed in ink as well as shadowed, or it thins out over busy art.
     UI.label(opts.headline, r, TY + 146,
-      { size: 16, color: UI.SILVER, width: 420, align: "right", anchor: "topright", opacity: op });
+      { size: 16, color: UI.SILVER, outline: 2, shadowOff: 4, lineSpacing: 6, width: 420, align: "right", anchor: "topright", opacity: op });
 
     // and the stat boost on its slab, landing last
     const sw = Math.ceil(UI.measure(opts.stat, UI.PX, statSize).width);
