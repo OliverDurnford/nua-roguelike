@@ -173,7 +173,10 @@ scene("tutorial", () => {
 
   // --- the reveal: the whole park first, then in to the player ---
   G.paused = true;
-  const reveal = UI.reveal(m.w, m.h, { onPush: () => { if (st < 5) G.paused = false; } });
+  const reveal = UI.reveal(m.w, m.h, {
+    onPush: () => { if (st < 5) G.paused = false; },
+    onDone: () => UI.bigTitle({ num: "00", name: "VICTORIA PARK", sub: "PRESENT DAY · 2026" }),
+  });
 
   // --- state machine ---
   onUpdate(() => {
@@ -236,5 +239,4 @@ scene("tutorial", () => {
     for (const b of get("plateSolid")) b.opacity = G.showBlocks ? 0.35 : 0;
   });
 
-  UI.titleCard({ num: "00", name: "VICTORIA PARK", sub: "PRESENT DAY · 2026" });
 });

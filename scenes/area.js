@@ -303,21 +303,53 @@ scene("area", ({ chapter, area: areaNum }) => {
   let exiting = false;
   let clearedSaid = false;
 
-  // --- enemies (randomised placement each run) ---
-  // They come in once the room has been revealed (see the camera below),
-  // one after another, never right on top of the player's entrance.
-  // Until they have, the room does not count as cleared.
-  let spawned = false;
-  const spawnEnemies = () => {
-    if (a.enemyBudget > 0) {
-      let pts = m.enemySpawns.filter((p) => p.dist(m.playerSpawn) > 260);
-      if (pts.length < a.enemyBudget) pts = m.enemySpawns;
-      pts = MAPS.shuffle(pts).slice(0, a.enemyBudget);
+  // --- enemies: three waves (Ollie, 6 and 12 Oct 2026) ---
+  // A fight room sends its enemies in three waves, half, three quarters and
+  // then the room's whole budget, each announced by its card top left. The
+  // first comes in as the room's name flies off (see the camera below), the
+  // next a breather after the last enemy of the one before goes down. None
+  // lands within 260px of where the player is standing unless the room has
+  // no spawn point further away. Placement is random each run. Until the
+  // last wave is in, the room does not count as cleared.
+  const WAVE_NAMES = ["WAVE 1", "WAVE 2", "FINAL WAVE"];
+  const WAVE_SUBS = ["HERE THEY COME", "THEY'VE BROUGHT FRIENDS", "LAST ONES, THEN THE DOOR"];   // PLACEHOLDER wording, Ollie's call
+  const WAVE_LEAD = 0.6;   // the card is up this long before the wave arrives
+  const BREATHER = 1.5;    // between one wave cleared and the next card
+  const waves = (a.enemyBudget > 0 && m.enemySpawns.length)
+    ? [0.5, 0.75, 1].map((f) => Math.max(1, Math.round(a.enemyBudget * f)))
+    : [];
+  let wave = -1;           // the wave in now; -1 before the first
+  let waveBusy = true;     // a card is up or a wave is still arriving
+  let spawned = false;     // every wave is in
+  const sendWave = () => {
+    if (dead || exiting) return;
+    wave++;
+    waveBusy = true;
+    UI.titleCard({ num: String(wave + 1), name: WAVE_NAMES[wave], sub: WAVE_SUBS[wave], hold: 2.2 });
+    wait(WAVE_LEAD, () => {
+      if (dead || exiting) return;
+      const from = wave === 0 ? m.playerSpawn : player.pos;
+      const far = m.enemySpawns.filter((p) => p.dist(from) > 260);
+      const near = m.enemySpawns.filter((p) => p.dist(from) <= 260).sort((p, q) => q.dist(from) - p.dist(from));
+      const pts = MAPS.shuffle(far).concat(near).slice(0, waves[wave]);
       pts.forEach((p, i) => wait(i * 0.14, () => { if (!dead && !exiting) ENEMIES.spawnIn(choose(ch.enemySet), p); }));
-      wait(pts.length * 0.14, () => { spawned = true; SPEECH.fire("fightStart"); });
-    } else {
-      spawned = true;
-    }
+      wait(pts.length * 0.14, () => {
+        waveBusy = false;
+        if (wave === waves.length - 1) spawned = true;
+        SPEECH.fire("fightStart");
+      });
+    });
+  };
+  // the room's name has landed: start the fight, if there is one
+  const spawnEnemies = () => {
+    if (waves.length) sendWave();
+    else spawned = true;
+  };
+  // a wave down and another to come: a breather, then its card
+  const nextWave = () => {
+    if (waveBusy || spawned || wave < 0 || get("enemy").length) return;
+    waveBusy = true;
+    wait(BREATHER, sendWave);
   };
 
   // --- companion pickup (quiet areas, chapters 1-4) ---
@@ -463,12 +495,21 @@ scene("area", ({ chapter, area: areaNum }) => {
   // No cracks added in the finale: its plate has them painted in.
 
   // --- the reveal: pulled back over the whole room, then in to the player ---
-  // Nothing moves through the hold; control comes back as the push starts
-  // and the enemies arrive once the camera has landed.
+  // Nothing moves through the hold; control comes back as the push starts.
+  // Once the camera has landed the room's name flies through, big, and the
+  // first wave's card comes up as it leaves.
   G.paused = true;
   const reveal = UI.reveal(m.w, m.h, {
     onPush: () => { G.paused = false; },
-    onDone: spawnEnemies,
+    onDone: () => {
+      const dur = UI.bigTitle({
+        num: String(areaNum).padStart(2, "0"),
+        name: a.name.toUpperCase(),
+        sub: ch.year ? ch.title + " · " + ch.year : ch.title,
+      });
+      if (waves.length) wait(dur - 0.35, spawnEnemies);
+      else spawnEnemies();
+    },
   });
 
   // --- exit door logic ---
@@ -483,6 +524,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     const cy = m.h <= G.H ? m.h / 2 : G.clamp(target.y, G.H / 2, m.h - G.H / 2);
     reveal.apply(vec2(cx, cy));
 
+    nextWave();
     const cleared = spawned && get("enemy").length === 0 && get("boss").length === 0;
     if (cleared && !clearedSaid) { clearedSaid = true; SPEECH.fire("cleared"); }
     for (const d of m.exits) {
@@ -559,12 +601,6 @@ scene("area", ({ chapter, area: areaNum }) => {
   UI.pause();
   COMPANIONS.ambient();
   COMPANIONS.onAreaEnter();
-  // the taped-down label: track number in the chapter, the room, the chapter and its year
-  UI.titleCard({
-    num: String(areaNum).padStart(2, "0"),
-    name: a.name.toUpperCase(),
-    sub: ch.year ? ch.title + " · " + ch.year : ch.title,
-  });
   UI.sceneFade();
 
   G.devSkip = () => {

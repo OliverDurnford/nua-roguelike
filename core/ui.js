@@ -430,11 +430,13 @@ UI.subtitleSeq = (lines) => {
 // system feedback (sound OFF, god mode ON): the kit's yellow chip
 UI.toast = (str) => UI._bottomChip(str, { fill: UI.STEEL, shade: UI.BLUE, padY: 5 });
 
-// The room's title card: a taped-down label, pixel polaroid style. A
-// yellow number block, then the room's name in chrome over its subtitle
-// (the chapter and the year) on navy, the whole thing sitting on a hard
-// ink drop shadow. Slides in from the left, holds, fades.
-UI.titleCard = ({ num, name, sub }) => {
+// The wave card: a taped-down label, pixel polaroid style, top left under
+// the lanyard. A chrome number block, then the name in chrome over its
+// subtitle on navy, the whole thing sitting on a hard ink drop shadow.
+// Slides in from the left, holds, fades. It carried the room's name until
+// 12 Oct 2026, when the room's name went big and central (UI.bigTitle) and
+// the waves took this spot (Ollie).
+UI.titleCard = ({ num, name, sub, hold = 3.6 }) => {
   const x0 = 14, y0 = 112;
   const NAME = 16, SUB = 8, NUM = 24;
   const nameW = Math.ceil(UI.measure(name, UI.PX, NAME).width);
@@ -463,12 +465,106 @@ UI.titleCard = ({ num, name, sub }) => {
     UI.label(sub, tx, ty + NAME + 6, { size: SUB, letterSpacing: 1, color: UI.PALE, shadow: false, opacity: op });
   });
   UI.slideIn(card, vec2(x0 - 46, y0), vec2(x0, y0), 0.5);
-  wait(3.6, () => {
+  wait(hold, () => {
     card.onUpdate(() => {
       card.opacity -= dt() * 1.8;
       if (card.opacity <= 0) destroy(card);
     });
   });
+};
+
+// The room's name, big and central, once the camera has pushed in (Ollie,
+// 12 Oct 2026). It rushes in from the right, brakes to a crawl through the
+// middle where it reads, and kicks off the left, on a navy band that wipes
+// in and out with it, with speed lines streaking past. The lines are spawned
+// in proportion to how fast the name is moving, so they pour in on the
+// entry and the exit and thin to a trickle while it reads. Position is a
+// function of time: s runs 1 to -1 and x = centre + a*s + b*s^POW, so the
+// middle drifts at DRIFT px/s and the ends are a blur. Returns its length
+// in seconds, so the scene can time what follows.
+UI.bigTitle = ({ num, name, sub }) => {
+  const DUR = 2.3;           // the whole fly-through
+  const DRIFT = 90;          // px/s through the middle, where it is read
+  const POW = 5;             // odd; higher brakes harder into the middle
+  const WIPE = 0.22;         // the band's wipe in, and out
+  const cx = G.W / 2, cy = Math.round(G.H * 0.42);
+  // Press Start 2P is an 8px grid, so any multiple of 8 stays crisp: as big
+  // as fits, up to 48
+  const w8 = UI.measure(name, UI.PX, 8).width;
+  const SIZE = Math.max(16, Math.min(48, Math.floor(880 * 8 / w8 / 8) * 8));
+  const nameW = Math.ceil(UI.measure(name, UI.PX, SIZE).width);
+  const SUB = 16;
+  const numW = Math.ceil(UI.measure(num, UI.PX, SUB).width) + 16;
+  const subW = Math.ceil(UI.measure(sub, UI.PX, SUB).width);
+  const rowW = numW + 12 + subW, rowH = SUB + 10;
+  const groupW = Math.max(nameW, rowW);
+  const rowY = cy - SIZE / 2 - 14 - rowH;
+  const bandY = rowY - 16, bandH = (cy + SIZE / 2 + 4 + 16) - bandY;
+  const a = DRIFT * DUR / 2;
+  const b = G.W / 2 + groupW / 2 + 40 - a;
+  const xAt = (t) => { const s = 1 - 2 * Math.min(1, Math.max(0, t / DUR)); return cx + a * s + b * Math.pow(s, POW); };
+  const speedAt = (t) => { const s = 1 - 2 * Math.min(1, Math.max(0, t / DUR)); return (2 / DUR) * (a + POW * b * Math.pow(s, POW - 1)); };
+  const LINES = [UI.WHITE, UI.SILVER, UI.STEEL, UI.BLUE];
+
+  const obj = add([fixed(), z(196), pos(0, 0), { t: 0, lines: [], owe: 0 }]);
+  SFX.play("whoosh");
+  wait(DUR - 0.45, () => SFX.play("whoosh"));
+  obj.onUpdate(() => {
+    const d = dt();
+    obj.t += d;
+    if (obj.t >= DUR + 0.6 && obj.lines.length === 0) { destroy(obj); return; }
+    // new lines, as many as the name's speed earns, until it is gone
+    if (obj.t < DUR) {
+      obj.owe += speedAt(obj.t) / 22 * d;
+      while (obj.owe >= 1) {
+        obj.owe -= 1;
+        const len = rand(60, 320), front = rand() < 0.3;
+        // most across the band, the rest spilling over the room either side
+        const y = rand() < 0.65 ? rand(bandY + 4, bandY + bandH - 4)
+          : (rand() < 0.5 ? rand(bandY - 56, bandY - 6) : rand(bandY + bandH + 6, bandY + bandH + 56));
+        obj.lines.push({
+          x: G.W + rand(0, 120), len, front, y: Math.round(y / 2) * 2,
+          th: front ? 2 : choose([2, 4, 4]),
+          v: rand(1600, 3000), col: choose(LINES), op: front ? rand(0.35, 0.7) : rand(0.5, 0.95),
+        });
+      }
+    }
+    for (const l of obj.lines) l.x -= l.v * d;
+    obj.lines = obj.lines.filter((l) => l.x + l.len > 0);
+  });
+  obj.onDraw(() => {
+    const t = obj.t;
+    if (t < DUR) {
+      // the band: wipes in from the right, wipes off to the left
+      const l = G.W * (1 - UI.ease(t / WIPE));
+      const r = G.W * (1 - Math.pow(Math.min(1, Math.max(0, (t - (DUR - WIPE)) / WIPE)), 3));
+      if (r > l) {
+        UI.R(l, bandY, r - l, bandH, UI.NAVY, 0.82);
+        UI.R(l, bandY - 2, r - l, 2, UI.INK);
+        UI.R(l, bandY, r - l, 2, UI.PALE);
+        UI.R(l, bandY + bandH - 2, r - l, 2, UI.PALE);
+        UI.R(l, bandY + bandH, r - l, 2, UI.INK);
+      }
+    }
+    for (const ln of obj.lines) if (!ln.front) UI.R(ln.x, ln.y, ln.len, ln.th, ln.col, ln.op);
+    if (t < DUR) {
+      const x = Math.round(xAt(t));
+      // the track number in a chrome block, then the chapter and its year
+      const rx = x - rowW / 2;
+      UI.R(rx + 3, rowY + 3, numW, rowH, UI.INK);
+      UI.R(rx, rowY, numW, rowH, UI.STEEL);
+      UI.R(rx, rowY, numW, 3, UI.SILVER);
+      UI.R(rx, rowY + rowH - 3, numW, 3, UI.BLUE_DEEP);
+      UI.label(num, rx + 8, rowY + rowH / 2, { size: SUB, anchor: "left", color: UI.NAVY, shadow: false });
+      UI.label(sub, rx + numW + 12, rowY + rowH / 2, { size: SUB, anchor: "left", color: UI.PALE, shadowOff: 3 });
+      // the name, in chrome, with a heavier shadow at this size
+      const nx = x - nameW / 2, ny = cy - SIZE / 2;
+      UI.text(name, nx + 4, ny + 4, { font: UI.PX, size: SIZE, color: UI.INK });
+      UI.chromeText(name, nx, ny, SIZE);
+    }
+    for (const ln of obj.lines) if (ln.front) UI.R(ln.x, ln.y, ln.len, ln.th, ln.col, ln.op);
+  });
+  return DUR;
 };
 
 // ---------- the room reveal ----------

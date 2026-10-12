@@ -56,7 +56,7 @@ SFX.tone = ({ type = "square", from = 440, to = null, dur = 0.1, vol = 1, delay 
 };
 
 // one burst of filtered noise: impacts, explosions, rumbles
-SFX.noise = ({ dur = 0.1, vol = 1, freq = 800, q = 1, delay = 0 }) => {
+SFX.noise = ({ dur = 0.1, vol = 1, freq = 800, to = null, q = 1, delay = 0 }) => {
   const ctx = SFX.ctx();
   if (!ctx) return;
   const t0 = ctx.currentTime + delay;
@@ -68,7 +68,8 @@ SFX.noise = ({ dur = 0.1, vol = 1, freq = 800, q = 1, delay = 0 }) => {
   src.buffer = buf;
   const f = ctx.createBiquadFilter();
   f.type = "bandpass";
-  f.frequency.value = freq;
+  f.frequency.setValueAtTime(freq, t0);
+  if (to !== null) f.frequency.exponentialRampToValueAtTime(Math.max(20, to), t0 + dur);   // a sweep: the whoosh
   f.Q.value = q;
   const g = ctx.createGain();
   g.gain.setValueAtTime(vol, t0);
@@ -111,6 +112,7 @@ SFX.LIB = {
   thwack:  () => { SFX.noise({ dur: 0.06, vol: 0.8, freq: 950 }); SFX.tone({ type: "square", from: 185, dur: 0.06, vol: 0.5 }); },
   honk:    () => { SFX.tone({ type: "square", from: 470, dur: 0.16, vol: 0.6 }); SFX.tone({ type: "square", from: 350, dur: 0.22, vol: 0.6, delay: 0.18 }); },
   rumble:  () => SFX.noise({ dur: 0.55, vol: 0.9, freq: 110, q: 0.4 }),
+  whoosh:  () => SFX.noise({ dur: 0.32, vol: 0.5, freq: 3200, to: 420, q: 0.9 }),   // the room's name flying past
 
   // menus
   uitick:    () => SFX.tone({ type: "sine", from: 800, dur: 0.04, vol: 0.35 }),
