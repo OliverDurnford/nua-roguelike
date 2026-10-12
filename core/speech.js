@@ -32,8 +32,10 @@ SPEECH.REPLY_GAP  = 1.5;   // s between a line and its reply
 SPEECH.IDLE_AFTER = 6;     // s of standing still before the idle moment
 SPEECH.SPOT_RANGE = 1.6;   // grid units from a thing's footprint
 
-// Scripted beats ignore the global gag and always get through.
-SPEECH.SCRIPTED = ["join", "death", "bossStart", "special"];
+// Scripted beats ignore the global gag and always get through. The finale's
+// two cutscene beats are among them (docs/superpowers/specs/2026-10-12-
+// busy-boss-design.md).
+SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "pubInvite", "fromPile"];
 
 SPEECH.WEIGHT = { often: 3, sometimes: 1.5, rare: 0.5, run: 1.5, ever: 1.5 };
 
@@ -89,12 +91,15 @@ SPEECH.present = (who) => {
   // "who" may be a pair, for the lines the girls say in unison
   if (Array.isArray(who)) return who.length > 0 && who.every((w) => SPEECH.present(w));
   if (who.startsWith("boss:")) {
-    const b = get("boss")[0];
+    // the beaten finale boss speaks from under its pile
+    const b = get("boss")[0] || get("bossPile")[0];
     return !!(b && b.exists());
   }
   if (who.startsWith("npc:")) return !!SPEECH.npcSprite(who.slice(4));
   if (!G.run) return false;
-  return G.run.charId === who || G.run.companions.includes(who);
+  // friends freed in the finale walk with you without ever joining the party
+  return G.run.charId === who || G.run.companions.includes(who) ||
+    (G.followers || []).some((f) => f.charId === who && f.exists());
 };
 
 SPEECH.npcSprite = (name) => {
@@ -105,7 +110,7 @@ SPEECH.npcSprite = (name) => {
 // The sprite a bubble should hang off. Friends go through COMPANIONS,
 // which already falls back to a named subtitle when they are off field.
 SPEECH.sprite = (who) => {
-  if (who.startsWith("boss:")) return get("boss")[0];
+  if (who.startsWith("boss:")) return get("boss")[0] || get("bossPile")[0];
   if (who.startsWith("npc:")) return SPEECH.npcSprite(who.slice(4));
   return COMPANIONS.fieldSprite(who);
 };
@@ -194,7 +199,7 @@ SPEECH.speak = (who, str) => {
   COMPANIONS.say(who, str);
 };
 
-SPEECH.play = (line) => {
+SPEECH.play = (line, cutscene = false) => {
   SPEECH.lastLine[line.id] = time();
   SPEECH.retire(line);
   SPEECH.speak(line.who, line.text);
@@ -203,21 +208,24 @@ SPEECH.play = (line) => {
   // two hander never breaks when the wrong four friends turned up.
   (line.reply || []).forEach((r, i) => {
     wait(SPEECH.REPLY_GAP * (i + 1), () => {
-      if (G.paused) return;
+      if (G.paused && !cutscene) return;
       if (!SPEECH.present(r.who)) return;
       SPEECH.speak(r.who, r.text);
     });
   });
 };
 
-// The way the rest of the game talks to this file.
+// The way the rest of the game talks to this file. A cutscene (the
+// finale's opening and ending) pauses play but still wants its lines,
+// so it passes { cutscene: true }.
 SPEECH.fire = (moment, extra) => {
-  if (!G.run || G.paused || !SPEECH.ctx) return false;
+  const cutscene = !!(extra && extra.cutscene);
+  if (!G.run || (G.paused && !cutscene) || !SPEECH.ctx) return false;
   const scripted = SPEECH.SCRIPTED.includes(moment);
   if (!scripted && time() - SPEECH.lastAny < SPEECH.QUIET) return false;
   const line = SPEECH.pick(SPEECH.eligible(moment, extra));
   if (!line) return false;
-  SPEECH.play(line);
+  SPEECH.play(line, cutscene);
   return true;
 };
 
