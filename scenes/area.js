@@ -113,6 +113,9 @@ MAPS.baseOf = (t) => {
 MAPS.addOver = (t, tiles, plate) => {
   const U = plate.unit;
   const pts = t.over.map(([x, y]) => vec2(x * U, y * U));
+  // cut once into triangles: drawPolygon's own fan fill spills round a
+  // concave trace (core/triangulate.js)
+  const indices = TRIANGULATE(pts);
   const base = MAPS.baseOf(t) * U;
   const xs = t.over.map((p) => p[0]), ys = t.over.map((p) => p[1]);
   const bx1 = Math.min(...xs), bx2 = Math.max(...xs);
@@ -135,10 +138,10 @@ MAPS.addOver = (t, tiles, plate) => {
       draw() {
         drawMasked(
           () => { for (const p of patches) drawSprite({ sprite: p.sprite, pos: p.pos, quad: p.quad }); },
-          () => drawPolygon({ pts }),
+          () => drawPolygon({ pts, indices }),
         );
         if (G.showBlocks) {
-          drawPolygon({ pts, color: rgb(80, 140, 255), opacity: 0.35 });
+          drawPolygon({ pts, indices, color: rgb(80, 140, 255), opacity: 0.35 });
           drawLines({ pts: [vec2(bx1 * U, base), vec2(bx2 * U, base)], color: rgb(255, 255, 255), width: 2, opacity: 0.8 });
         }
       },
