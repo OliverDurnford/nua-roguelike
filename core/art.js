@@ -497,6 +497,14 @@ ART.init = () => {
       loadSprite("ch-" + c.id + "-old", ART.genChar(c, { old: true }));
       G.SPR["ch-" + c.id + "-old"] = { name: "ch-" + c.id + "-old", h: c.height };
     }
+    // Busy You (core/sprites-busy.js): the final boss's animated sheet, once
+    // this friend's is built. The finale prefers it to the old-age still.
+    if (typeof REAL_BUSY !== "undefined" && REAL_BUSY[c.id]) {
+      const rb = REAL_BUSY[c.id];
+      const key = "ch-" + c.id + "-busy";
+      loadSprite(key, rb.src, { sliceX: rb.sliceX, anims: rb.anims });
+      G.SPR[key] = { name: key, h: rb.charH, anchorY: rb.anchorY, anims: rb.anims };
+    }
     // the thrown projectile (core/weapons-real.js), when drawn
     if (typeof REAL_WEAPONS !== "undefined" && REAL_WEAPONS[c.id]) {
       loadSprite("wp-" + c.id, REAL_WEAPONS[c.id].src);
@@ -551,6 +559,11 @@ ART.init = () => {
   // What the shooters and bosses fire (core/ebullets-real.js), when drawn
   if (typeof REAL_EBULLETS !== "undefined") {
     for (const k in REAL_EBULLETS) loadSprite("eb-" + k, REAL_EBULLETS[k].src);
+  }
+
+  // Busy You's ending: the responsibilities that bury them (core/duties-real.js)
+  if (typeof REAL_DUTIES !== "undefined") {
+    for (const k in REAL_DUTIES) loadSprite("duty-" + k, REAL_DUTIES[k].src);
   }
 
   // Painted room backgrounds (core/plates-real.js), one per venue
@@ -619,14 +632,23 @@ ART.init = () => {
 // Components to draw a character at a given on-screen height.
 // Animated characters start on their idle loop and hang from the centre of
 // the BODY, not the padded sheet cell (charH / anchorY, see sprites-anim.js).
-ART.charComps = (id, hPx, old = false) => {
-  const key = "ch-" + id + (old ? "-old" : "");
+// variant: "" for the friend, "old" for the old-age still, "busy" for Busy You.
+ART.charComps = (id, hPx, variant = "") => {
+  const key = "ch-" + id + (variant ? "-" + variant : "");
   const reg = G.SPR[key];
   return [
     sprite(reg.name, reg.anims ? { anim: "idle" } : undefined),
     scale(hPx / reg.h),
     anchor(reg.anims ? vec2(0, reg.anchorY) : "center"),
   ];
+};
+
+// The final boss's look for a friend: their Busy sheet once it is built, the
+// old-age still until then, so the finale never breaks mid-build.
+ART.bossVariant = (id) => (G.SPR["ch-" + id + "-busy"] ? "busy" : "old");
+ART.bossAnims = (id) => {
+  const r = G.SPR["ch-" + id + "-busy"];
+  return r ? r.anims : null;
 };
 
 // True if this character has a real animation sheet loaded.

@@ -204,7 +204,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
   // charComps sizes itself (and already follows the room), a plain boss
   // sprite does not, so that one gets the room's scale bolted on.
   const comps = opts.finale
-    ? [...ART.charComps(G.run.charId, G.charH(2.3), true), area({ scale: 0.8 })]   // elderly version of YOUR character
+    ? [...ART.charComps(G.run.charId, G.charH(2.3), ART.bossVariant(G.run.charId)), area({ scale: 0.8 })]   // elderly version of YOUR character
     : ENEMIES.comps(def, "boss-" + chapter.num);
 
   const b = add([
