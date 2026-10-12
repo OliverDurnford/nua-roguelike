@@ -134,5 +134,5 @@ const MERCYSTAGE_PLATE = {
   // Way out, bottom left, down the gap past the end of the bar. Sits
   // flush with the bottom edge so it reads as a threshold. Boss arenas
   // never unlock it in play; it is here so the schema stays uniform.
-  exit: [1.7, 23.35, 3.3, 23.84],
+  exit: [1.7, 23.05, 3.3, 23.84],
 };
