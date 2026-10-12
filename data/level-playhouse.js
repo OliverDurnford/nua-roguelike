@@ -88,5 +88,5 @@ const PLAYHOUSE_PLATE = {
   enemySpawns: [
   ],
 
-  exit: [31.55, 19.26, 31.95, 21.06],
+  exit: [31.25, 19.26, 31.95, 21.06],
 };
