@@ -484,16 +484,19 @@ UI.titleCard = ({ num, name, sub, hold = 3.6 }) => {
 // 12 Oct 2026). It rushes in from the right, brakes to a crawl through the
 // middle where it reads, and kicks off the left, with speed lines streaking
 // past. No box behind it (Ollie, 12 Oct: cleaner without): an ink ring, a
-// deep hard drop shadow and a soft dark pool lift it off the room instead. The lines are spawned
-// in proportion to how fast the name is moving, so they pour in on the
-// entry and the exit and thin to a trickle while it reads. Position is a
-// function of time: s runs 1 to -1 and x = centre + a*s + b*s^POW, so the
-// middle drifts at DRIFT px/s and the ends are a blur. Returns its length
-// in seconds, so the scene can time what follows.
+// deep hard drop shadow and a soft dark pool lift it off the room instead.
+// The lines are spawned in proportion to how fast the name is moving, so
+// they pour in on the entry and the exit and thin to a trickle while it
+// reads. Position is a function of time: a steady DRIFT through the middle,
+// plus an entry that decays as (1-k)^POW over IN seconds and an exit that
+// grows as k^POW over OUT, so the speed is continuous and the ends are a
+// blur. Ollie, 12 Oct: rush in and out faster, the middle as it was.
+// Returns its length in seconds, so the scene can time what follows.
 UI.bigTitle = ({ num, name, sub }) => {
-  const DUR = 2.3;           // the whole fly-through
+  const IN = 0.2, MID = 1.45, OUT = 0.2;  // the rush in, the read, the rush out
+  const DUR = IN + MID + OUT;
   const DRIFT = 90;          // px/s through the middle, where it is read
-  const POW = 5;             // odd; higher brakes harder into the middle
+  const POW = 3;             // how hard it brakes in and kicks out
   const cx = G.W / 2, cy = Math.round(G.H * 0.42);
   // Press Start 2P is an 8px grid, so any multiple of 8 stays crisp: as big
   // as fits, up to 48
@@ -512,15 +515,16 @@ UI.bigTitle = ({ num, name, sub }) => {
   const ink = (str, x, y, size, d, op = 1) => {
     for (const [ox, oy] of RING) UI.text(str, x + ox * d, y + oy * d, { font: UI.PX, size, color: UI.INK, opacity: op });
   };
-  const a = DRIFT * DUR / 2;
-  const b = G.W / 2 + groupW / 2 + 40 - a;
-  const xAt = (t) => { const s = 1 - 2 * Math.min(1, Math.max(0, t / DUR)); return cx + a * s + b * Math.pow(s, POW); };
-  const speedAt = (t) => { const s = 1 - 2 * Math.min(1, Math.max(0, t / DUR)); return (2 / DUR) * (a + POW * b * Math.pow(s, POW - 1)); };
+  // the rush: whatever the drift leaves of the way from just off screen
+  const A = G.W / 2 + groupW / 2 + 40 - DRIFT * DUR / 2;
+  const kIn = (t) => Math.max(0, 1 - t / IN), kOut = (t) => Math.max(0, (t - (DUR - OUT)) / OUT);
+  const xAt = (t) => cx - DRIFT * (t - DUR / 2) + A * Math.pow(kIn(t), POW) - A * Math.pow(kOut(t), POW);
+  const speedAt = (t) => DRIFT + (POW * A / IN) * Math.pow(kIn(t), POW - 1) + (POW * A / OUT) * Math.pow(kOut(t), POW - 1);
   const LINES = [UI.WHITE, UI.SILVER, UI.STEEL, UI.BLUE];
 
   const obj = add([fixed(), z(196), pos(0, 0), { t: 0, lines: [], owe: 0 }]);
   SFX.play("whoosh");
-  wait(DUR - 0.45, () => SFX.play("whoosh"));
+  wait(DUR - OUT - 0.05, () => SFX.play("whoosh"));
   obj.onUpdate(() => {
     const d = dt();
     obj.t += d;
@@ -537,7 +541,7 @@ UI.bigTitle = ({ num, name, sub }) => {
         obj.lines.push({
           x: G.W + rand(0, 120), len, front, y: Math.round(y / 2) * 2,
           th: front ? 2 : choose([2, 4, 4]),
-          v: rand(1600, 3000), col: choose(LINES), op: front ? rand(0.35, 0.7) : rand(0.5, 0.95),
+          v: rand(2200, 4000), col: choose(LINES), op: front ? rand(0.35, 0.7) : rand(0.5, 0.95),
         });
       }
     }
