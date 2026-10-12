@@ -233,9 +233,10 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
 
     CUTIN._scrim(TY - 40, 320, typeX(t), op);
 
-    // the name, in the title lettering's chrome
+    // the name, in the special screens' gold chrome (Ollie, 12 Oct: the
+    // silver did not stand out enough against the scenes)
     const nw = Math.ceil(UI.measure(opts.name, UI.PX, 48).width);
-    UI.chromeText(opts.name, r - nw, TY, 48, op);
+    UI.chromeText(opts.name, r - nw, TY, 48, op, UI.SPECIAL_CHROME);
 
     // The special move comes FIRST, straight under the name (Ollie, 20 Sep):
     // ink type on a pale notched paper card, the opposite treatment to the
