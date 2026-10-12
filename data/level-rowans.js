@@ -138,5 +138,5 @@ const ROWANS_PLATE = {
   enemySpawns: [
   ],
 
-  exit: [32.55, 6.03, 32.95, 7.83],
+  exit: [32.15, 6.03, 32.95, 7.83],
 };
