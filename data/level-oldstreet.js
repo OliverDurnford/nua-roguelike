@@ -89,5 +89,5 @@ const OLDSTREET_PLATE = {
 
   // Way out: across the foot of the right hand passage, flush with the
   // bottom edge so it reads as a threshold.
-  exit: [26.85, 17.45, 28.9, 17.86],
+  exit: [26.85, 16.75, 28.9, 17.86],
 };
