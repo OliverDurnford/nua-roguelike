@@ -125,23 +125,45 @@ MAPS.addOver = (t, tiles, plate) => {
     const x1 = Math.max(bx1, tile.x0), x2 = Math.min(bx2, tile.x1);
     if (x2 <= x1) continue;
     const tw = tile.x1 - tile.x0;
+    // the same patch in whole tile pixels, for a see-through cut
+    const wx1 = Math.floor(x1 * U), wy1 = Math.floor(by1 * U);
     patches.push({
       sprite: tile.sprite,
       pos: vec2(x1 * U, by1 * U),
       quad: quad((x1 - tile.x0) / tw, by1 / plate.rows, (x2 - x1) / tw, (by2 - by1) / plate.rows),
+      region: {
+        key: tile.sprite.replace(/^plate-/, ""), pos: vec2(wx1, wy1),
+        px: wx1 - tile.x0 * U, py: wy1,
+        pw: Math.min(Math.ceil(x2 * U), tile.x1 * U) - wx1, ph: Math.min(Math.ceil(by2 * U), plate.rows * U) - wy1,
+      },
     });
+  }
+  // A see-through thing (a railing) masks with a cut-out of its own pixels
+  // once it is made (core/seethrough.js), so you show between the bars;
+  // until then, and if it fails, the whole outline masks as usual.
+  let cut = null;
+  if (t.see) {
+    Promise.all(patches.map((p) => SEETHROUGH.maskFor(p.region, pts, U)
+      .then((sprite) => ({ sprite, pos: p.region.pos }))))
+      .then((m) => { cut = m; })
+      .catch((e) => console.warn(`see-through cut failed for "${t.name}":`, e));
   }
   return add([
     pos(0, 0), z(DEPTH.z(base)), "plateOver",
     {
       thing: t,
+      cutReady: () => !!cut,
       draw() {
         drawMasked(
           () => { for (const p of patches) drawSprite({ sprite: p.sprite, pos: p.pos, quad: p.quad }); },
-          () => drawPolygon({ pts, indices }),
+          () => {
+            if (cut) for (const m of cut) drawSprite({ sprite: m.sprite, pos: m.pos });
+            else drawPolygon({ pts, indices });
+          },
         );
         if (G.showBlocks) {
-          drawPolygon({ pts, indices, color: rgb(80, 140, 255), opacity: 0.35 });
+          // see-through outlines show teal, ordinary ones blue
+          drawPolygon({ pts, indices, color: t.see ? rgb(60, 220, 200) : rgb(80, 140, 255), opacity: 0.35 });
           drawLines({ pts: [vec2(bx1 * U, base), vec2(bx2 * U, base)], color: rgb(255, 255, 255), width: 2, opacity: 0.8 });
         }
       },
