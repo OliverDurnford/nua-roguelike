@@ -4,8 +4,10 @@
 // Remade 12 Oct 2026 from Ollie's own floor plan of the real flat
 // and his photos (tools/levels/venues.py has the design). The plate
 // is 21:9 and one texture; its source is Gemini's v7 with the
-// bathroom and front door corridor stitched in from v2
-// ("Level Design/The Flat/build/composite.py").
+// bathroom and front door corridor stitched in from v2, and
+// Ollie's fixes (en-suite into bedroom 2, four chairs, kitchen
+// tiles, oak corridor, bed 3 the right way round) pasted in from
+// v9 ("Level Design/The Flat/build/composite.py").
 //
 // Plate area, FIRST PASS geometry: outer shell and the start and
 // exit only. Collision and enemy spawns are Ollie's, traced on the
