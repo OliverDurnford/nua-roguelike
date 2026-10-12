@@ -211,6 +211,11 @@ CUTIN._scrim = (sy, sh, dx, op) => {
 // grows the block upwards instead of pushing the slab off the screen.
 // In with the friend's landing, out with them, and creeping at 4px/s in
 // between: slow enough to read, never actually still.
+// PASSIVE EFFECT is meant to be the stat slab's blue, but not UI.BLUE_DEEP
+// itself: thin letters ringed in ink read much darker than the solid slab
+// with pale type on it, so the heading is lifted until it LOOKS like the
+// slab (Ollie, 12 Oct: "it looks a lot darker still").
+CUTIN.PASS_HEAD_COLOUR = [140, 160, 230];
 CUTIN._joinType = (opts, P, clock, alpha) => {
   const TYPE_IN = CUTIN.parkedAt(0, P), TYPE_OUT = CUTIN.exitAt(0, P);
   const RX = 928, BOTTOM = 504;  // right margin, and the foot of the block
@@ -236,7 +241,7 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
   // (Ollie, 12 Oct): the special's yellow, the passive slab's blue.
   const LINE = { size: 16, color: UI.SILVER, outline: 2, shadowOff: 4, anchor: "topright" };
   const SPEC_HEAD = Object.assign({}, LINE, { color: UI.SPECIAL_YELLOW });
-  const PASS_HEAD = Object.assign({}, LINE, { color: UI.BLUE_DEEP });
+  const PASS_HEAD = Object.assign({}, LINE, { color: CUTIN.PASS_HEAD_COLOUR });
   const PASSIVE = Object.assign({}, LINE, { lineSpacing: 6, width: 420, align: "right" });
   const DESC = Object.assign({}, LINE,
     { font: UI.VT, size: CUTIN.DESC_SIZE, width: CUTIN.DESC_W, align: "right" });
