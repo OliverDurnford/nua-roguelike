@@ -287,6 +287,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   const m = a.plate ? MAPS.buildPlate(a.plate) : MAPS.build(a.map, a.palette);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
   G.areaWater = !!a.water;   // kept for anything still reading it directly
+  G.cutscene = false;        // the finale raises it while it steers you
 
   // Tell the speech system what room this is. Every `when` clause on a
   // line is tested against this, and the spot trigger walks these things.
@@ -387,10 +388,10 @@ scene("area", ({ chapter, area: areaNum }) => {
   // --- boss areas ---
   if (a.boss) {
     const finaleOpts = a.finale
-      ? { finale: true, name: "OLD " + G.playerChar().name.toUpperCase() }
+      ? { finale: true, name: "BUSY " + G.playerChar().name.toUpperCase() }
       : {};
     ENEMIES.spawnBoss(ch, m.bossSpawn, finaleOpts);
-    wait(0.6, () => SPEECH.fire("bossStart"));
+    if (!a.finale) wait(0.6, () => SPEECH.fire("bossStart"));   // the finale says it in its opening
 
     // boss health bar: a paper card at the foot of the screen, the name in
     // pixel type over a wristband meter like the HUD's, in red, with a pink
@@ -398,7 +399,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     const bar = add([fixed(), z(175), pos(0, 0), { disp: 1, ghost: 1 }]);
     bar.onDraw(() => {
       const b = get("boss")[0];
-      if (!b) return;
+      if (!b || G.cutscene) return;
       const ratio = Math.max(0, b.hp / b.maxHp);
       bar.disp += (ratio - bar.disp) * Math.min(1, dt() * 14);
       bar.ghost = Math.max(bar.disp, bar.ghost - dt() * 0.22);
@@ -419,13 +420,13 @@ scene("area", ({ chapter, area: areaNum }) => {
 
     if (a.finale) FINALE.setup(m);
 
-    G.onBossDeath = () => {
+    G.onBossDeath = (snap) => {
       G.onBossDeath = null;
       if (dead) return;   // a last bullet in flight can land after you've dropped
       if (ART.hasAnims(G.run.charId)) { player.play("victory"); player.actionT = 1.6; }
       SPEECH.fire("bossDown");
       if (a.finale) {
-        FINALE.win(player);
+        FINALE.win(player, snap);
       } else {
         COMPANIONS.onAreaExit();   // any exit line plays during the victory pause
         wait(1.6, () => { if (!exiting) { exiting = true; G.advance(); } });
@@ -501,18 +502,22 @@ scene("area", ({ chapter, area: areaNum }) => {
   // Once the camera has landed the room's name flies through, big, and the
   // first wave's card comes up as it leaves.
   G.paused = true;
-  const reveal = UI.reveal(m.w, m.h, {
-    onPush: () => { G.paused = false; },
-    onDone: () => {
-      const dur = UI.bigTitle({
-        num: String(areaNum).padStart(2, "0"),
-        name: a.name.toUpperCase(),
-        sub: ch.year ? ch.title + " · " + ch.year : ch.title,
-      });
-      if (waves.length) wait(dur - 0.35, spawnEnemies);
-      else spawnEnemies();
-    },
-  });
+  // The finale runs its own camera instead (scenes/finale.js): close on you,
+  // up to Busy You, out for their name, back in to you.
+  const reveal = a.finale
+    ? FINALE.start(m, player, ch, areaNum, spawnEnemies)
+    : UI.reveal(m.w, m.h, {
+      onPush: () => { G.paused = false; },
+      onDone: () => {
+        const dur = UI.bigTitle({
+          num: String(areaNum).padStart(2, "0"),
+          name: a.name.toUpperCase(),
+          sub: ch.year ? ch.title + " · " + ch.year : ch.title,
+        });
+        if (waves.length) wait(dur - 0.35, spawnEnemies);
+        else spawnEnemies();
+      },
+    });
 
   // --- exit door logic ---
   onUpdate(() => {
@@ -527,7 +532,8 @@ scene("area", ({ chapter, area: areaNum }) => {
     reveal.apply(vec2(cx, cy));
 
     nextWave();
-    const cleared = spawned && get("enemy").length === 0 && get("boss").length === 0;
+    // the finale never clears: its ending takes over when the boss drops
+    const cleared = !a.finale && spawned && get("enemy").length === 0 && get("boss").length === 0;
     if (cleared && !clearedSaid) { clearedSaid = true; SPEECH.fire("cleared"); }
     for (const d of m.exits) {
       if (cleared && !d.unlocked) {
@@ -626,59 +632,3 @@ scene("area", ({ chapter, area: areaNum }) => {
     }
   });
 });
-
-// ============================================================
-// FINALE: Victoria Park, ruined. Five caged friends in front of
-// the boss. Win: cages open, friends gather, fade to white.
-// ============================================================
-const FINALE = {};
-
-FINALE.setup = (m) => {
-  const caged = CHARACTERS
-    .filter((c) => c.id !== G.run.charId && !G.run.companions.includes(c.id))
-    .slice(0, 5);
-
-  const base = m.bossSpawn.add(0, 110);
-  caged.forEach((c, i) => {
-    const p = base.add((i - 2) * 110, Math.abs(i - 2) * 26);
-    const h = G.charH(0.9);
-    const zc = DEPTH.z(p.y + h * 0.5);   // the friend's feet; the cage sits just over them
-    add([...ART.charComps(c.id, h), pos(p), z(zc), opacity(0.55), "cagedFriend", { charId: c.id, feet: ART.feetBox(h) }]);
-    // cage bars (obstacles the player has to fight around)
-    const cage = add([
-      rect(56, 56), pos(p), anchor("center"), color(40, 40, 48), opacity(0.35),
-      outline(4, rgb(25, 25, 30)), area(), z(zc + 0.1), "solid", "cageBars",
-    ]);
-    COLLIDE.add(p.x - 28, p.y - 28, p.x + 28, p.y + 28, { open: () => !cage.exists() });
-    for (let bx = -18; bx <= 18; bx += 12) {
-      add([rect(4, 56), pos(p.add(bx, 0)), anchor("center"), color(70, 70, 80), z(zc + 0.2), "cageBars"]);
-    }
-  });
-};
-
-FINALE.win = (player) => {
-  G.paused = true;
-
-  wait(0.8, () => {
-    // cages open
-    destroyAll("cageBars");
-    shake(10);
-    for (const f of get("cagedFriend")) {
-      f.opacity = 1;
-      f.onUpdate(() => {
-        const d = player.pos.sub(f.pos);
-        if (d.len() > 70) f.pos = f.pos.add(d.unit().scale(90 * dt()));
-      });
-    }
-    UI.subtitleSeq(["Everyone's free.", "The park starts to mend itself..."]);
-  });
-
-  // fade to white -> ending
-  wait(3.6, () => {
-    const w = add([rect(G.W, G.H), color(255, 255, 255), opacity(0), fixed(), z(250)]);
-    w.onUpdate(() => {
-      w.opacity += dt() * 0.5;
-      if (w.opacity >= 1) go("ending");
-    });
-  });
-};

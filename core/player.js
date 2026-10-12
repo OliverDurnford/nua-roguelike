@@ -19,7 +19,7 @@ PLAYER.make = (spawnPos) => {
     opacity(1),
     z(50),
     "player",
-    { iframes: 0, fireCd: 0, bobT: 0, actionT: 0, faceAimT: 0, feet: ART.feetBox(G.charH()) },
+    { iframes: 0, fireCd: 0, bobT: 0, actionT: 0, faceAimT: 0, autoWalk: null, feet: ART.feetBox(G.charH()) },
   ]);
   G.playerObj = p;   // so companions can find the player on the field
   DEPTH.track(p);
@@ -30,11 +30,17 @@ PLAYER.make = (spawnPos) => {
 
     // --- movement ---
     let dir = vec2(0, 0);
-    if (isKeyDown("a") || isKeyDown("left")) dir.x -= 1;
-    if (isKeyDown("d") || isKeyDown("right")) dir.x += 1;
-    if (isKeyDown("w") || isKeyDown("up")) dir.y -= 1;
-    if (isKeyDown("s") || isKeyDown("down")) dir.y += 1;
-    dir = dir.add(G.joy);
+    if (p.autoWalk) {
+      // a cutscene is walking you (the finale's walk-off): the keys do nothing
+      const to = p.autoWalk.sub(p.pos);
+      if (to.len() > 8) dir = to.unit().scale(0.55);
+    } else {
+      if (isKeyDown("a") || isKeyDown("left")) dir.x -= 1;
+      if (isKeyDown("d") || isKeyDown("right")) dir.x += 1;
+      if (isKeyDown("w") || isKeyDown("up")) dir.y -= 1;
+      if (isKeyDown("s") || isKeyDown("down")) dir.y += 1;
+      dir = dir.add(G.joy);
+    }
     if (dir.len() > 1) dir = dir.unit();
     // walls stop the feet box, x then y, so you slide along edges
     COLLIDE.moveBy(p, dir.scale(s.moveSpeed * dt()));

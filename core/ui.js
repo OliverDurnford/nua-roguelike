@@ -363,7 +363,8 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   root.onUpdate(() => {
     const gone = !ent.exists();
     if (!gone) {
-      root.pos = ent.pos.add(0, -50 - h / 2 - root.lift);
+      // a big speaker (the finale's boss, the pile) says how far up its head is
+      root.pos = ent.pos.add(0, -(ent.speechLift || 50) - h / 2 - root.lift);
       // keep the note inside the map so it never clips off the edges
       if (G.mapBounds && !o.fixed) {
         root.pos.x = G.clamp(root.pos.x, w / 2 + 10, Math.max(w / 2 + 10, G.mapBounds.x2 - w / 2 - 10));
@@ -373,7 +374,8 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
     // A collection screen raises G.paused while it plays, so its own note
     // has to keep running or it never fades up. Field bubbles still freeze
     // behind the pause menu.
-    if (!G.paused || o.whilePaused) root.t += dt();
+    // The finale's cutscenes pause play but speak, so their notes run too.
+    if (!G.paused || o.whilePaused || G.cutscene) root.t += dt();
     if (gone) root.t = Math.max(root.t, dur - 0.25);
 
     let op;
@@ -631,7 +633,7 @@ UI.hud = () => {
   }]);
 
   hud.onDraw(() => {
-    if (!G.run) return;
+    if (!G.run || G.cutscene) return;   // the finale's opening and ending own the frame
     const s = G.stats();
     const r = G.run;
 
@@ -974,6 +976,7 @@ UI.pause = () => {
     if (typeof CUTIN !== "undefined" && CUTIN.active) return;
     const b = UI.PAUSE_BTN;
     if (!UI.pauseOpen) {
+      if (G.cutscene) return;
       UI.card(vec2(b.x, b.y), b.w, b.h, { fill: UI.CHIP, shade: null, notch: false, opacity: 0.85 });
       UI.label("PAUSE", b.x + b.w / 2, b.y + b.h / 2 + 1, { anchor: "center", color: UI.TEXT, shadow: false, opacity: 0.85 });
       return;

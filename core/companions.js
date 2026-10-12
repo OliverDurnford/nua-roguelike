@@ -153,7 +153,7 @@ COMPANIONS.checkPairs = () => {
 
 // ---------- specials ----------
 COMPANIONS.trySpecial = () => {
-  if (!G.run || G.paused) return;
+  if (!G.run || G.paused || G.cutscene) return;
   if (G.run.meter < 1 || G.run.companions.length === 0) return;
   const c = G.char(G.run.companions[G.run.selected]);
 

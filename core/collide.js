@@ -62,8 +62,10 @@ COLLIDE.resolve = (obj, axis) => {
   }
 };
 
-// Move by a world-pixel vector, x then y, resolving after each.
+// Move by a world-pixel vector, x then y, resolving after each. A ghost
+// (obj.ghost, the finale's walk-off out of the park) is not stopped at all.
 COLLIDE.moveBy = (obj, v) => {
+  if (obj.ghost) { obj.pos.x += v.x; obj.pos.y += v.y; return; }
   if (v.x) { obj.pos.x += v.x; COLLIDE.resolve(obj, "x"); }
   if (v.y) { obj.pos.y += v.y; COLLIDE.resolve(obj, "y"); }
 };

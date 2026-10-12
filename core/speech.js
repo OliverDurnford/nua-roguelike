@@ -221,6 +221,7 @@ SPEECH.play = (line, cutscene = false) => {
 SPEECH.fire = (moment, extra) => {
   const cutscene = !!(extra && extra.cutscene);
   if (!G.run || (G.paused && !cutscene) || !SPEECH.ctx) return false;
+  if (G.cutscene && !cutscene) return false;   // the finale's own beats only
   const scripted = SPEECH.SCRIPTED.includes(moment);
   if (!scripted && time() - SPEECH.lastAny < SPEECH.QUIET) return false;
   const line = SPEECH.pick(SPEECH.eligible(moment, extra));
