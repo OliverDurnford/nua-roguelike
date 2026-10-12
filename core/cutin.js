@@ -231,10 +231,12 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
   const specSize = fit(opts.special);
 
   // Section headings and the lines under them are ringed in ink as well as
-  // shadowed, or they thin out over busy art. The headings take the title's
-  // blue so they read as headings, not as one more line of silver.
+  // shadowed, or they thin out over busy art. Each heading takes its own
+  // section's colour so it reads as a heading, not one more line of silver
+  // (Ollie, 12 Oct): the special's yellow, the passive slab's blue.
   const LINE = { size: 16, color: UI.SILVER, outline: 2, shadowOff: 4, anchor: "topright" };
-  const HEAD = Object.assign({}, LINE, { color: UI.BLUE });
+  const SPEC_HEAD = Object.assign({}, LINE, { color: UI.SPECIAL_YELLOW });
+  const PASS_HEAD = Object.assign({}, LINE, { color: UI.BLUE_DEEP });
   const PASSIVE = Object.assign({}, LINE, { lineSpacing: 6, width: 420, align: "right" });
   const DESC = Object.assign({}, LINE,
     { font: UI.VT, size: CUTIN.DESC_SIZE, width: CUTIN.DESC_W, align: "right" });
@@ -273,7 +275,7 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
     // The special: ink type on a pale notched paper card, the opposite
     // treatment to the stat's silver type on a solid blue square-cornered
     // slab. Same weight, unmistakably a different thing.
-    UI.label("SPECIAL MOVE", r, specHeadTop, o(HEAD));
+    UI.label("SPECIAL MOVE", r, specHeadTop, o(SPEC_HEAD));
     const sc2 = pop(t, 0.08);
     if (sc2 > 0) {
       const pw = Math.ceil(UI.measure(opts.special, UI.PX, specSize).width);
@@ -289,7 +291,7 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
 
     // The passive: its name (Josh's runs to forty-two characters, so it
     // wraps), then the stat boost on its slab, landing last.
-    UI.label("PASSIVE EFFECT", r, passiveHeadTop, o(HEAD));
+    UI.label("PASSIVE EFFECT", r, passiveHeadTop, o(PASS_HEAD));
     UI.label(opts.headline, r, passiveTop, o(PASSIVE));
     const sc = pop(t, 0.18);
     if (sc > 0) {
