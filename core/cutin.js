@@ -147,6 +147,7 @@ CUTIN.forJoin = (c) => ({
   headline: c.passive.name.toUpperCase(),
   stat: c.passive.desc.toUpperCase(),
   special: c.special.name.toUpperCase(),
+  specialDesc: CUTIN.effectText(c.special),
   bubble: c.recruitLine,
 });
 
@@ -204,11 +205,15 @@ CUTIN._scrim = (sy, sh, dx, op) => {
 // length: names run CAL to ANNIE, and the stat boosts run "+2 MAX HP" to
 // "SMALL BOOST TO EVERYTHING". Right-aligned, a long one grows leftwards
 // into empty sky instead of off the edge.
+// Two sections under the name (Ollie, 12 Oct): SPECIAL MOVE, its name and
+// what it does; then a bigger gap; then PASSIVE EFFECT, its name and what
+// it does. The block is laid out from the bottom up, so a long description
+// grows the block upwards instead of pushing the slab off the screen.
 // In with the friend's landing, out with them, and creeping at 4px/s in
 // between: slow enough to read, never actually still.
 CUTIN._joinType = (opts, P, clock, alpha) => {
   const TYPE_IN = CUTIN.parkedAt(0, P), TYPE_OUT = CUTIN.exitAt(0, P);
-  const RX = 928, TY = 250;      // right margin, and the top of the block
+  const RX = 928, BOTTOM = 504;  // right margin, and the foot of the block
 
   const typeX = (t) => {
     if (t < TYPE_IN) return 520;                                   // off to the right
@@ -225,49 +230,72 @@ CUTIN._joinType = (opts, P, clock, alpha) => {
   const statSize = fit(opts.stat);
   const specSize = fit(opts.special);
 
+  // Section headings and the lines under them are ringed in ink as well as
+  // shadowed, or they thin out over busy art. The headings take the title's
+  // blue so they read as headings, not as one more line of silver.
+  const LINE = { size: 16, color: UI.SILVER, outline: 2, shadowOff: 4, anchor: "topright" };
+  const HEAD = Object.assign({}, LINE, { color: UI.BLUE });
+  const PASSIVE = Object.assign({}, LINE, { lineSpacing: 6, width: 420, align: "right" });
+  const DESC = Object.assign({}, LINE,
+    { font: UI.VT, size: CUTIN.DESC_SIZE, width: CUTIN.DESC_W, align: "right" });
+  const SECTION_GAP = 32;        // between the special and the passive
+
+  const desc = opts.specialDesc || "";
+  const statH = statSize + 16, specH = specSize + 16;
+  const statTop = BOTTOM - statH;
+  const passiveTop = statTop - 12 - UI.measure(opts.headline, UI.PX, 16, PASSIVE).height;
+  const passiveHeadTop = passiveTop - 10 - 16;
+  const descTop = passiveHeadTop - SECTION_GAP - (desc ? UI.measure(desc, UI.VT, CUTIN.DESC_SIZE, DESC).height : 0);
+  const cardTop = descTop - (desc ? 10 : 0) - specH;
+  const specHeadTop = cardTop - 10 - 16;
+  const nameTop = specHeadTop - 10 - 48;
+
+  // a card or slab lands with a small overshoot, `delay` after the type arrives
+  const pop = (t, delay) => {
+    if (t < TYPE_IN + delay) return 0;
+    return 1.25 - 0.25 * UI.ease(Math.min(1, (t - (TYPE_IN + delay)) / 0.12));
+  };
+
   const type = add([fixed(), z(CUTIN.Z + 7), "cutin"]);
   type.onDraw(() => {
     const t = clock(), op = alpha();
     if (t < TYPE_IN) return;
     const r = RX + typeX(t);
+    const o = (extra) => Object.assign({}, extra, { opacity: op });
 
-    CUTIN._scrim(TY - 40, 320, typeX(t), op);
+    CUTIN._scrim(nameTop - 40, BOTTOM - nameTop + 70, typeX(t), op);
 
     // the name, in the special screens' gold chrome (Ollie, 12 Oct: the
     // silver did not stand out enough against the scenes)
     const nw = Math.ceil(UI.measure(opts.name, UI.PX, 48).width);
-    UI.chromeText(opts.name, r - nw, TY, 48, op, UI.SPECIAL_CHROME);
+    UI.chromeText(opts.name, r - nw, nameTop, 48, op, UI.SPECIAL_CHROME);
 
-    // The special move comes FIRST, straight under the name (Ollie, 20 Sep):
-    // ink type on a pale notched paper card, the opposite treatment to the
-    // stat's silver type on a solid blue square-cornered slab. Same weight,
-    // unmistakably a different thing.
-    UI.label("SPECIAL MOVE", r, TY + 58,
-      { size: 16, color: UI.SILVER, outline: 2, shadowOff: 4, anchor: "topright", opacity: op });
-    const pw = Math.ceil(UI.measure(opts.special, UI.PX, specSize).width);
-    const k2 = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.08)) / 0.12));
-    const sc2 = t < TYPE_IN + 0.08 ? 0 : 1.25 - 0.25 * UI.ease(k2);
+    // The special: ink type on a pale notched paper card, the opposite
+    // treatment to the stat's silver type on a solid blue square-cornered
+    // slab. Same weight, unmistakably a different thing.
+    UI.label("SPECIAL MOVE", r, specHeadTop, o(HEAD));
+    const sc2 = pop(t, 0.08);
     if (sc2 > 0) {
-      const w2 = (pw + 28) * sc2, h2 = (specSize + 16) * sc2;
-      const cx2 = r - w2 / 2, cy2 = TY + 84 + h2 / 2;
+      const pw = Math.ceil(UI.measure(opts.special, UI.PX, specSize).width);
+      const w2 = (pw + 28) * sc2, h2 = specH * sc2;
+      const cx2 = r - w2 / 2, cy2 = cardTop + h2 / 2;
       UI.card(vec2(cx2, cy2), w2, h2,
         { center: true, fill: UI.PAPER, shade: UI.PAPER_SHADE, drop: 3, opacity: op });
       UI.label(opts.special, cx2, cy2 + 1,
         { size: specSize, color: UI.TEXT, anchor: "center", shadow: false, opacity: op });
     }
+    // what it does, the same words as on the special screen (CUTIN.effectText)
+    if (desc) UI.label(desc, r, descTop, o(DESC));
 
-    // then their passive, wrapped: Josh's runs to forty-two characters.
-    // Ringed in ink as well as shadowed, or it thins out over busy art.
-    UI.label(opts.headline, r, TY + 146,
-      { size: 16, color: UI.SILVER, outline: 2, shadowOff: 4, lineSpacing: 6, width: 420, align: "right", anchor: "topright", opacity: op });
-
-    // and the stat boost on its slab, landing last
-    const sw = Math.ceil(UI.measure(opts.stat, UI.PX, statSize).width);
-    const k = Math.min(1, Math.max(0, (t - (TYPE_IN + 0.18)) / 0.12));
-    const sc = t < TYPE_IN + 0.18 ? 0 : 1.25 - 0.25 * UI.ease(k);
+    // The passive: its name (Josh's runs to forty-two characters, so it
+    // wraps), then the stat boost on its slab, landing last.
+    UI.label("PASSIVE EFFECT", r, passiveHeadTop, o(HEAD));
+    UI.label(opts.headline, r, passiveTop, o(PASSIVE));
+    const sc = pop(t, 0.18);
     if (sc > 0) {
-      const w = (sw + 28) * sc, h = (statSize + 16) * sc;
-      const cx = r - w / 2, cy = TY + 214 + h / 2;
+      const sw = Math.ceil(UI.measure(opts.stat, UI.PX, statSize).width);
+      const w = (sw + 28) * sc, h = statH * sc;
+      const cx = r - w / 2, cy = statTop + h / 2;
       UI.card(vec2(cx, cy), w, h,
         { center: true, fill: UI.BLUE_DEEP, shade: UI.INK, notch: false, opacity: op });
       UI.label(opts.stat, cx, cy + 1,
