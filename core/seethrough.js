@@ -14,7 +14,8 @@
 // and is cleared otherwise. The bars' dark cores and lighter edges are both
 // kept, and pale paving or a bench behind is cleared, whichever is darker.
 // At the top edge of the map, with nothing above, the bigger of two colour
-// groups inside the outline is taken as the floor.
+// groups inside the outline is taken as the floor. A cut that keeps almost
+// nothing is not trusted, and the whole outline stays solid instead.
 // A solid base under a railing (the brick wall the Beehive's fence stands
 // on) is traced as its own, ordinary thing: a bench behind the railing can
 // be the very same brown as the brick, and colour alone cannot tell them.
@@ -111,6 +112,15 @@ SEETHROUGH.keep = (rgba, w, h, band, inside) => {
   } else {
     const [a, b] = SEETHROUGH.groups(px.map(col), 2).sort((p, q) => q.share - p.share);
     for (const i of px) if (b && d2(col(i), b.c) < d2(col(i), a.c)) out[i] = 255;
+  }
+  // A railing is a quarter to a half bars. A cut keeping under 15% means the
+  // band above was not the floor behind but the railing itself (a rail that
+  // runs up the screen, cut into pieces): do not trust it, keep the outline.
+  let kept = 0;
+  for (const i of px) if (out[i]) kept++;
+  if (kept < px.length * 0.15) {
+    for (const i of px) out[i] = 255;
+    return out;
   }
   // tidy: a lone kept pixel goes, a lone hole in a bar is filled
   const tidy = out.slice();

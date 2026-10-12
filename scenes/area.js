@@ -154,6 +154,10 @@ MAPS.addOver = (t, tiles, plate) => {
       thing: t,
       cutReady: () => !!cut,
       draw() {
+        // off screen there is nobody to hide, so skip it: a room can have a
+        // hundred outlines and each one costs a masked draw
+        const c = camPos(), sc = camScale(), hw = width() / 2 / sc.x + U, hh = height() / 2 / sc.y + U;   // a unit spare for camera shake
+        if (bx2 * U < c.x - hw || bx1 * U > c.x + hw || by2 * U < c.y - hh || by1 * U > c.y + hh) return;
         drawMasked(
           () => { for (const p of patches) drawSprite({ sprite: p.sprite, pos: p.pos, quad: p.quad }); },
           () => {
