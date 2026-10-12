@@ -55,17 +55,10 @@ const OLDSTREET_PLATE = {
   // the bottom edge of `foot` (the bottom of the outline when there is no
   // foot); `base` overrides it for overhangs.
   things: [
-    { name: "tunnel wall, tunnel mouths and track bed", foot: [0, 0, 32, 5.8] },
-    { name: "end wall, left", foot: [0, 5.8, 0.58, 13.75] },
-    { name: "end wall, right", foot: [31.55, 5.8, 32, 13.75] },
-    { name: "vending machine", foot: [7.1, 12.77, 8.88, 13.3], over: [[7.1, 10.65], [8.88, 10.65], [8.88, 13.3], [7.1, 13.3]] },
-    { name: "bench, left (the friend is on this one)", foot: [11.5, 12.7, 14.8, 13.1], over: [[11.5, 11.85], [14.8, 11.85], [14.8, 13.33], [11.5, 13.33]], base: 13.33 },
-    { name: "litter bin", foot: [16.68, 13.01, 17.63, 13.3], over: [[16.68, 11.87], [17.63, 11.87], [17.63, 13.3], [16.68, 13.3]] },
-    { name: "bench, right", foot: [20.42, 12.7, 23.72, 13.1], over: [[20.42, 11.85], [23.72, 11.85], [23.72, 13.33], [20.42, 13.33]], base: 13.33 },
-    { name: "wall, left of the near passage", foot: [0, 13.75, 3.08, 18] },
-    { name: "the long run, roundel panels and all", foot: [5.46, 13.75, 26.69, 18] },
-    { name: "wall, right of the far passage", foot: [29.04, 13.75, 32, 18] },
-    { name: "bottom edge of the picture", foot: [0, 17.82, 32, 18] },
+    { name: "top edge", foot: [0, 0, 32, 0.4] },
+    { name: "bottom edge", foot: [0, 17.6, 32, 18] },
+    { name: "left edge", foot: [0, 0, 0.4, 18] },
+    { name: "right edge", foot: [31.6, 0, 32, 18] },
   ],
 
   // Up out of the left hand passage, at the head of it: the arch is

@@ -13,8 +13,7 @@
 // imagine it cut into 32 columns and 18 rows, and read off the
 // column and row.
 //
-// solid: [x1, y1, x2, y2] - a rectangle you cannot walk through.
-//        Bullets stop on these too.
+// things: one entry per painted thing (footprint and outline); see below.
 //
 // TUNING NOTES
 // Chairs are walkable, the same rule as Gonzo's: the blue chairs
@@ -55,45 +54,19 @@ const LIBRARY_PLATE = {
   // so a person is 83px on this floor.
   charScale: 1.15,
 
-  solid: [
-    // ---- the shell ----
-    [0,     0,     32,    4.15],   // top wall: white brick, four arched windows, the staff door
-    [14.33, 4.1,   16.92, 4.28],   // radiator under the second window, hangs proud of the wall
-    [18.48, 4.1,   21.02, 4.28],   // radiator under the third window
-    [12.69, 4.1,   13.33, 4.55],   // cast iron column, foot standing out of the wall
-    [17.44, 4.1,   18.08, 4.55],   // cast iron column, the middle one
-    [29.0,  4.1,   29.65, 6.25],   // cast iron column by the stairwell, this one runs 2 units into the room
-    [0,     0,     0.4,   18],     // left wall. The doorway painted at 13.05 to 16.1 is the way in
-    [31.6,  0,     32,    18],     // right wall
-    [0,     17.66, 32,    18],     // bottom wall
-
-    // ---- issue desk, top left ----
-    [0.5,   4.1,   6.75,  6.55],   // the long curved counter: till, two monitors, book scanner
-    [6.75,  4.1,   7.2,   6.3],    // the shoulder of the curve at the end of the counter
-    [7.2,   4.1,   7.46,  5.95],   // the return, stepped in three so it follows the curve
-    [7.78,  3.28,  9.2,   4.9],    // trolley of returned books, parked beside the desk
-
-    // ---- study zone, left. Tables solid, chairs walkable ----
-    [2.65,  7.77,  4.44,  9.08],   // round table 1
-    [6.65,  7.77,  8.42,  9.08],   // round table 2
-    [2.65,  11.0,  4.44,  12.28],  // round table 3, the one with the plant
-    [6.65,  11.0,  8.42,  12.28],  // round table 4
-    [0.5,   7.98,  1.62,  12.3],   // the three soft cubes. One block: the gaps are 7px, nobody fits
-
-    // ---- six double sided stacks, white end panels included ----
-    [10.77, 4.54,  11.85, 12.68],  // stack 1
-    [13.63, 4.54,  14.71, 12.68],  // stack 2
-    [16.52, 4.54,  17.6,  12.68],  // stack 3
-    [19.41, 4.54,  20.49, 12.68],  // stack 4
-    [22.27, 4.54,  23.35, 12.68],  // stack 5
-    [25.13, 4.54,  26.21, 12.68],  // stack 6
-
-    // ---- the bottom of the room ----
-    [10.38, 14.7,  27.02, 16.46],  // the whole reading table run as one block, chairs walkable
-    [29.96, 12.67, 31.42, 17.55],  // the two large format printers, stacked into one block
-
-    // ---- stairwell, top right ----
-    [29.6,  3.12,  31.6,  10.02],  // black cast iron staircase and the well it sits in
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "top edge", foot: [0, 0, 32, 0.4] },
+    { name: "bottom edge", foot: [0, 17.6, 32, 18] },
+    { name: "left edge", foot: [0, 0, 0.4, 18] },
+    { name: "right edge", foot: [31.6, 0, 32, 18] },
   ],
 
   // Just inside the doorway in the left wall. The opening is painted
