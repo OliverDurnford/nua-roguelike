@@ -493,7 +493,7 @@ UI.titleCard = ({ num, name, sub, hold = 3.6 }) => {
 // blur. Ollie, 12 Oct: rush in and out faster, the middle as it was.
 // Returns its length in seconds, so the scene can time what follows.
 UI.bigTitle = ({ num, name, sub }) => {
-  const IN = 0.2, MID = 1.45, OUT = 0.2;  // the rush in, the read, the rush out
+  const IN = 0.2, MID = 2.0, OUT = 0.2;   // the rush in, the read (Ollie: a bit longer, 12 Oct), the rush out
   const DUR = IN + MID + OUT;
   const DRIFT = 90;          // px/s through the middle, where it is read
   const POW = 3;             // how hard it brakes in and kicks out
