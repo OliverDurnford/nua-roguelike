@@ -122,5 +122,5 @@ const MERCY_PLATE = {
   // sits over the middle of it, so only the two openings and the
   // threshold strip in front actually trigger. Locked until the room
   // is clear.
-  exit: [14.65, 2.6, 18.45, 4.45],
+  exit: [14.75, 2.75, 15.75, 3.85],
 };

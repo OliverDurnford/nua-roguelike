@@ -248,7 +248,9 @@ MAPS.buildPlate = (plate) => {
     const lbl = add([
       text("WAY OUT", { size: 8, font: UI.PX }), anchor("center"),
       pos(mid.x, y1 * U - 13),
-      color(230, 200, 190), opacity(0.75), z(11),
+      // above the field (61+), so a walk-under arch over a doorway exit
+      // cannot paint over the sign
+      color(230, 200, 190), opacity(0.75), z(61),
     ]);
     // once it opens, the glow breathes so your eye finds it across the room
     glow.onUpdate(() => {
