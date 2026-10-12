@@ -525,7 +525,7 @@ ART.init = () => {
   // same box as tall ones) and its motion kind (see ENEMIES.animate).
   const realEnemy = (id) => (typeof REAL_ENEMIES !== "undefined" && id && REAL_ENEMIES[id]) || null;
   for (const ch of CHAPTERS) {
-    ch.enemySet.forEach((en, i) => {
+    ch.enemySet.concat(ch.extraEnemies || []).forEach((en, i) => {
       const key = "en-" + ch.num + "-" + i;
       const real = realEnemy(en.id);
       if (real) {

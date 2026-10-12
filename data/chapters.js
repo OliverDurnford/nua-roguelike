@@ -226,6 +226,13 @@ const CHAPTERS = [
     // 12 Oct 2026): grown-up admin from earlier chapters, by enemy id
     boss: { name: "BUSY YOU", id: "oldage", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50,
       minions: ["deadline", "invoice", "agent", "box"] },
+    // Enemies only Busy You summons, never a room's own waves (drawn by
+    // tools/enemies, ids toddler and calendar). Listed here so the art loads;
+    // a boss only summons what its `minions` names.
+    extraEnemies: [
+      { type: "chaser", name: "Toddler", id: "toddler", color: [240, 200, 170] },
+      { type: "runner", name: "Busy Calendar", id: "calendar", color: [235, 235, 235] },
+    ],
     areas: [
       {
         name: "The Faltering Fullback", feel: "treehouse pub - mini-arenas, narrow walkways", enemyBudget: 8,

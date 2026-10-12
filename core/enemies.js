@@ -307,7 +307,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
 
 // An enemy's definition by its id, from whichever chapter it belongs to.
 ENEMIES.defById = (id) => {
-  for (const c of CHAPTERS) for (const d of c.enemySet) if (d.id === id) return d;
+  for (const c of CHAPTERS) for (const d of c.enemySet.concat(c.extraEnemies || [])) if (d.id === id) return d;
   return null;
 };
 
