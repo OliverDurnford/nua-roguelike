@@ -111,5 +111,5 @@ const TRAIN_PLATE = {
 
   // Way out: the aisle carries on off the right edge. Kept clear of the
   // toilet cubicle just below it.
-  exit: [66.5, 7.6, 66.95, 9.2],
+  exit: [66.2, 7.6, 66.95, 9.2],
 };
