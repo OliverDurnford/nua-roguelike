@@ -52,6 +52,7 @@ FINALE.start = (m, player, ch, areaNum, onFight) => {
   boss.speechLift = FINALE.BOSS_H() * 0.55;   // bubbles clear the boss's head
   G.paused = true;
   G.cutscene = true;
+  onSceneLeave(() => { G.cutscene = false; });   // quitting mid-cutscene must not leave it on
   dir.cut(player.pos, 1);
   dir.run([
     { to: "follow", zoom: 1, move: 0, hold: 0.8 },
