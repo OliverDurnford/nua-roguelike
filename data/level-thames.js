@@ -103,5 +103,5 @@ const THAMES_PLATE = {
   ],
 
   // Right edge, across the walkway, past the last lamp post.
-  exit: [47.55, 8.82, 47.95, 10.62],
+  exit: [47.15, 8.82, 47.95, 10.62],
 };
