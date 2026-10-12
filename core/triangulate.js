@@ -30,6 +30,13 @@ const TRIANGULATE = (pts) => {
   const out = [];
   while (left.length > 3) {
     let cut = -1;
+    // a point on a straight run, or a spike doubling back along it, goes
+    // first as a flat triangle: left in, it reads as touching the outline
+    // and blocks every ear round it
+    for (let i = 0; i < left.length && cut < 0; i++) {
+      const ia = left[(i + left.length - 1) % left.length], ib = left[i], ic = left[(i + 1) % left.length];
+      if (Math.abs(cross(pts[ia], pts[ib], pts[ic])) <= 1e-9) { out.push(ia, ib, ic); cut = i; }
+    }
     for (let i = 0; i < left.length && cut < 0; i++) {
       const ia = left[(i + left.length - 1) % left.length], ib = left[i], ic = left[(i + 1) % left.length];
       const a = pts[ia], b = pts[ib], c = pts[ic];
