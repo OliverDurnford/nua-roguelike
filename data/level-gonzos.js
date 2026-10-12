@@ -85,5 +85,5 @@ const GONZOS_PLATE = {
 
   // Way out, bottom left, past the toilets. Sits flush with the bottom
   // edge so it reads as a threshold. Locked until the room is clear.
-  exit: [7.0, 17.4, 8.7, 17.84],
+  exit: [7, 17, 8.7, 17.84],
 };
