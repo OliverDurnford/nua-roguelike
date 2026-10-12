@@ -14,8 +14,7 @@
 // Lecture Theatre/Lecture Theatre - game plate.jpg" cut into 32
 // columns and 18 rows. Press F2 in game to see the blocks.
 //
-// solid: [x1, y1, x2, y2] - a rectangle you cannot walk through.
-//        Bullets stop on these too.
+// things: one entry per painted thing (footprint and outline); see below.
 //
 // TUNING NOTE: the seating is painted as a trapezoid, wider at the
 // front than at the back, so each tier gets its own rectangle and
@@ -53,35 +52,73 @@ const LECTURE_PLATE = {
 
   charScale: 1.1,
 
-  solid: [
-    // ---- back wall, doors included (you start just below them) ----
-    [0,     0,     32,    2.06],   // back wall: panels, clock, the doorway
-    [12.62, 2.06,  13.45, 2.72],   // wall speaker, left of the doors
-    [18.82, 2.06,  19.65, 2.72],   // wall speaker, right of the doors
-
-    // ---- side walls ----
-    [0,     2.06,  0.32,  18],     // left wall
-    [31.90, 2.06,  32,    18],     // right wall
-
-    // ---- left block: five tiers, each one desk plus the seats behind it ----
-    [4.67,  3.20,  14.77, 4.75],   // left tier 1 (back row, nearest the doors)
-    [4.50,  4.75,  14.77, 6.50],   // left tier 2
-    [4.31,  6.50,  14.77, 8.25],   // left tier 3
-    [4.15,  8.25,  14.77, 10.02],  // left tier 4
-    [3.83,  10.02, 14.77, 12.08],  // left tier 5 (front row, deeper front panel)
-
-    // ---- right block: the same five tiers, stepping the other way ----
-    [17.50, 3.20,  27.48, 4.75],   // right tier 1
-    [17.50, 4.75,  27.65, 6.50],   // right tier 2
-    [17.50, 6.50,  27.81, 8.25],   // right tier 3
-    [17.50, 8.25,  28.00, 10.02],  // right tier 4
-    [17.50, 10.02, 28.31, 12.08],  // right tier 5
-
-    // ---- the front of the room ----
-    [22.58, 13.70, 29.05, 15.60],  // lecturer's desk: white slab and its legs
-    [25.65, 14.40, 27.40, 16.20],  // his office chair, pulled out in front of it
-    [6.75,  16.55, 25.55, 17.80],  // the projection screen and its frame
-    [0,     17.77, 32,    18],     // front wall, so nobody walks off the picture
+  // Edited on the level board (tools/levels/board.html, launch config
+  // level-board). One entry per painted thing. `foot` is the floor it takes
+  // up, [x1, y1, x2, y2] in grid units: you cannot walk through it and
+  // bullets stop on it. `over`, when present, is its outline as [x, y]
+  // points: while your feet are above its base line the game redraws that
+  // patch of the painting over you, so you stand behind it. The base line is
+  // the bottom edge of `foot` (the bottom of the outline when there is no
+  // foot); `base` overrides it for overhangs.
+  things: [
+    { name: "back wall, left of the doorway", foot: [0, 0, 14.8, 2.22] },
+    { name: "back wall, right of the doorway", foot: [17.5, 0, 32, 2.22] },
+    { name: "wall above the doorway", foot: [14.8, 0, 17.5, 1.2] },
+    { name: "left wall", foot: [0, 2.06, 0.32, 18] },
+    { name: "right wall", foot: [31.9, 2.06, 32, 18] },
+    { name: "front wall, so nobody walks off the picture", foot: [0, 17.77, 32, 18] },
+    { name: "projection screen on the front wall", foot: [6.75, 16.55, 25.55, 17.77] },
+    { name: "speaker, left of the doors", foot: [12.68, 2.4, 13.41, 2.95], over: [[12.74, 1.83], [13.35, 1.83], [13.41, 1.9], [13.41, 2.9], [13.35, 2.95], [12.74, 2.95], [12.68, 2.9], [12.68, 1.9]] },
+    { name: "speaker, right of the doors", foot: [18.9, 2.4, 19.66, 2.95], over: [[18.96, 1.78], [19.6, 1.78], [19.66, 1.85], [19.66, 2.9], [19.6, 2.95], [18.96, 2.95], [18.9, 2.9], [18.9, 1.85]] },
+    { name: "fire extinguisher", foot: [17.95, 2.2, 18.4, 2.48], over: [[18, 1.8], [17.9, 1.7], [17.92, 1.56], [18.1, 1.54], [18.32, 1.56], [18.42, 1.64], [18.4, 1.8], [18.35, 1.86], [18.35, 2.45], [18.3, 2.5], [18.05, 2.5], [18, 2.44], [17.98, 2.36], [17.9, 2.36]] },
+    { name: "left seating bank, part 1", foot: [4.56, 3.2, 14.85, 4.2], over: [[5.04, 3.21], [5.71, 3.21], [5.85, 3.56], [6.17, 3.56], [6.29, 3.21], [6.96, 3.21], [7.08, 3.56], [7.4, 3.56], [7.52, 3.21], [8.19, 3.21], [8.31, 3.56], [8.62, 3.56], [8.75, 3.21], [9.44, 3.21], [9.56, 3.56], [9.88, 3.56], [10, 3.21], [10.67, 3.21], [10.79, 3.56], [11.1, 3.56], [11.23, 3.21], [11.9, 3.21], [12.04, 3.56], [12.35, 3.56], [12.48, 3.21], [13.17, 3.21], [13.27, 3.56], [13.56, 3.56], [13.71, 3.21], [14.42, 3.21], [14.52, 3.56], [14.85, 3.71], [14.85, 4.21], [4.56, 4.21], [4.6, 3.69], [4.94, 3.56]] },
+    { name: "left seating bank, part 2", foot: [4.44, 4.2, 14.8, 5.2], over: [[4.55, 4.2], [14.8, 4.2], [14.8, 5.2], [4.44, 5.2]] },
+    { name: "left seating bank, part 3", foot: [4.34, 5.2, 14.8, 6.2], over: [[4.44, 5.2], [14.8, 5.2], [14.8, 6.2], [4.34, 6.2]] },
+    { name: "left seating bank, part 4", foot: [4.24, 6.2, 14.8, 7.2], over: [[4.34, 6.2], [14.8, 6.2], [14.8, 7.2], [4.24, 7.2]] },
+    { name: "left seating bank, part 5", foot: [4.13, 7.2, 14.8, 8.2], over: [[4.24, 7.2], [14.8, 7.2], [14.8, 8.2], [4.13, 8.2]] },
+    { name: "left seating bank, part 6", foot: [4.03, 8.2, 14.8, 9.2], over: [[4.13, 8.2], [14.8, 8.2], [14.8, 9.2], [4.03, 9.2]] },
+    { name: "left seating bank, part 7", foot: [3.92, 9.2, 14.8, 10.2], over: [[4.03, 9.2], [14.8, 9.2], [14.8, 10.2], [3.92, 10.2]] },
+    { name: "left seating bank, part 8", foot: [3.77, 10.2, 14.8, 11.2], over: [[3.92, 10.2], [14.8, 10.2], [14.8, 11.2], [3.77, 11.2], [3.77, 10.7], [3.87, 10.7]] },
+    { name: "left seating bank, part 9", foot: [3.77, 11.2, 14.8, 12.08], over: [[3.77, 11.2], [14.8, 11.2], [14.8, 12.08], [3.77, 12.08]] },
+    { name: "right seating bank, part 1", foot: [17.4, 3.2, 27.6, 4.2], over: [[17.81, 3.21], [18.52, 3.21], [18.67, 3.56], [18.92, 3.56], [19.06, 3.21], [19.75, 3.21], [19.85, 3.56], [20.19, 3.56], [20.31, 3.21], [20.98, 3.21], [21.08, 3.56], [21.42, 3.56], [21.52, 3.21], [22.21, 3.21], [22.33, 3.56], [22.62, 3.56], [22.77, 3.21], [23.44, 3.21], [23.56, 3.56], [23.85, 3.56], [24, 3.21], [24.67, 3.21], [24.79, 3.56], [25.12, 3.56], [25.25, 3.21], [25.92, 3.21], [26.04, 3.56], [26.35, 3.56], [26.48, 3.21], [27.17, 3.21], [27.27, 3.54], [27.58, 3.77], [27.6, 4.04], [27.52, 4.21], [17.52, 4.21], [17.4, 4.08], [17.4, 3.73], [17.71, 3.56]] },
+    { name: "right seating bank, part 2", foot: [17.46, 4.2, 27.68, 5.2], over: [[17.46, 4.2], [27.57, 4.2], [27.68, 5.2], [17.46, 5.2]] },
+    { name: "right seating bank, part 3", foot: [17.46, 5.2, 27.79, 6.2], over: [[17.46, 5.2], [27.68, 5.2], [27.79, 6.2], [17.46, 6.2]] },
+    { name: "right seating bank, part 4", foot: [17.46, 6.2, 27.89, 7.2], over: [[17.46, 6.2], [27.79, 6.2], [27.89, 7.2], [17.46, 7.2]] },
+    { name: "right seating bank, part 5", foot: [17.46, 7.2, 28, 8.2], over: [[17.46, 7.2], [27.89, 7.2], [28, 8.2], [17.46, 8.2]] },
+    { name: "right seating bank, part 6", foot: [17.46, 8.2, 28.11, 9.2], over: [[17.46, 8.2], [28, 8.2], [28.11, 9.2], [17.46, 9.2]] },
+    { name: "right seating bank, part 7", foot: [17.46, 9.2, 28.21, 10.2], over: [[17.46, 9.2], [28.11, 9.2], [28.21, 10.2], [17.46, 10.2]] },
+    { name: "right seating bank, part 8", foot: [17.46, 10.2, 28.34, 11.2], over: [[17.46, 10.2], [28.21, 10.2], [28.27, 10.7], [28.34, 10.7], [28.34, 11.2], [17.46, 11.2]] },
+    { name: "right seating bank, part 9", foot: [17.46, 11.2, 28.34, 12.08], over: [[17.46, 11.2], [28.34, 11.2], [28.34, 12.08], [17.46, 12.08]] },
+    { name: "left outer rail, part 1", foot: [4.34, 4.33, 4.55, 5.2], over: [[4.39, 4.33], [4.59, 4.33], [4.5, 5.2], [4.3, 5.2]], see: true },
+    { name: "left outer rail, part 2", foot: [4.23, 5.2, 4.46, 6.2], over: [[4.3, 5.2], [4.5, 5.2], [4.39, 6.2], [4.19, 6.2]], see: true },
+    { name: "left outer rail, part 3", foot: [4.12, 6.2, 4.35, 7.2], over: [[4.19, 6.2], [4.39, 6.2], [4.28, 7.2], [4.08, 7.2]], see: true },
+    { name: "left outer rail, part 4", foot: [4.01, 7.2, 4.24, 8.2], over: [[4.08, 7.2], [4.28, 7.2], [4.17, 8.2], [3.97, 8.2]], see: true },
+    { name: "left outer rail, part 5", foot: [3.9, 8.2, 4.13, 9.2], over: [[3.97, 8.2], [4.17, 8.2], [4.06, 9.2], [3.86, 9.2]], see: true },
+    { name: "left outer rail, part 6", foot: [3.8, 9.2, 4.02, 10.05], over: [[3.86, 9.2], [4.06, 9.2], [3.96, 10.05], [3.76, 10.05]], see: true },
+    { name: "right outer rail, part 1", foot: [27.58, 4.33, 27.79, 5.2], over: [[27.54, 4.33], [27.74, 4.33], [27.83, 5.2], [27.63, 5.2]], see: true },
+    { name: "right outer rail, part 2", foot: [27.67, 5.2, 27.89, 6.2], over: [[27.63, 5.2], [27.83, 5.2], [27.93, 6.2], [27.73, 6.2]], see: true },
+    { name: "right outer rail, part 3", foot: [27.77, 6.2, 27.99, 7.2], over: [[27.73, 6.2], [27.93, 6.2], [28.03, 7.2], [27.83, 7.2]], see: true },
+    { name: "right outer rail, part 4", foot: [27.87, 7.2, 28.1, 8.2], over: [[27.83, 7.2], [28.03, 7.2], [28.14, 8.2], [27.94, 8.2]], see: true },
+    { name: "right outer rail, part 5", foot: [27.98, 8.2, 28.2, 9.2], over: [[27.94, 8.2], [28.14, 8.2], [28.24, 9.2], [28.04, 9.2]], see: true },
+    { name: "right outer rail, part 6", foot: [28.08, 9.2, 28.29, 10.05], over: [[28.04, 9.2], [28.24, 9.2], [28.33, 10.05], [28.13, 10.05]], see: true },
+    { name: "left aisle rail, part 1", foot: [14.91, 4.35, 15.03, 5.2], over: [[14.9, 4.35], [15.04, 4.35], [15.04, 5.2], [14.9, 5.2]], see: true },
+    { name: "left aisle rail, part 2", foot: [14.91, 5.2, 15.03, 6.2], over: [[14.9, 5.2], [15.04, 5.2], [15.04, 6.2], [14.9, 6.2]], see: true },
+    { name: "left aisle rail, part 3", foot: [14.91, 6.2, 15.03, 7.2], over: [[14.9, 6.2], [15.04, 6.2], [15.04, 7.2], [14.9, 7.2]], see: true },
+    { name: "left aisle rail, part 4", foot: [14.91, 7.2, 15.03, 8.2], over: [[14.9, 7.2], [15.04, 7.2], [15.04, 8.2], [14.9, 8.2]], see: true },
+    { name: "left aisle rail, part 5", foot: [14.91, 8.2, 15.03, 9.2], over: [[14.9, 8.2], [15.04, 8.2], [15.04, 9.2], [14.9, 9.2]], see: true },
+    { name: "left aisle rail, part 6", foot: [14.91, 9.2, 15.03, 10.2], over: [[14.9, 9.2], [15.04, 9.2], [15.04, 10.2], [14.9, 10.2]], see: true },
+    { name: "left aisle rail, part 7", foot: [14.91, 10.2, 15.03, 11.2], over: [[14.9, 10.2], [15.04, 10.2], [15.04, 11.2], [14.9, 11.2]], see: true },
+    { name: "left aisle rail, part 8", foot: [14.91, 11.2, 15.03, 12.46], over: [[14.9, 11.2], [15.04, 11.2], [15.04, 12.46], [14.9, 12.46]], see: true },
+    { name: "right aisle rail, part 1", foot: [17.22, 4.35, 17.34, 5.2], over: [[17.21, 4.35], [17.35, 4.35], [17.35, 5.2], [17.21, 5.2]], see: true },
+    { name: "right aisle rail, part 2", foot: [17.22, 5.2, 17.34, 6.2], over: [[17.21, 5.2], [17.35, 5.2], [17.35, 6.2], [17.21, 6.2]], see: true },
+    { name: "right aisle rail, part 3", foot: [17.22, 6.2, 17.34, 7.2], over: [[17.21, 6.2], [17.35, 6.2], [17.35, 7.2], [17.21, 7.2]], see: true },
+    { name: "right aisle rail, part 4", foot: [17.22, 7.2, 17.34, 8.2], over: [[17.21, 7.2], [17.35, 7.2], [17.35, 8.2], [17.21, 8.2]], see: true },
+    { name: "right aisle rail, part 5", foot: [17.22, 8.2, 17.34, 9.2], over: [[17.21, 8.2], [17.35, 8.2], [17.35, 9.2], [17.21, 9.2]], see: true },
+    { name: "right aisle rail, part 6", foot: [17.22, 9.2, 17.34, 10.2], over: [[17.21, 9.2], [17.35, 9.2], [17.35, 10.2], [17.21, 10.2]], see: true },
+    { name: "right aisle rail, part 7", foot: [17.22, 10.2, 17.34, 11.2], over: [[17.21, 10.2], [17.35, 10.2], [17.35, 11.2], [17.21, 11.2]], see: true },
+    { name: "right aisle rail, part 8", foot: [17.22, 11.2, 17.34, 12.46], over: [[17.21, 11.2], [17.35, 11.2], [17.35, 12.46], [17.21, 12.46]], see: true },
+    { name: "lecturer's desk with its monitors", foot: [22.6, 14.6, 29.05, 15.6], over: [[22.6, 13.4], [23.4, 13.4], [23.65, 12.8], [24.15, 12.8], [24.2, 13], [23.95, 13.4], [24.8, 13.4], [24.8, 12.85], [27.6, 12.85], [27.6, 13.4], [29.05, 13.4], [29.05, 15.6], [28.8, 15.6], [28.8, 14.95], [22.85, 14.95], [22.85, 15.6], [22.6, 15.6]] },
+    { name: "double doors, walk under", over: [[14.8, 0], [17.5, 0], [17.5, 2.2], [17.3, 2.2], [17.3, 1.2], [15, 1.2], [15, 2.2], [14.8, 2.2]], base: 2.2 },
   ],
 
   // Just inside the double doors, at the mouth of the centre aisle.
