@@ -475,8 +475,9 @@ UI.titleCard = ({ num, name, sub, hold = 3.6 }) => {
 
 // The room's name, big and central, once the camera has pushed in (Ollie,
 // 12 Oct 2026). It rushes in from the right, brakes to a crawl through the
-// middle where it reads, and kicks off the left, on a navy band that wipes
-// in and out with it, with speed lines streaking past. The lines are spawned
+// middle where it reads, and kicks off the left, with speed lines streaking
+// past. No box behind it (Ollie, 12 Oct: cleaner without): an ink ring, a
+// deep hard drop shadow and a soft dark pool lift it off the room instead. The lines are spawned
 // in proportion to how fast the name is moving, so they pour in on the
 // entry and the exit and thin to a trickle while it reads. Position is a
 // function of time: s runs 1 to -1 and x = centre + a*s + b*s^POW, so the
@@ -486,7 +487,6 @@ UI.bigTitle = ({ num, name, sub }) => {
   const DUR = 2.3;           // the whole fly-through
   const DRIFT = 90;          // px/s through the middle, where it is read
   const POW = 5;             // odd; higher brakes harder into the middle
-  const WIPE = 0.22;         // the band's wipe in, and out
   const cx = G.W / 2, cy = Math.round(G.H * 0.42);
   // Press Start 2P is an 8px grid, so any multiple of 8 stays crisp: as big
   // as fits, up to 48
@@ -499,7 +499,12 @@ UI.bigTitle = ({ num, name, sub }) => {
   const rowW = numW + 12 + subW, rowH = SUB + 10;
   const groupW = Math.max(nameW, rowW);
   const rowY = cy - SIZE / 2 - 14 - rowH;
-  const bandY = rowY - 16, bandH = (cy + SIZE / 2 + 4 + 16) - bandY;
+  const bandY = rowY - 16, bandH = (cy + SIZE / 2 + 4 + 16) - bandY;   // the lane the lines pour along
+  const DROP = SIZE / 8;     // the hard shadow's offset: 6px at 48
+  const RING = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+  const ink = (str, x, y, size, d, op = 1) => {
+    for (const [ox, oy] of RING) UI.text(str, x + ox * d, y + oy * d, { font: UI.PX, size, color: UI.INK, opacity: op });
+  };
   const a = DRIFT * DUR / 2;
   const b = G.W / 2 + groupW / 2 + 40 - a;
   const xAt = (t) => { const s = 1 - 2 * Math.min(1, Math.max(0, t / DUR)); return cx + a * s + b * Math.pow(s, POW); };
@@ -534,19 +539,9 @@ UI.bigTitle = ({ num, name, sub }) => {
   });
   obj.onDraw(() => {
     const t = obj.t;
-    if (t < DUR) {
-      // the band: wipes in from the right, wipes off to the left
-      const l = G.W * (1 - UI.ease(t / WIPE));
-      const r = G.W * (1 - Math.pow(Math.min(1, Math.max(0, (t - (DUR - WIPE)) / WIPE)), 3));
-      if (r > l) {
-        UI.R(l, bandY, r - l, bandH, UI.NAVY, 0.82);
-        UI.R(l, bandY - 2, r - l, 2, UI.INK);
-        UI.R(l, bandY, r - l, 2, UI.PALE);
-        UI.R(l, bandY + bandH - 2, r - l, 2, UI.PALE);
-        UI.R(l, bandY + bandH, r - l, 2, UI.INK);
-      }
-    }
-    for (const ln of obj.lines) if (!ln.front) UI.R(ln.x, ln.y, ln.len, ln.th, ln.col, ln.op);
+    // each line carries a 2px ink shadow like the type, or the pale ones vanish on a pale floor
+    const line = (ln) => { UI.R(ln.x + 2, ln.y + 2, ln.len, ln.th, UI.INK, ln.op * 0.55); UI.R(ln.x, ln.y, ln.len, ln.th, ln.col, ln.op); };
+    for (const ln of obj.lines) if (!ln.front) line(ln);
     if (t < DUR) {
       const x = Math.round(xAt(t));
       // the track number in a chrome block, then the chapter and its year
@@ -556,13 +551,18 @@ UI.bigTitle = ({ num, name, sub }) => {
       UI.R(rx, rowY, numW, 3, UI.SILVER);
       UI.R(rx, rowY + rowH - 3, numW, 3, UI.BLUE_DEEP);
       UI.label(num, rx + 8, rowY + rowH / 2, { size: SUB, anchor: "left", color: UI.NAVY, shadow: false });
-      UI.label(sub, rx + numW + 12, rowY + rowH / 2, { size: SUB, anchor: "left", color: UI.PALE, shadowOff: 3 });
-      // the name, in chrome, with a heavier shadow at this size
+      const sx = rx + numW + 12, sy = rowY + rowH / 2;
+      for (const [ox, oy] of RING) UI.label(sub, sx + ox * 2, sy + oy * 2, { size: SUB, anchor: "left", color: UI.INK, shadow: false });
+      UI.label(sub, sx, sy, { size: SUB, anchor: "left", color: UI.SILVER, shadowOff: 4 });
+      // the name, in chrome: a soft dark pool, the hard drop, an ink ring
       const nx = x - nameW / 2, ny = cy - SIZE / 2;
-      UI.text(name, nx + 4, ny + 4, { font: UI.PX, size: SIZE, color: UI.INK });
+      ink(name, nx + DROP, ny + DROP, SIZE, 10, 0.1);
+      ink(name, nx + DROP, ny + DROP, SIZE, 5, 0.14);
+      UI.text(name, nx + DROP, ny + DROP, { font: UI.PX, size: SIZE, color: UI.INK });
+      ink(name, nx, ny, SIZE, 2);
       UI.chromeText(name, nx, ny, SIZE);
     }
-    for (const ln of obj.lines) if (ln.front) UI.R(ln.x, ln.y, ln.len, ln.th, ln.col, ln.op);
+    for (const ln of obj.lines) if (ln.front) line(ln);
   });
   return DUR;
 };
