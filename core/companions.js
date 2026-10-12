@@ -52,8 +52,9 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
     if (G.paused) return;
     const lead = f.idx === 0 ? player : G.followers[f.idx - 1];
     if (!lead || !lead.exists()) return;
-    const d = lead.pos.sub(f.pos);
-    const gap = 38;
+    // a cutscene can send a follower to a spot instead (the finale's pub beat)
+    const d = (f.spot || lead.pos).sub(f.pos);
+    const gap = f.spot ? 4 : 38;
     // Walls stop them too now, so one can be left behind a table while the
     // lead walks off. After a beat of being far away they catch up.
     if (d.len() > 260) { f.lostT += dt(); if (f.lostT > 1.5) { f.pos = lead.pos.clone(); f.lostT = 0; } }

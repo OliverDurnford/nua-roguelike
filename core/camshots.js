@@ -4,7 +4,8 @@
 // opening and ending are made of these (scenes/finale.js).
 //
 // A shot: { to, zoom, move, hold, start, arrive }
-//   to      a world position, or "follow" for wherever the player is
+//   to      a world position, "follow" for wherever the player is, or a
+//           function returning a position, asked every frame
 //   zoom    camScale for the shot, 1 = normal
 //   move    seconds to get there, eased; 0 = a cut
 //   hold    seconds to stay once there
@@ -61,7 +62,8 @@ CAMSHOTS.director = (bounds, viewW, viewH) => {
       return;
     }
     const s = d.shots[d.i];
-    const to = CAMSHOTS.clamp(s.to === "follow" ? follow : s.to, s.zoom, viewW, viewH, bounds);
+    const want = typeof s.to === "function" ? s.to() : s.to === "follow" ? follow : s.to;
+    const to = CAMSHOTS.clamp(want, s.zoom, viewW, viewH, bounds);
     const from = d.fromPos || to;
     // the 1e-6 stops float drift in the summed frame times leaving a shot
     // one frame short of arriving

@@ -126,14 +126,16 @@ FINALE.win = (player, snap) => {
     { to: cageMid, zoom: 1, move: 1.0, hold: 2.4, arrive: () => FINALE.openCages(player) },
     { to: "follow", zoom: 1, move: 0.6, hold: 3.4, arrive: () => SPEECH.fire("pubInvite", { cutscene: true }) },
     {
-      // held long enough to outlast the fade, so the camera never hands back
-      to: snap.pos.lerp(vec2(snap.pos.x, m.h), 0.5), zoom: 0.8, move: 3.5, hold: 8,
+      // the pile near the top with room for its bubble, the group walking
+      // out of the bottom; held long enough to outlast the fade, so the
+      // camera never hands back
+      to: () => vec2(snap.pos.x, FINALE.pileTop(snap) - 90 + G.H / 2 / 0.8), zoom: 0.8, move: 3.5, hold: 8,
       // the whole group walks out of the bottom of the park, through the
       // hedge (ghost), and off the frame while the camera pulls out
       start: () => {
         player.autoWalk = vec2(player.pos.x, m.h + G.charH(4));
         player.ghost = true;
-        for (const f of G.followers || []) f.ghost = true;
+        for (const f of G.followers || []) { f.ghost = true; f.spot = null; }   // back into line
       },
       arrive: () => {
         SPEECH.fire("fromPile", { cutscene: true });
@@ -152,6 +154,13 @@ FINALE.standIn = (snap) => {
   const anims = ART.bossAnims(id);
   if (anims && anims.hurt !== undefined) s.play("hurt");
   return s;
+};
+
+// The top of the pile (where its bubble hangs from), or where it will be.
+FINALE.pileTop = (snap) => {
+  const p = get("bossPile")[0];
+  if (p) return p.pos.y - p.drawH;
+  return snap.pos.y + FINALE.BOSS_H() * 0.45 - FINALE.duty("pile", G.charH(2.6)).h;
 };
 
 // A duty drawn `size` px on its longer side: its picture, or a plain stand-in
@@ -189,7 +198,7 @@ FINALE.bury = (stand) => {
   }));
   wait(0.15 + 5 * 0.32 + 0.3, () => {
     const pile = FINALE.duty("pile", G.charH(2.6));
-    const p = FINALE.fall([...pile.comps, "bossPile", { speechLift: pile.h + 6 }], feet, zf + 0.3, () => {
+    const p = FINALE.fall([...pile.comps, "bossPile", { speechLift: pile.h + 6, drawH: pile.h }], feet, zf + 0.3, () => {
       shake(12);
       SFX.play("bossdie");
       UI.pop(feet.add(0, -pile.h * 0.4), [200, 190, 170], 50);
@@ -202,6 +211,8 @@ FINALE.bury = (stand) => {
 
 // The cages open and the five walk with you from here on. Play runs again so
 // they can move, but G.cutscene keeps you standing (autoWalk) and no special.
+// Everyone gathers round you in an arc for the pub beat (f.spot), then falls
+// back into line for the walk-off.
 FINALE.openCages = (player) => {
   destroyAll("cageBars");
   shake(10);
@@ -210,6 +221,12 @@ FINALE.openCages = (player) => {
     COMPANIONS.addFollower(player, f.charId, f.pos);
     destroy(f);
   }
+  const fs = G.followers || [];
+  const rx = G.charH(0.42) * Math.max(3, fs.length), ry = G.charH(1.0);   // wider for a bigger crowd
+  fs.forEach((f, i) => {
+    const a = Math.PI * (1.08 + 0.84 * (fs.length > 1 ? i / (fs.length - 1) : 0.5));   // left, over the top, to the right
+    f.spot = player.pos.add(Math.cos(a) * rx, Math.sin(a) * ry);
+  });
   G.paused = false;
 };
 

@@ -150,9 +150,16 @@ ENEMIES.shootAt = (from, to, speed, who) => {
   SFX.play("eshoot");
   let id = who && who.id;
   if (id === "dean_grad") id = "dean";
-  const eb = id && (typeof REAL_EBULLETS !== "undefined") && REAL_EBULLETS[id];
+  let eb = id && (typeof REAL_EBULLETS !== "undefined") && REAL_EBULLETS[id];
+  let key = "eb-" + id;
+  // Busy You throws their responsibilities (Ollie, 12 Oct 2026): one of the
+  // five that later bury them (core/duties-real.js), once those are drawn
+  if (id === "oldage" && typeof REAL_DUTIES !== "undefined") {
+    const ks = ["calendar", "laptop", "nappy", "phone", "briefcase"].filter((k) => REAL_DUTIES[k]);
+    if (ks.length) { const k = choose(ks); eb = REAL_DUTIES[k]; key = "duty-" + k; }
+  }
   const look = eb
-    ? [sprite("eb-" + id), scale(G.charH(0.3) / Math.max(eb.w, eb.h)), rotate(rand(0, 360))]
+    ? [sprite(key), scale(G.charH(0.3) / Math.max(eb.w, eb.h)), rotate(rand(0, 360))]
     : [circle(G.charH(0.14)), color(255, 120, 90), outline(2, rgb(120, 40, 30))];
   const b = add([
     ...look,
@@ -298,6 +305,12 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
   return b;
 };
 
+// An enemy's definition by its id, from whichever chapter it belongs to.
+ENEMIES.defById = (id) => {
+  for (const c of CHAPTERS) for (const d of c.enemySet) if (d.id === id) return d;
+  return null;
+};
+
 ENEMIES.runPattern = (pat, b, pl, chapter) => {
   if (pat === "radial") {
     const n = 12;
@@ -315,8 +328,9 @@ ENEMIES.runPattern = (pat, b, pl, chapter) => {
     UI.floatText(b.pos.add(0, -70), "!!", [255, 100, 100]);
   } else if (pat === "spawn") {
     if (get("enemy").length < 7) {
+      const pool = (chapter.boss.minions || []).map(ENEMIES.defById).filter(Boolean);
       for (let i = 0; i < 2; i++) {
-        const def = choose(chapter.enemySet);
+        const def = choose(pool.length ? pool : chapter.enemySet);
         const offset = vec2(rand(-140, 140), rand(-140, 140));
         ENEMIES.spawn(def, b.pos.add(offset));
       }

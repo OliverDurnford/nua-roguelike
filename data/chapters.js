@@ -222,7 +222,10 @@ const CHAPTERS = [
       { type: "shooter", name: "Rent Invoice", id: "invoice", color: [240, 240, 240] },
       { type: "chaser",  name: "Tube Rat", id: "rat",     color: [110, 85, 60] },
     ],
-    boss: { name: "BUSY YOU", id: "oldage", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50 },
+    // Busy You summons the things that stop the group hanging out (Ollie,
+    // 12 Oct 2026): grown-up admin from earlier chapters, by enemy id
+    boss: { name: "BUSY YOU", id: "oldage", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50,
+      minions: ["deadline", "invoice", "agent", "box"] },
     areas: [
       {
         name: "The Faltering Fullback", feel: "treehouse pub - mini-arenas, narrow walkways", enemyBudget: 8,
