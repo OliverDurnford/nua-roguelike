@@ -7,7 +7,8 @@
 // bathroom and front door corridor stitched in from v2, and
 // Ollie's fixes (en-suite into bedroom 2, four chairs, kitchen
 // tiles, oak corridor, bed 3 the right way round) pasted in from
-// v9 ("Level Design/The Flat/build/composite.py").
+// v9, and bed 3's wardrobe removed from v11 ("Level Design/The
+// Flat/build/composite.py").
 //
 // Plate area, FIRST PASS geometry: outer shell and the start and
 // exit only. Collision and enemy spawns are Ollie's, traced on the
