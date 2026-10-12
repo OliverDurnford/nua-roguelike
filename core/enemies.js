@@ -44,9 +44,10 @@ ENEMIES.animate = (e, moving, dir) => {
   if (!real) return;
   e.animT += dt();
   if (dir && Math.abs(dir.x) > 0.1) e.flipX = dir.x < 0;
+  if (e.hurtT > 0) { e.hurtT -= dt(); return; }   // the hurt frame holds for its beat
   const m = real.motion;
-  if (real.anims && real.anims.move) {
-    const want = moving ? "move" : "idle";
+  if (real.anims && (real.anims.move || real.moveAnim)) {
+    const want = moving ? (real.moveAnim || "move") : "idle";
     if (e.curAnim() !== want) e.play(want);
   } else if (m === "hop") {
     const s = moving ? Math.sin(e.animT * 13) : 0;
@@ -60,6 +61,14 @@ ENEMIES.animate = (e, moving, dir) => {
   } else {
     e.angle = 0;
   }
+};
+
+// The finale's boss moves like an enemy with a sheet: "walk" when it drifts
+// or charges, "idle" otherwise, the hurt frame on hits. A friend without a
+// Busy sheet yet stays a still (null), exactly as the old-age boss did.
+ENEMIES.busyReal = (id) => {
+  const a = ART.bossAnims(id);
+  return a ? { anims: a, moveAnim: "walk", hurtAnim: a.hurt !== undefined ? "hurt" : null } : null;
 };
 
 ENEMIES.spawn = (def, p) => {
@@ -167,6 +176,7 @@ ENEMIES.hit = (e, dmg, critChance) => {
   const d = Math.round(dmg * (isCrit ? 2 : 1) * 10) / 10;
   e.hp -= d;
   e.flashT = 0.08;
+  if (e.real && e.real.hurtAnim && e.hp > 0) { e.hurtT = 0.2; e.play(e.real.hurtAnim); }
 
   UI.floatText(e.pos.add(rand(-8, 8), -14), String(d) + (isCrit ? "!" : ""), isCrit ? [255, 220, 80] : [240, 240, 240]);
   G.run.meter = Math.min(1, G.run.meter + 0.03 * s.chargeRate);
@@ -179,8 +189,10 @@ ENEMIES.hit = (e, dmg, critChance) => {
     shake(18);
     SFX.play("bossdie");
     const cb = G.onBossDeath;
+    // where it fell and which way it faced, for the finale's burial
+    const snap = { pos: e.pos.clone(), flipX: !!e.flipX, z: e.z };
     destroy(e);
-    if (cb) cb();
+    if (cb) cb(snap);
   } else {
     G.run.kills++;
     UI.pop(e.pos, [200, 200, 210], 24);
@@ -220,7 +232,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
       stun: 0, flashT: 0,
       patI: 0, patT: 2,
       charging: null, spiral: null, spiralT: 0,
-      real: opts.finale ? null : (def.real || null), animT: 0, baseScale: 1,
+      real: opts.finale ? ENEMIES.busyReal(G.run.charId) : (def.real || null), animT: 0, baseScale: 1, hurtT: 0,
     },
   ]);
   b.baseScale = b.scale.x;
