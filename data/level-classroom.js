@@ -106,5 +106,5 @@ const CLASSROOM_PLATE = {
   // one, so the exit sits flush in the only doorway and unlocks when
   // the room is clear. If a v2 plate adds that right hand door, move
   // this to sit flush against it instead.
-  exit: [2.5, 17.25, 4.35, 17.75],
+  exit: [2.5, 16.95, 4.35, 17.75],
 };
