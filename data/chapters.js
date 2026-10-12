@@ -222,7 +222,7 @@ const CHAPTERS = [
       { type: "shooter", name: "Rent Invoice", id: "invoice", color: [240, 240, 240] },
       { type: "chaser",  name: "Tube Rat", id: "rat",     color: [110, 85, 60] },
     ],
-    boss: { name: "OLD AGE", id: "oldage", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50 },
+    boss: { name: "BUSY YOU", id: "oldage", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50 },
     areas: [
       {
         name: "The Faltering Fullback", feel: "treehouse pub - mini-arenas, narrow walkways", enemyBudget: 8,

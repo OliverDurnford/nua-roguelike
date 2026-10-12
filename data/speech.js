@@ -12,7 +12,7 @@
 //   who    a friend's id, or "boss:<id>", or "npc:<name>"
 //   on     the moment: wander spot enter exit fightStart cleared
 //          bossStart bossDown hurt lastHeart healed kill special
-//          join idle death
+//          join idle death pubInvite fromPile
 //   when   every clause present must pass; absent means no constraint
 //   freq   often | sometimes | rare | run (once a run) | ever (once)
 //   reply  up to two answers, 1.5s apart, skipped if nobody is there
@@ -64,6 +64,10 @@ const SPEECH_DATA = {
     {"id":"josh-05","who":"josh","text":"What's your mate Kinga up to?","on":"wander","freq":"run","when":{"with":["ana"]}},
     {"id":"josh-06","who":"josh","text":"How's Gee Underwood doin?","on":"wander","freq":"run","when":{"with":["annie"]}},
     {"id":"annie+ana-01","who":["annie","ana"],"text":"Silly boys!","on":"wander","freq":"run","when":{"with":["annie","ana"]}},
-    {"id":"josh-07","who":"josh","text":"My hair's never recovered, Sam.","on":"wander","freq":"run","when":{"with":["sam"]},"reply":[{"who":"sam","text":"It was ONE haircut!"}]}
+    {"id":"josh-07","who":"josh","text":"My hair's never recovered, Sam.","on":"wander","freq":"run","when":{"with":["sam"]},"reply":[{"who":"sam","text":"It was ONE haircut!"}]},
+    {"id":"busy-open-placeholder","who":"boss:oldage","text":"The pub? I haven't got TIME for the pub! HA HA HA!","on":"bossStart","freq":"often"},
+    {"id":"busy-pub-lucy-placeholder","who":"lucy","text":"Right. Pub?","on":"pubInvite","freq":"often","reply":[{"who":"josh","text":"Pub."}]},
+    {"id":"busy-pub-ollie-placeholder","who":"ollie","text":"Right. Pub?","on":"pubInvite","freq":"often","reply":[{"who":"annie","text":"Pub!"}]},
+    {"id":"busy-pile-placeholder","who":"boss:oldage","text":"Can I come too?","on":"fromPile","freq":"often"}
   ],
 };
