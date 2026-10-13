@@ -188,13 +188,20 @@ FINALE.fall = (comps, at, zz, onLand) => {
   return o;
 };
 
+// Where each falling item lands, in item sizes from the boss's feet: the
+// first two at the bottom of the legs, one either side, then each one after
+// on top of those, so it builds up as a heap (Ollie, 13 Oct 2026: not "a
+// diagonal line across them").
+FINALE.STACK = [[-0.55, 0], [0.55, 0], [0, -0.7], [-0.35, -1.35], [0.3, -1.95]];
+
 FINALE.bury = (stand) => {
   const feet = stand.pos.add(0, FINALE.BOSS_H() * 0.45);
   const zf = DEPTH.z(feet.y);
-  const step = G.charH(0.28);
+  const size = G.charH(0.6);
   FINALE.ITEMS.forEach((id, i) => wait(0.15 + i * 0.32, () => {
-    const it = FINALE.duty(id, G.charH(0.6));
-    FINALE.fall([...it.comps, "duty"], feet.add((i - 2) * step, -i * step * 0.7), zf + 0.1 + i * 0.01,
+    const it = FINALE.duty(id, size);
+    const [sx, sy] = FINALE.STACK[i];
+    FINALE.fall([...it.comps, "duty"], feet.add(sx * size, sy * size), zf + 0.1 + i * 0.01,
       () => { shake(4); SFX.play("hit"); });
   }));
   wait(0.15 + 5 * 0.32 + 0.3, () => {

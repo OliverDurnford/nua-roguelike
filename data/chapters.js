@@ -223,9 +223,10 @@ const CHAPTERS = [
       { type: "chaser",  name: "Tube Rat", id: "rat",     color: [110, 85, 60] },
     ],
     // Busy You summons the things that stop the group hanging out (Ollie,
-    // 12 Oct 2026): grown-up admin from earlier chapters, by enemy id
+    // 12 Oct 2026), by enemy id: only its own two since 13 Oct ("the draft
+    // enemies are great, get rid of the other ones")
     boss: { name: "BUSY YOU", id: "oldage", hp: 240, size: G.charH(2.1), color: [150, 150, 160], patterns: ["radial", "aimed", "spawn", "charge"], speed: 50,
-      minions: ["toddler", "calendar", "deadline", "invoice", "agent", "box"] },
+      minions: ["toddler", "calendar"] },
     // Enemies only Busy You summons, never a room's own waves (drawn by
     // tools/enemies, ids toddler and calendar). Listed here so the art loads;
     // a boss only summons what its `minions` names.
