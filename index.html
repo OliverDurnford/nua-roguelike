@@ -50,12 +50,21 @@
       background: repeating-linear-gradient(90deg, #8a97c9 0 8px, transparent 8px 9px);
     }
     #turn { z-index: 30; display: none; }
-    /* Over everything for the moment a phone is being turned, until the
-       page has its new size (core/turn.js) */
+    /* The cover over a turn. While an iPhone turns it freezes the page and
+       spins a picture of the old screen, then swaps in the new one, which
+       anything run from code only sees afterwards (three attempts that way
+       still popped, Ollie, 13 Oct 2026). So the cover is pure CSS: each
+       way round has its own fade, and a new name restarts the animation,
+       so the browser itself draws the cover in the very first frame of the
+       new shape and fades it once the game has redrawn underneath. */
     #settle {
-      position: fixed; inset: 0; z-index: 40; display: none;
-      background: #0c0c10; transition: opacity 0.18s;
+      position: fixed; inset: 0; z-index: 40; pointer-events: none;
+      background: #0c0c10; opacity: 0;
     }
+    @media (orientation: landscape) and (pointer: coarse) { #settle { animation: settle-wide 0.75s ease-in forwards; } }
+    @media (orientation: portrait) and (pointer: coarse) { #settle { animation: settle-tall 0.75s ease-in forwards; } }
+    @keyframes settle-wide { 0%, 45% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes settle-tall { 0%, 45% { opacity: 1; } 100% { opacity: 0; } }
     @media (orientation: portrait) and (pointer: coarse) { #turn { display: flex; } }
     #turn-phone {
       width: 30px; height: 52px; border: 4px solid #e7ecff; border-radius: 6px;
