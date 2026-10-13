@@ -18,9 +18,10 @@ FINALE.BOSS_H = () => G.charH(2.3);   // the finale boss's height (ENEMIES.spawn
 
 // Where the cages stand, in grid units: the middle of each cage's front
 // bottom edge. Along the path at the top of the park, in the gaps between
-// the trees, the bin, the fallen column and the bench, out of the fight
-// (Ollie, 13 Oct 2026). Clear of the path mouth, where the door glows.
-FINALE.CAGES = [[9.7, 3.2], [12.5, 3.1], [19.3, 3.2], [23.0, 3.3], [25.7, 3.55]];
+// the trees, the bin and the fallen column, out of the fight, one in the
+// path mouth in the middle, behind Busy You (Ollie, 13 Oct 2026; the
+// finale has no way out drawn there any more).
+FINALE.CAGES = [[9.7, 3.2], [12.5, 3.1], [16.0, 2.8], [19.3, 3.2], [23.0, 3.3]];
 FINALE.CAGED_H = () => G.charH(0.86);   // a follower's height, so the release is seamless
 
 FINALE.setup = (m, plate) => {

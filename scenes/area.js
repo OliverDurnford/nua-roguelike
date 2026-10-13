@@ -310,7 +310,9 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   // so walking between rooms on the same track does not restart it.
   SOUNDTRACK.playForArea(chapter, areaNum, a);
 
-  const m = a.plate ? MAPS.buildPlate(a.plate, { sealed: !!a.boss && !a.finale }) : MAPS.build(a.map, a.palette);
+  // Every boss room keeps its painted exit shut and unseen, the finale too:
+  // everyone walks out of the bottom of the park instead (Ollie, 13 Oct 2026)
+  const m = a.plate ? MAPS.buildPlate(a.plate, { sealed: !!a.boss }) : MAPS.build(a.map, a.palette);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
   G.areaWater = !!a.water;   // kept for anything still reading it directly
   G.cutscene = false;        // the finale raises it while it steers you
