@@ -199,7 +199,9 @@ MAPS.addOver = (t, tiles, plate) => {
 // (see data/level-gonzos.js). Returns exactly the same shape as
 // MAPS.build, so everything downstream works without knowing which
 // kind of area it is in.
-MAPS.buildPlate = (plate) => {
+// `sealed`: the painted exit stays shut and unseen (a boss room, whose way on
+// is the crack that opens when the boss goes down).
+MAPS.buildPlate = (plate, { sealed = false } = {}) => {
   const U = plate.unit;
   const W = plate.cols * U;
   const H = plate.rows * U;
@@ -245,7 +247,10 @@ MAPS.buildPlate = (plate) => {
     w: W, h: H,
   };
 
-  if (plate.exit) {
+  if (plate.exit && sealed) {
+    const [x1, y1, x2, y2] = plate.exit;
+    COLLIDE.add(x1 * U, y1 * U, x2 * U, y2 * U);   // the gap in the wall stays filled
+  } else if (plate.exit) {
     const [x1, y1, x2, y2] = plate.exit;
     const dw = (x2 - x1) * U, dh = (y2 - y1) * U;
     const mid = vec2((x1 + x2) / 2 * U, (y1 + y2) / 2 * U);
@@ -305,7 +310,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   // so walking between rooms on the same track does not restart it.
   SOUNDTRACK.playForArea(chapter, areaNum, a);
 
-  const m = a.plate ? MAPS.buildPlate(a.plate) : MAPS.build(a.map, a.palette);
+  const m = a.plate ? MAPS.buildPlate(a.plate, { sealed: !!a.boss && !a.finale }) : MAPS.build(a.map, a.palette);
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
   G.areaWater = !!a.water;   // kept for anything still reading it directly
   G.cutscene = false;        // the finale raises it while it steers you
@@ -327,18 +332,49 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   let exiting = false;
   let clearedSaid = false;
 
+  // --- where enemies come in (core/spawns.js) ---
+  // Each enemy's spot is chosen the moment it arrives, never within AWAY of
+  // where you are standing right then: the no-spawn zone walks with you
+  // (Ollie, 13 Oct 2026). The room's own spawn points come first; a room
+  // without any, or with every one of them too close to you, uses open
+  // floor you can reach, worked out from its walls the first time it is
+  // needed. Nothing comes in behind a walk-behind outline.
+  const AWAY = G.charH(3.6);
+  let floorPts = null;
+  const openFloor = () => {
+    if (floorPts) return floorPts;
+    const h = G.charH(1);
+    const U = a.plate ? a.plate.unit : G.TILE;
+    const hidden = (a.plate ? MAPS.things(a.plate) : [])
+      .filter((t) => t.over && t.over.length >= 3)
+      .map((t) => t.over.map(([x, y]) => ({ x: x * U, y: y * U })));
+    floorPts = SPAWNS.floor({
+      solids: COLLIDE.solids, bounds: { x1: 0, y1: 0, x2: m.w, y2: m.h }, start: m.playerSpawn,
+      walk: ART.feetBox(G.charH()),
+      fit: { dx: -0.42 * h, dy: 0.05 * h, w: 0.84 * h, h: 0.36 * h },   // the biggest enemy's feet (the brute)
+      step: Math.max(12, Math.round(G.charH(0.28))), hidden,
+    });
+    return floorPts;
+  };
+  const rnd = () => rand(0, 1);
+  const toVec = (p) => p && vec2(p.x, p.y);
+  // a boss calling minions wants them at its side (core/enemies.js)
+  G.spawnSpot = (around) => toVec(SPAWNS.pick(openFloor(), {
+    from: player.pos, away: AWAY, around, within: G.charH(2.4),
+    used: get("enemy").map((e) => e.pos), gap: G.charH(0.6), rnd,
+  }));
+
   // --- enemies: three waves (Ollie, 6 and 12 Oct 2026) ---
   // A fight room sends its enemies in three waves, half, three quarters and
   // then the room's whole budget, each announced by its card top left. The
   // first comes in as the room's name flies off (see the camera below), the
-  // next a breather after the last enemy of the one before goes down. None
-  // lands within 260px of where the player is standing unless the room has
-  // no spawn point further away. Placement is random each run. Until the
-  // last wave is in, the room does not count as cleared.
+  // next a breather after the last enemy of the one before goes down.
+  // Placement is random each run (see above). Until the last wave is in,
+  // the room does not count as cleared.
   const WAVE_NAMES = ["WAVE 1", "WAVE 2", "FINAL WAVE"];   // just the name, no line under it (Ollie, 13 Oct)
   const WAVE_LEAD = 0.6;   // the card is up this long before the wave arrives
   const BREATHER = 1.5;    // between one wave cleared and the next card
-  const waves = (a.enemyBudget > 0 && m.enemySpawns.length)
+  const waves = a.enemyBudget > 0
     ? [0.5, 0.75, 1].map((f) => Math.max(1, Math.round(a.enemyBudget * f)))
     : [];
   let wave = -1;           // the wave in now; -1 before the first
@@ -351,16 +387,27 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     UI.titleCard({ num: String(wave + 1), name: WAVE_NAMES[wave], hold: 2.2 });
     wait(WAVE_LEAD, () => {
       if (dead || exiting) return;
-      const from = wave === 0 ? m.playerSpawn : player.pos;
-      const far = m.enemySpawns.filter((p) => p.dist(from) > 260);
-      const near = m.enemySpawns.filter((p) => p.dist(from) <= 260).sort((p, q) => q.dist(from) - p.dist(from));
-      const pts = MAPS.shuffle(far).concat(near).slice(0, waves[wave]);
-      pts.forEach((p, i) => wait(i * 0.14, () => { if (!dead && !exiting) ENEMIES.spawnIn(choose(ch.enemySet), p); }));
-      wait(pts.length * 0.14, () => {
+      // one at a time, 0.14s apart, each placed against where you are now;
+      // with nowhere clear (you are stood in the middle of a small room) it
+      // waits a moment and looks again, and gives up on that one in the end
+      const used = [];
+      let placed = 0, misses = 0;
+      const next = () => {
+        if (dead || exiting) return;
+        if (placed < waves[wave] && misses < 12) {
+          const p = toVec(SPAWNS.choose({
+            own: m.enemySpawns, floor: openFloor(), from: player.pos, away: AWAY,
+            used, gap: G.charH(0.9), rnd,
+          }));
+          if (p) { used.push(p); placed++; ENEMIES.spawnIn(choose(ch.enemySet), p); wait(0.14, next); }
+          else { misses++; wait(0.3, next); }
+          return;
+        }
         waveBusy = false;
         if (wave === waves.length - 1) spawned = true;
         SPEECH.fire("fightStart");
-      });
+      };
+      next();
     });
   };
   // the room's name has landed: start the fight, if there is one
@@ -387,7 +434,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   // nothing to win, nor the finale, whose plate has its cracks painted in.
   let cracked = false;
   const crackOpen = () => {
-    if (cracked || a.quiet || a.finale) return;
+    if (cracked || a.quiet || a.boss) return;   // a boss room opens its own, big (wayOn)
     cracked = true;
     const n = (chapter - 1) * 5 + (areaNum - 1);      // 0 at Gonzo's, 24 at the end
     // 1, 2, 3, then 4, but two at Gonzo's: straight after the tutorial a
@@ -489,12 +536,97 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
       if (a.finale) {
         FINALE.win(player, snap);
       } else {
-        crackOpen();
-        COMPANIONS.onAreaExit();   // any exit line plays during the victory pause
-        wait(1.6, () => { if (!exiting) { exiting = true; G.advance(); } });
+        // everything else goes down with it, then the room is yours to walk
+        // round until you take the crack on (Ollie, 13 Oct 2026)
+        ENEMIES.clearAll();
+        wait(1.4, () => wayOn(snap.pos));
       }
     };
   }
+
+  // --- a boss room's way on: one big crack where the boss fell ---
+  // It opens as close to that spot as the floor allows and never under
+  // you; walk into the middle of it and it pulls your friends through,
+  // then you, into the next chapter.
+  const WAY_ON = 1.5;   // times the biggest of the ordinary cracks
+  const wayOn = (where) => {
+    if (exiting || dead) return;
+    const keep = G.charH(1.4);   // how far from you it must open
+    const near = (cx, cy, rx, ry) => {
+      const box = [Math.max(60, cx - rx), Math.max(60, cy - ry), Math.min(m.w - 60, cx + rx), Math.min(m.h - 60, cy + ry)];
+      if (box[2] <= box[0] || box[3] <= box[1]) return null;
+      for (let i = 0; i < 6; i++) {
+        const at = CRACKS.spot(box, { variant: 0, plate: a.plate, mult: WAY_ON });
+        if (at && at.pos.dist(player.pos.add(0, G.charH(0.39))) > keep) return at;
+      }
+      return null;
+    };
+    // where the boss fell if you can see it from here, else anywhere in view
+    const c = camPos(), r = G.charH(2.6);
+    const seen = Math.abs(where.x - c.x) < G.W / 2 - 60 && Math.abs(where.y - c.y) < G.H / 2 - 60;
+    const at = (seen && near(where.x, where.y, r, r * 0.7))
+      || near(c.x, c.y, G.W / 2 - 80, G.H / 2 - 80)
+      || near(m.w / 2, m.h / 2, m.w / 2, m.h / 2);
+    if (!at) {   // nowhere for one to open: straight on, as it used to
+      wait(0.4, () => { if (!exiting) { exiting = true; G.advance(); } });
+      return;
+    }
+    const GROW = 1.8;
+    shake(10);
+    SFX.play("rumble");
+    wait(0.5, () => { shake(6); SFX.play("rumble"); });
+    const crack = add([...CRACKS.comps(at.variant, { flip: at.flip, dur: GROW, mult: WAY_ON }), pos(at.pos), opacity(0.95), z(2)]);
+    const glow = add([
+      sprite("glow"), anchor("center"), pos(at.pos), scale(G.charH(4.5) / 96, G.charH(1.6) / 96),
+      color(200, 110, 240), opacity(0), z(1),
+    ]);
+    glow.onUpdate(() => { glow.opacity = Math.min(1, crack.growT / GROW) * (0.3 + Math.sin(time() * 3) * 0.12); });
+    const lbl = add([
+      text("JUMP IN", { size: 8, font: UI.PX }), anchor("center"), pos(at.pos),
+      color(240, 205, 250), opacity(0), z(61),   // above the field, as the door's sign
+    ]);
+    lbl.onUpdate(() => {
+      lbl.opacity = 0.85 * Math.max(0, Math.min(1, (crack.growT - GROW) / 0.5));
+      lbl.pos = at.pos.add(0, -G.charH(1.15) + Math.sin(time() * 4) * 4);
+    });
+    crack.onUpdate(() => {
+      if (exiting || dead || crack.growT < GROW * 0.7) return;
+      if (player.pos.add(0, G.charH(0.39)).dist(at.pos) < G.charH(0.42)) fallIn(at.pos);
+    });
+  };
+
+  // Into the crack: friends first, one after another, then you, spinning
+  // down into it as the tutorial's park swallowed everyone; then black.
+  const fallIn = (into) => {
+    exiting = true;
+    FIDGET.stop();
+    G.paused = true;
+    G.cutscene = true;
+    COMPANIONS.onAreaExit();
+    SFX.play("whoosh");
+    const pull = (o, delay) => wait(delay, () => o.onUpdate(() => {
+      const d = into.sub(o.pos);
+      o.angle = (o.angle || 0) + 720 * dt();
+      if (d.len() < 12) {
+        o.scale = o.scale.scale(1 - 4 * dt());
+        if (o.scale.x < 0.05) o.hidden = true;
+      } else {
+        o.pos = o.pos.add(d.unit().scale(Math.min(d.len(), 240 * dt())));
+      }
+    }));
+    const friends = (G.followers || []).filter((f) => f.exists());
+    friends.forEach((f, i) => pull(f, i * 0.35));
+    const last = friends.length * 0.35;
+    pull(player, last + 0.2);
+    wait(last + 1.5, () => {
+      SOUNDTRACK.fadeOut(1);
+      const black = add([rect(G.W, G.H), color(0, 0, 0), opacity(0), fixed(), z(250), { done: false }]);
+      black.onUpdate(() => {
+        black.opacity = Math.min(1, black.opacity + dt() * 1.2);
+        if (black.opacity >= 1 && !black.done) { black.done = true; G.advance({ black: true }); }
+      });
+    });
+  };
 
   // --- NPC easter egg (e.g. Megan Whiteside in Propaganda) ---
   if (a.npc) {
@@ -678,7 +810,6 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   UI.wireControls();
   UI.mobileControls();
   UI.pause();
-  COMPANIONS.ambient();
   COMPANIONS.onAreaEnter();
   UI.sceneFade();
 

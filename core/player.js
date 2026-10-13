@@ -107,6 +107,38 @@ PLAYER.aimDir = (p, targets) => {
   return d.len() < 4 ? vec2(1, 0) : d.unit();
 };
 
+// Phones only: a very slight pull of your shots towards enemies (Ollie, 13
+// Oct 2026). A thumb on a stick is never as exact as a mouse, so a shot
+// that would just miss bends in at the end; one aimed clear of everybody
+// flies straight. It only turns towards an enemy within `reach` (character
+// heights) and `cone` degrees either side of where it is going, and at most
+// `turn` degrees a second: under 20px of bend by the time it arrives.
+PLAYER.MAGNET = { turn: 35, cone: 25, reach: 2.2 };
+PLAYER.magnet = (dir, speed) => ({
+  id: "magnet",
+  require: ["pos"],
+  flyDir: dir.unit(),
+  update() {
+    if (!G.paused) {
+      const M = PLAYER.MAGNET, reach = G.charH(M.reach);
+      let best = null, bestOff = M.cone;
+      for (const t of get("enemy").concat(get("boss"))) {
+        const to = t.pos.sub(this.pos);
+        const d = to.len();
+        if (d < 1 || d > reach) continue;
+        const off = Math.abs(this.flyDir.angleBetween(to));
+        if (off < bestOff) { bestOff = off; best = to; }
+      }
+      if (best) {
+        const want = this.flyDir.angleBetween(best);   // degrees, signed
+        const step = Math.sign(want) * Math.min(Math.abs(want), M.turn * dt());
+        this.flyDir = Vec2.fromAngle(this.flyDir.angle() + step);
+      }
+    }
+    this.move(this.flyDir.scale(speed));
+  },
+});
+
 // Fire one projectile. Each character "throws" their signature weapon -
 // for now that's a coloured shape in their weapon colour.
 PLAYER.fire = (p, dir, s) => {
@@ -134,7 +166,7 @@ PLAYER.fire = (p, dir, s) => {
     rotate(rand(0, 360)),
     area(),
     opacity(1),
-    move(dir, 440),
+    isTouchscreen() ? PLAYER.magnet(dir, 440) : move(dir, 440),
     lifespan(s.range / 440, { fade: 0.08 }),
     z(40),
     "pbullet",

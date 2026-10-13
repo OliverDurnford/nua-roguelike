@@ -24,6 +24,10 @@ const SOUNDTRACK = {};
 
 SOUNDTRACK.volume = 0.42;    // sits under the sound effects
 SOUNDTRACK.FADE = 0.7;       // seconds, volume ramp on change
+// Between rooms the song fades out with the picture as you leave and the
+// next one fades up as the new room is revealed (Ollie, 13 Oct 2026).
+SOUNDTRACK.LEAVE = 0.7;      // seconds: the fade out through the exit (G.leave)
+SOUNDTRACK.AREA_IN = 1.6;    // seconds: the next room's song coming up
 SOUNDTRACK.REVEAL_AT = 10;   // seconds before the HUD reveals the title
 
 SOUNDTRACK.current = null;   // the track actually audible right now
@@ -54,6 +58,7 @@ SOUNDTRACK.hudToken = -1;    // last SOUNDTRACK.token the HUD has accounted for
 // playing, never one still queued up behind a fade. Do not collapse
 // this back into one field.
 SOUNDTRACK._requested = null;
+SOUNDTRACK._out = false;     // faded out by fadeOut(), still loaded and playing
 
 // The element's volume for a track at full level: the music volume times
 // the track's own gain, which make_registry.py works out from its measured
@@ -211,8 +216,17 @@ SOUNDTRACK.play = (track, at = 0, fadeIn = SOUNDTRACK.FADE) => {
   // declaration above for why. This is what stops a second play() call
   // for a track that is mid-fade-out from being swallowed as a false
   // no-op while the wrong track finishes taking over.
-  if (SOUNDTRACK._requested && SOUNDTRACK._requested.id === track.id) return;
+  if (SOUNDTRACK._requested && SOUNDTRACK._requested.id === track.id) {
+    // the same song asked for after a fade out (a room that shares it):
+    // bring it back up rather than leave it silent
+    if (SOUNDTRACK._out && fadeIn !== null) {
+      SOUNDTRACK._out = false;
+      SOUNDTRACK._rampTo(SOUNDTRACK.full(track), fadeIn);
+    }
+    return;
+  }
   SOUNDTRACK._requested = track;
+  SOUNDTRACK._out = false;
   const a = SOUNDTRACK._audio();
 
   const start = () => {
@@ -264,8 +278,17 @@ SOUNDTRACK.play = (track, at = 0, fadeIn = SOUNDTRACK.FADE) => {
     if (fadeIn !== null) SOUNDTRACK._rampTo(SOUNDTRACK.full(track), fadeIn);
   };
 
-  if (SOUNDTRACK.current) SOUNDTRACK._rampTo(0, 0.35, start);
+  // already silent (faded out on the way out of the last room): no dip
+  if (SOUNDTRACK.current && SOUNDTRACK._v > 0.001) SOUNDTRACK._rampTo(0, 0.35, start);
   else start();
+};
+
+// Fade the song down to nothing and leave it there, still loaded, for the
+// next play() to take over from (or, for the same song, to bring back up).
+SOUNDTRACK.fadeOut = (secs = SOUNDTRACK.LEAVE) => {
+  if (!SOUNDTRACK._el && !SOUNDTRACK._src) return;
+  SOUNDTRACK._out = true;
+  SOUNDTRACK._rampTo(0, secs);
 };
 
 SOUNDTRACK.stop = () => {
@@ -276,6 +299,7 @@ SOUNDTRACK.stop = () => {
   // track as still "requested" and wrongly no-opping once this fade
   // finishes and pauses it.
   SOUNDTRACK._requested = null;
+  SOUNDTRACK._out = false;
   SOUNDTRACK._rampTo(0, 0.4, () => {
     SOUNDTRACK._el.pause();
     SOUNDTRACK._stopDecoded();
@@ -340,7 +364,7 @@ SOUNDTRACK.forArea = (chapter, areaNum, a) => {
 };
 
 SOUNDTRACK.playForArea = (chapter, areaNum, a) => {
-  SOUNDTRACK.play(SOUNDTRACK.forArea(chapter, areaNum, a));
+  SOUNDTRACK.play(SOUNDTRACK.forArea(chapter, areaNum, a), 0, SOUNDTRACK.AREA_IN);
 };
 
 // Named track by id, for the title screen.

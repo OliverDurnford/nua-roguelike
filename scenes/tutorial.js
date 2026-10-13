@@ -179,6 +179,7 @@ scene("tutorial", () => {
       }
     });
     wait(2.2, () => {
+      SOUNDTRACK.fadeOut(0.8);   // the cracks' cue goes with the picture
       const black = add([rect(G.W, G.H), color(0, 0, 0), opacity(0), fixed(), z(250)]);
       black.onUpdate(() => {
         black.opacity += dt() * 1.2;

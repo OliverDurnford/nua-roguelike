@@ -11,6 +11,40 @@ const COMPANIONS = {};
 // each follower chases the one in front (the first chases the player).
 // Purely cosmetic - no collisions, they can't be hurt and don't block.
 
+// Who walks behind whom: the order friends joined, except that Josh and
+// Sam always walk together (Ollie, 13 Oct 2026). If you are one of them the
+// other is first behind you; if both follow you, the later one falls in
+// straight behind the earlier.
+COMPANIONS.TOGETHER = [["josh", "sam"]];
+COMPANIONS.chainOrder = (ids, you) => {
+  const out = ids.slice();
+  for (const [p, q] of COMPANIONS.TOGETHER) {
+    if (you === p || you === q) {
+      const i = out.indexOf(you === p ? q : p);
+      if (i > 0) out.unshift(out.splice(i, 1)[0]);
+    } else {
+      const i = out.indexOf(p), j = out.indexOf(q);
+      if (i >= 0 && j >= 0 && Math.abs(i - j) > 1) {
+        const x = out.splice(Math.max(i, j), 1)[0];
+        out.splice(Math.min(i, j) + 1, 0, x);
+      }
+    }
+  }
+  return out;
+};
+
+// Point every follower at the one they walk behind. G.followers itself stays
+// in the order friends joined: the HUD, the number keys and the selected
+// friend's marker all count along it.
+COMPANIONS.relink = (player) => {
+  let lead = player;
+  for (const id of COMPANIONS.chainOrder(G.followers.map((f) => f.charId), G.run.charId)) {
+    const f = G.followers.find((o) => o.charId === id);
+    f.lead = lead;
+    lead = f;
+  }
+};
+
 COMPANIONS.spawnFollowers = (player) => {
   G.followers = [];
   for (const id of G.run.companions) {
@@ -55,7 +89,7 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
 
   f.onUpdate(() => {
     if (G.paused) return;
-    const lead = f.idx === 0 ? player : G.followers[f.idx - 1];
+    const lead = f.lead || player;   // set by COMPANIONS.relink
     if (!lead || !lead.exists()) return;
     // a cutscene can send a follower to a spot instead (the finale's pub beat)
     const d = (f.spot || lead.pos).sub(f.pos);
@@ -85,6 +119,7 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
   });
 
   G.followers.push(f);
+  COMPANIONS.relink(player);
   return f;
 };
 
@@ -239,21 +274,6 @@ COMPANIONS.applyEffect = (c) => {
       ]);
     }
   }
-};
-
-// ---------- ambient easter eggs while companions are active ----------
-// The talking itself now lives in core/speech.js, driven by data/speech.js
-// and the speech board. What stays here is the wordless stuff, which is
-// not speech and has no line to write.
-COMPANIONS.ambient = () => {
-  loop(9, () => {
-    if (G.paused || !G.run) return;
-    const ids = G.run.companions;
-    // Josh + Sam sneak a kiss - rare, wordless, easy to miss (per the roster)
-    if (ids.includes("josh") && ids.includes("sam") && chance(0.03)) {
-      COMPANIONS.heartsBetween("josh", "sam");
-    }
-  });
 };
 
 // Hooks for area enter / exit. Both just raise the moment; which line

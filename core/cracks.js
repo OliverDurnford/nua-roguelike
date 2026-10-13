@@ -366,7 +366,7 @@ const CRACKS = (() => {
   const comps = (variant, opts = {}) => (ensure(variant), [
     sprite("crack" + (variant % VARIANTS.length)),
     anchor("center"),
-    scale(PX * G.areaScale),
+    scale(PX * G.areaScale * (opts.mult || 1)),
     grow(opts.delay || 0, opts.dur || 1.1, opts.flip !== undefined ? opts.flip : Math.random() < 0.5),
   ]);
 
@@ -377,8 +377,10 @@ const CRACKS = (() => {
   // of every crack in `placed`, so no two ever cross. If the shape asked for will not fit, the
   // smaller ones are tried. Returns { pos, variant, flip }, or null
   // when nothing fits (a tight room just gets fewer cracks).
-  const spot = ([x1, y1, x2, y2], { variant = 0, placed = [], plate = null } = {}) => {
-    const k = PX * G.areaScale;
+  // `mult` grows the crack past its own size (the boss rooms' way on); a
+  // placed crack is taken to share it.
+  const spot = ([x1, y1, x2, y2], { variant = 0, placed = [], plate = null, mult = 1 } = {}) => {
+    const k = PX * G.areaScale * mult;
     const blocks = COLLIDE.solids.filter((r) => !(r.open && r.open())).slice();
     if (plate && plate.things) {
       for (const t of plate.things) {

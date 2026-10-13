@@ -125,7 +125,7 @@ G.char = (id) => CHARACTERS.find((c) => c.id === id);
 G.playerChar = () => G.char(G.run.charId);
 
 // Move to the next area / chapter. Called by area.js when the player exits.
-G.advance = () => {
+G.advance = (opts = {}) => {
   const r = G.run;
   r.area += 1;
   if (r.area > 5) {
@@ -135,10 +135,29 @@ G.advance = () => {
     r.hp = G.stats().maxHp;
   }
   if (r.chapter > 5) {
-    go("ending");
+    G.leave(() => go("ending"));
   } else {
-    go("area", { chapter: r.chapter, area: r.area });
+    const a = CHAPTERS[r.chapter - 1].areas[r.area - 1];
+    G.leave(() => go("area", { chapter: r.chapter, area: r.area }), {
+      next: SOUNDTRACK.forArea(r.chapter, r.area, a), black: opts.black,
+    });
   }
+};
+
+// Leaving a room: the picture fades to black and the song fades out with
+// it, then `to` runs (the next scene fades back up from black). A next room
+// that plays the same song keeps it going instead. `black`: the caller has
+// already taken the screen to black (the boss rooms' fall into the crack).
+G.leave = (to, { next = null, black = false } = {}) => {
+  const req = SOUNDTRACK._requested;
+  if (!(next && req && next.id === req.id)) SOUNDTRACK.fadeOut(SOUNDTRACK.LEAVE);
+  G.paused = true;   // nobody moves, shoots or gets hurt on the way out
+  if (black) { wait(SOUNDTRACK.LEAVE * 0.5, to); return; }
+  const f = add([rect(G.W, G.H), color(0, 0, 0), opacity(0), fixed(), z(255)]);
+  f.onUpdate(() => {
+    f.opacity = Math.min(1, f.opacity + dt() / SOUNDTRACK.LEAVE);
+    if (f.opacity >= 1) { destroy(f); to(); }
+  });
 };
 
 // Helper: clamp a number

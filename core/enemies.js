@@ -212,6 +212,19 @@ ENEMIES.hit = (e, dmg, critChance) => {
   }
 };
 
+// The boss is down: everything else in the room goes with it, one after
+// another, and the bullets still in the air vanish (Ollie, 13 Oct 2026).
+ENEMIES.clearAll = () => {
+  for (const b of get("ebullet")) destroy(b);
+  get("enemy").forEach((e, i) => wait(0.15 + i * 0.07, () => {
+    if (!e.exists()) return;
+    G.run.kills++;
+    UI.pop(e.pos, [200, 200, 210], 24);
+    if (i % 2 === 0) SFX.play("kill");
+    destroy(e);
+  }));
+};
+
 // ---------- BOSSES ----------
 // A generic pattern machine; each boss picks from:
 //   radial - ring of bullets | aimed - spread at the player
@@ -332,8 +345,10 @@ ENEMIES.runPattern = (pat, b, pl, chapter) => {
       const pool = (chapter.boss.minions || []).map(ENEMIES.defById).filter(Boolean);
       for (let i = 0; i < 2; i++) {
         const def = choose(pool.length ? pool : chapter.enemySet);
-        const offset = vec2(rand(-140, 140), rand(-140, 140));
-        ENEMIES.spawn(def, b.pos.add(offset));
+        // at the boss's side on open floor, never on top of you (the room
+        // works it out, scenes/area.js); none at all if nowhere is clear
+        const at = G.spawnSpot ? G.spawnSpot(b.pos) : b.pos.add(rand(-140, 140), rand(-140, 140));
+        if (at) ENEMIES.spawnIn(def, at);
       }
     }
   } else if (pat === "spiral") {
