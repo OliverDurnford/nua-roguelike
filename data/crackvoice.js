@@ -65,6 +65,11 @@ const CRACK_VOICE = {
     { say: "Don't you have better things to be doing than hanging out with your friends?" },
     { say: "Think of all the work you could be getting on with if you just forgot about all this!" },
   ],
+  // Parliament Square, COVID beaten (Ollie's pick)
+  "4-5": [
+    { say: "You beat the pandemic, [name]. Adorable." },
+    { say: "Now try a Monday morning with 46 unread emails." },
+  ],
   // Games Night at the Flat, the last fight before the end
   "5-3": [
     { say: "Tsk tsk tsk, [name]. When are you just gonna give up?" },
