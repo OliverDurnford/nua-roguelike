@@ -95,3 +95,80 @@ FIDGET.turns = (rnd) => {
     done() { playing = false; after = true; gapT = 0; },
   };
 };
+
+// ---------- on the field ----------
+
+// Someone standing still: their breathe and blink, set by hand each frame
+// (the "idle" anim is stopped so the engine's own loop cannot fight it).
+// Each person keeps their own clocks on obj.idleLife, started at a random
+// point, so no two breathe or blink in step.
+FIDGET.idle = (obj, id) => {
+  const an = G.SPR["ch-" + id].anims;
+  if (!obj.idleLife) obj.idleLife = { t: rand(0, 2 * FIDGET.BREATHE), blink: FIDGET.blinker(() => rand(0, 1)) };
+  const life = obj.idleLife;
+  if (obj.curAnim()) obj.stop();
+  life.t += dt();
+  const k = FIDGET.breathe(life.t);
+  const shut = life.blink.update(dt());
+  obj.frame = (shut && an.blink ? an.blink.from : an.idle.from) + k;
+};
+
+// A friend's fidget sheet, or null. STAND_IN borrows the select pose's two
+// cells instead, to judge the timing before the fidget art exists.
+FIDGET.STAND_IN = false;
+FIDGET.sheet = (id) =>
+  G.SPR["ch-" + id + "-fidget"] || (FIDGET.STAND_IN && G.SPR["ch-" + id + "-pose"]) || null;
+
+// Play one fidget. A stand-in on the fidget sheet takes the friend's place
+// (same spot, size, depth, facing and flicker) while their own sprite is
+// hidden, so their hitbox and feet never change. Returns a cancel.
+FIDGET.play = (obj, id, onDone) => {
+  const reg = FIDGET.sheet(id);
+  const a = reg.anims.fidget || reg.anims.pose;
+  const seq = FIDGETS[id];
+  const sub = add([sprite(reg.name), anchor(vec2(0, reg.anchorY)), pos(obj.pos), scale(obj.scale), opacity(1), z(obj.z)]);
+  obj.hidden = true;
+  let t = 0, over = false;
+  const end = () => {
+    if (over) return;
+    over = true;
+    if (sub.exists()) destroy(sub);
+    if (obj.exists()) obj.hidden = false;
+    onDone();
+  };
+  sub.onUpdate(() => {
+    if (G.paused) return;
+    t += dt();
+    const f = obj.exists() ? FIDGET.at(seq, t) : null;
+    if (!f) { end(); return; }
+    sub.frame = f === "I1" ? a.from : a.to;
+    sub.pos = obj.pos;
+    sub.scale = obj.scale;
+    sub.flipX = obj.flipX;
+    sub.z = obj.z;
+    sub.opacity = obj.opacity;
+  });
+  return end;
+};
+
+// The turn-taking for one room, started by area.js once the player and the
+// followers are in. calm() is area.js's own "is this room cleared" check.
+FIDGET.beginArea = (player, calm) => {
+  const turns = FIDGET.turns(() => rand(0, 1));
+  let was = null, now = null, cancel = null;
+  onUpdate(() => {
+    if (!G.run || G.paused) return;
+    const moving = !!was && player.pos.dist(was) >= 2;
+    was = player.pos.clone();
+    const ok = calm() && !G.cutscene;
+    if (now && FIDGET.shouldCancel({ moving, calm: ok, standing: now.exists() && now.standing })) cancel();
+    const people = [player].concat(G.followers || []);
+    const ready = people
+      .filter((o) => o.exists() && o.standing && FIDGETS[o.charId] && FIDGET.sheet(o.charId))
+      .map((o) => o.charId);
+    const pick = turns.update(dt(), { calm: ok, moving, ready });
+    if (!pick) return;
+    now = people.find((o) => o.charId === pick);
+    cancel = FIDGET.play(now, pick, () => { now = null; cancel = null; turns.done(); });
+  });
+};

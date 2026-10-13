@@ -19,7 +19,8 @@ PLAYER.make = (spawnPos) => {
     opacity(1),
     z(50),
     "player",
-    { iframes: 0, fireCd: 0, bobT: 0, actionT: 0, faceAimT: 0, autoWalk: null, feet: ART.feetBox(G.charH()) },
+    { iframes: 0, fireCd: 0, bobT: 0, actionT: 0, faceAimT: 0, autoWalk: null, feet: ART.feetBox(G.charH()),
+      charId: c.id, standing: false },
   ]);
   G.playerObj = p;   // so companions can find the player on the field
   DEPTH.track(p);
@@ -45,17 +46,19 @@ PLAYER.make = (spawnPos) => {
     // walls stop the feet box, x then y, so you slide along edges
     COLLIDE.moveBy(p, dir.scale(s.moveSpeed * dt()));
 
-    // real animation sheet: swap between the walk cycle and the idle
-    // breathe. actionT holds an attack / hurt pose for a beat first, and
-    // faceAimT keeps him facing his shot while he strafes between shots.
+    // real animation sheet: swap between the walk cycle and standing
+    // (core/fidget.js breathes and blinks). actionT holds an attack /
+    // hurt pose for a beat first, and faceAimT keeps him facing his
+    // shot while he strafes between shots.
     // Characters still on placeholder art keep the old rotation bob.
     if (ART.hasAnims(c.id)) {
       p.actionT = Math.max(0, p.actionT - dt());
       p.faceAimT = Math.max(0, p.faceAimT - dt());
       if (p.faceAimT <= 0 && Math.abs(dir.x) > 0.1) p.flipX = dir.x < 0;
+      p.standing = dir.len() <= 0.1 && p.actionT <= 0 && !p.autoWalk;
       if (p.actionT <= 0) {
-        const want = dir.len() > 0.1 ? "walk" : "idle";
-        if (p.curAnim() !== want) p.play(want);
+        if (dir.len() > 0.1) { if (p.curAnim() !== "walk") p.play("walk"); }
+        else FIDGET.idle(p, c.id);   // the breathe and the blink (core/fidget.js)
       }
     } else if (dir.len() > 0.1) {
       p.bobT += dt() * 14;

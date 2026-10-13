@@ -49,7 +49,7 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
     opacity(1),
     z(48),
     "follower",
-    { charId: id, idx: i, bobT: rand(0, 6), lostT: 0, feet: ART.feetBox(h) },
+    { charId: id, idx: i, bobT: rand(0, 6), lostT: 0, feet: ART.feetBox(h), standing: false },
   ]);
   DEPTH.track(f);
 
@@ -64,6 +64,7 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
     // lead walks off. After a beat of being far away they catch up.
     if (d.len() > 260) { f.lostT += dt(); if (f.lostT > 1.5) { f.pos = lead.pos.clone(); f.lostT = 0; } }
     else f.lostT = 0;
+    f.standing = d.len() <= gap;
     if (d.len() > gap) {
       // proportional chase: snappy when far behind, settles when close
       const sp = Math.min(d.len() * 4, 460);
@@ -77,7 +78,7 @@ COMPANIONS.addFollower = (player, id, spawnAt) => {
         f.angle = Math.sin(f.bobT) * 4;
       }
     } else if (ART.hasAnims(f.charId)) {
-      if (f.curAnim() !== "idle") f.play("idle");
+      FIDGET.idle(f, f.charId);   // the breathe and the blink (core/fidget.js)
     } else {
       f.angle = 0;
     }

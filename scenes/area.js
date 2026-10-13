@@ -355,6 +355,11 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     wait(BREATHER, sendWave);
   };
 
+  // Calm: a quiet room, or a fight room once every wave is in and down.
+  // The finale never is. Fidgets wait for this (core/fidget.js).
+  const isCleared = () => !a.finale && spawned && get("enemy").length === 0 && get("boss").length === 0;
+  FIDGET.beginArea(player, isCleared);
+
   // --- the cracks follow you ---
   // Each time a room is won, the ground splits a little where you can see
   // it: one small crack early on, a few bigger ones by the last chapter,
@@ -568,7 +573,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
 
     nextWave();
     // the finale never clears: its ending takes over when the boss drops
-    const cleared = !a.finale && spawned && get("enemy").length === 0 && get("boss").length === 0;
+    const cleared = isCleared();
     if (cleared && !clearedSaid) { clearedSaid = true; SPEECH.fire("cleared"); crackOpen(); }
     for (const d of m.exits) {
       if (cleared && !d.unlocked) {

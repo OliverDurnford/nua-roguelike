@@ -487,6 +487,14 @@ ART.init = () => {
       loadSprite(key, rp.src, { sliceX: rp.sliceX, anims: rp.anims });
       G.SPR[key] = { name: key, h: rp.charH, anchorY: rp.anchorY, anims: rp.anims };
     }
+    // the idle fidget (core/sprites-fidget.js): a sheet of its own for the
+    // same reason, a fidget can reach out wider than the standing figure
+    if (typeof REAL_FIDGETS !== "undefined" && REAL_FIDGETS[c.id]) {
+      const rf = REAL_FIDGETS[c.id];
+      const key = "ch-" + c.id + "-fidget";
+      loadSprite(key, rf.src, { sliceX: rf.sliceX, anims: rf.anims });
+      G.SPR[key] = { name: key, h: rf.charH, anchorY: rf.anchorY, anims: rf.anims };
+    }
     // old-age variant: the code-drawn grey-haired placeholder, kept only as
     // the final boss's last fallback. The generated old-age stills
     // (core/old-real.js) left the game on 13 Oct 2026 once every friend had
