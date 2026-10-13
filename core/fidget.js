@@ -195,14 +195,17 @@ FIDGET.play = (obj, id, onDone) => {
 // drawing's places, the drawing plays, and they walk back, all while the
 // real two are hidden, as FIDGET.play does for one, so neither hitbox nor
 // feet ever move. The drawing has Sam on the left; with Sam on the right it
-// is mirrored. Returns a cancel.
-FIDGET.kiss = (kisser, shy, onDone) => {
+// is mirrored. Returns a cancel. { whilePaused } plays it with the room
+// frozen, for the voice in the cracks' cutscene (core/crackvoice.js), and
+// on top of everyone on the floor, so nobody stood in front hides it.
+FIDGET.kiss = (kisser, shy, onDone, opt = {}) => {
+  const top = opt.whilePaused ? 60 : null;   // the top of the floor band (core/depth.js)
   const regK = G.SPR["ch-" + kisser.charId], regS = G.SPR["ch-" + shy.charId];
   const pair = G.SPR["pair-" + FIDGET.PAIR.id];
   const hOf = (o, reg) => o.scale.y * reg.h;
   const standIn = (o, reg) => add([
     sprite(reg.name, { flipX: o.flipX, frame: reg.anims.idle.from }), anchor(vec2(0, reg.anchorY)),
-    pos(o.pos), scale(o.scale), opacity(o.opacity), z(o.z),
+    pos(o.pos), scale(o.scale), opacity(o.opacity), z(top === null ? o.z : top),
   ]);
   const a = standIn(kisser, regK), b = standIn(shy, regS);
   const hA = hOf(kisser, regK), hB = hOf(shy, regS);
@@ -212,7 +215,7 @@ FIDGET.kiss = (kisser, shy, onDone) => {
   const midX = (kisser.pos.x + shy.pos.x) / 2;
   const both = add([
     sprite(pair.name, { frame: 0, flipX: side < 0 }), anchor("bot"),
-    pos(midX, feetY), scale(k), opacity(0), z(Math.max(kisser.z, shy.z)),
+    pos(midX, feetY), scale(k), opacity(0), z(top === null ? Math.max(kisser.z, shy.z) : top),
   ]);
   // where the drawing has each of them, for the walk in and out
   const spotA = vec2(midX + side * pair.left[0] * k, feetY - hA / 2);
@@ -229,7 +232,7 @@ FIDGET.kiss = (kisser, shy, onDone) => {
     onDone();
   };
   a.onUpdate(() => {
-    if (G.paused || over) return;
+    if ((G.paused && !(opt.whilePaused && !UI.pauseOpen)) || over) return;
     t += dt();
     if (!kisser.exists() || !shy.exists()) { end(); return; }
     const s = FIDGET.kissAt(t);

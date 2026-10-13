@@ -314,6 +314,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   G.mapBounds = { x1: 0, y1: 0, x2: m.w, y2: m.h };
   G.areaWater = !!a.water;   // kept for anything still reading it directly
   G.cutscene = false;        // the finale raises it while it steers you
+  G.camTo = null;            // the voice in the cracks looking elsewhere (core/crackvoice.js)
 
   // Tell the speech system what room this is. Every `when` clause on a
   // line is tested against this, and the spot trigger walks these things.
@@ -432,9 +433,11 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   // it: one small crack early on, a few bigger ones by the last chapter,
   // never a lot (Ollie, 13 Oct 2026). Not in quiet rooms, where there is
   // nothing to win, nor the finale, whose plate has its cracks painted in.
+  // Returns where they opened (filled in as each comes out) and how long
+  // until the last one has started, for the voice in the cracks.
   let cracked = false;
   const crackOpen = () => {
-    if (cracked || a.quiet || a.boss) return;   // a boss room opens its own, big (wayOn)
+    if (cracked || a.quiet || a.boss) return null;   // a boss room opens its own, big (wayOn)
     cracked = true;
     const n = (chapter - 1) * 5 + (areaNum - 1);      // 0 at Gonzo's, 24 at the end
     // 1, 2, 3, then 4, but two at Gonzo's: straight after the tutorial a
@@ -459,7 +462,15 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
         add([...CRACKS.comps(at.variant, { flip: at.flip, dur: 1.4 }), pos(at.pos), opacity(0.8), z(2)]);
       });
     }
+    return { placed, settle: 0.25 + (count - 1) * 0.4 };
   };
+
+  // --- the voice in the cracks (core/crackvoice.js) ---
+  // After some rooms whoever has the rest of your friends talks to you out
+  // of the crack. The room freezes the moment it is won, so nobody walks
+  // off before it speaks; once heard, a beat stays quiet for the rest of
+  // the run. False when this room has nothing to say.
+  const crackVoice = (at, delay) => CRACKVOICE.run({ chapter, area: areaNum, at, delay });
 
   // --- companion pickup (quiet areas, chapters 1-4) ---
   if (m.companionSpawn && chapter <= 4) {
@@ -585,12 +596,16 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
       text("JUMP IN", { size: 8, font: UI.PX }), anchor("center"), pos(at.pos),
       color(240, 205, 250), opacity(0), z(61),   // above the field, as the door's sign
     ]);
+    // the voice in the cracks speaks out of it first, in some rooms
+    const voiced = crackVoice(() => at.pos, GROW);
+    let shownT = voiced ? -1 : GROW;   // when JUMP IN starts to show
     lbl.onUpdate(() => {
-      lbl.opacity = 0.85 * Math.max(0, Math.min(1, (crack.growT - GROW) / 0.5));
+      if (shownT < 0 && !G.cutscene) shownT = crack.growT;
+      lbl.opacity = shownT < 0 ? 0 : 0.85 * Math.max(0, Math.min(1, (crack.growT - shownT) / 0.5));
       lbl.pos = at.pos.add(0, -G.charH(1.15) + Math.sin(time() * 4) * 4);
     });
     crack.onUpdate(() => {
-      if (exiting || dead || crack.growT < GROW * 0.7) return;
+      if (exiting || dead || G.cutscene || crack.growT < GROW * 0.7) return;
       if (player.pos.add(0, G.charH(0.39)).dist(at.pos) < G.charH(0.42)) fallIn(at.pos);
     });
   };
@@ -726,6 +741,10 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
       aimLean = aimLean.lerp(G.aim.scale(42), Math.min(1, dt() * 6));   // the aim stick leans it the same way
       target = player.pos.add(aimLean);
     }
+    // the voice in the cracks can look away to a crack out of view, and
+    // glides back to where this follow would be (core/crackvoice.js)
+    G.camFollow = target;
+    if (G.camTo) target = G.camTo;
     const cx = m.w <= G.W ? m.w / 2 : G.clamp(target.x, G.W / 2, m.w - G.W / 2);
     const cy = m.h <= G.H ? m.h / 2 : G.clamp(target.y, G.H / 2, m.h - G.H / 2);
     reveal.apply(vec2(cx, cy));
@@ -733,7 +752,13 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     nextWave();
     // the finale never clears: its ending takes over when the boss drops
     const cleared = isCleared();
-    if (cleared && !clearedSaid) { clearedSaid = true; SPEECH.fire("cleared"); crackOpen(); }
+    if (cleared && !clearedSaid) {
+      clearedSaid = true;
+      // the friends' own "cleared" quip would talk over the voice
+      const c = crackOpen();
+      const voiced = c && crackVoice(() => c.placed[0] && c.placed[0].pos, c.settle + 1.2);
+      if (!voiced) SPEECH.fire("cleared");
+    }
     for (const d of m.exits) {
       if (cleared && !d.unlocked) {
         d.unlocked = true;

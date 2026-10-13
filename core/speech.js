@@ -39,6 +39,9 @@ SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "pubInvite", "fromPi
 
 SPEECH.WEIGHT = { often: 3, sometimes: 1.5, rare: 0.5, run: 1.5, ever: 1.5 };
 
+// Who speaks in the voice in the cracks' dark note rather than a white one.
+SPEECH.VOICE = ["boss:oldage"];
+
 // ---------- state ----------
 // Reset per area by SPEECH.beginArea; cooldown clocks run off time(),
 // which is continuous across scenes, so a line said in the last room
@@ -197,7 +200,9 @@ SPEECH.speak = (who, str) => {
   SPEECH.lastBy[who] = now;
   if (who.startsWith("boss:") || who.startsWith("npc:")) {
     const ent = SPEECH.sprite(who);
-    if (ent && ent.exists()) UI.speech(ent, str);
+    // Busy You talks in the dark note the voice in the cracks used all
+    // game (core/crackvoice.js): that is how you find out it was them
+    if (ent && ent.exists()) UI.speech(ent, str, undefined, { dark: SPEECH.VOICE.includes(who) });
     return;
   }
   COMPANIONS.say(who, str);

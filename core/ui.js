@@ -57,6 +57,14 @@ UI.SPECIAL_YELLOW = [255, 214, 64];
 UI.SPECIAL_CREAM = [255, 243, 204];
 UI.SPECIAL_CHROME = [[255, 253, 232], [255, 222, 89], [190, 112, 16], [255, 244, 170], [255, 200, 46], [212, 136, 22]];
 
+// The voice in the cracks (core/crackvoice.js), and Busy You in the finale,
+// who it was all along: a dark note with a purple cast and lilac words, the
+// purple a boss room's crack glows (Ollie, 13 Oct 2026).
+UI.VOICE_FILL = [24, 14, 38];
+UI.VOICE_RULE = [70, 40, 104];
+UI.VOICE_TEXT = [226, 210, 255];
+UI.VOICE_GLOW = [200, 110, 240];
+
 // ---------- type ----------
 // Press Start 2P is an 8px grid: keep its sizes to multiples of 8 and it
 // stays pixel-perfect (its atlas is rasterised at 8, see ART.init). VT323
@@ -326,7 +334,8 @@ UI._bubbles = [];
 // o (optional): { fixed } puts the note in screen space and skips the map
 // clamp, for a note inside a collection screen; { z } overrides the layer;
 // { dur } overrides how long it stays up; { tag } tags it for teardown;
-// { whilePaused } keeps its clock running while G.paused is true.
+// { whilePaused } keeps its clock running while G.paused is true;
+// { dark } is the voice in the cracks' note (Busy You speaks in it).
 UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   if (!ent || !ent.exists()) return;
   // one bubble per character - a new line replaces the old one
@@ -356,18 +365,21 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   UI._bubbles.push(root);
 
   const note = root.add([pos(0, 0), opacity(0)]);
+  const fill = o.dark ? UI.VOICE_FILL : UI.WHITE;
   note.onDraw(() => {
     const op = note.opacity;
-    UI.card(vec2(0, 0), w, h, { center: true, fill: UI.WHITE, opacity: op });
+    UI.card(vec2(0, 0), w, h, o.dark
+      ? { center: true, fill, shade: UI.VOICE_RULE, drop: 3, opacity: op }
+      : { center: true, fill, opacity: op });
     // the tail: a white diamond straddling the bottom edge, inked along
     // its two lower sides so the outline runs down into the point
     const ty = h / 2 + 1, d = 6.4;
-    drawRect({ pos: vec2(0, ty), width: 9, height: 9, anchor: "center", angle: 45, color: UI.rgb(UI.WHITE), opacity: op });
+    drawRect({ pos: vec2(0, ty), width: 9, height: 9, anchor: "center", angle: 45, color: UI.rgb(fill), opacity: op });
     drawLines({ pts: [vec2(-d, ty), vec2(0, ty + d), vec2(d, ty)], width: 2, color: UI.rgb(UI.INK), opacity: op });
   });
   const txt = root.add([
     text(str, { size: 16, font: UI.VT, width: wrapW, align: "center" }),
-    pos(0, 1), anchor("center"), color(UI.rgb(UI.TEXT)), opacity(0),
+    pos(0, 1), anchor("center"), color(UI.rgb(o.dark ? UI.VOICE_TEXT : UI.TEXT)), opacity(0),
   ]);
 
   root.onUpdate(() => {
