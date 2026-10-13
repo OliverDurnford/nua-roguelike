@@ -6,14 +6,16 @@
 // so it works before anything else has loaded) and the game holds still
 // behind it.
 //
-// Turning the phone: an iPhone reports its new size late, sometimes
-// only after the turn has finished, so the engine sized the game for a
-// screen that no longer existed and it sat in the wrong place until the
-// phone was turned back and forth again (Ollie, 13 Oct 2026). So the
-// page pins itself to the window's size in pixels, and on every resize
-// or turn it measures again, now and a few more times over the next
-// second and a half, until the numbers settle. The engine watches the
-// page's size and refits the game whenever it changes.
+// Turning the phone: the game sat in the wrong place after a turn
+// until the phone was turned back and forth (Ollie, 13 Oct 2026). The
+// page is now held to the screen by CSS alone (body is position: fixed,
+// inset 0, in index.html), so the browser reshapes it in the same instant
+// the phone turns, and the engine refits the game whenever the page's
+// size changes. Pinning the size from here in pixels was tried first and
+// was worse: the page kept the upright shape until the code heard about
+// the turn, which an iPhone reports late, so the game sat where it had
+// been upright and then jumped. This only scrolls the page back to the
+// top, a few times over the second and a half after each turn.
 //
 // Even then, for a moment after the turn the phone shows the page laid
 // out for the old shape before it catches up, and the game visibly
@@ -38,17 +40,8 @@
     }
   };
 
-  // ---------- fitting the page to the screen ----------
-  let last = "";
+  // ---------- keeping the page at the top ----------
   const fit = () => {
-    const w = window.innerWidth, h = window.innerHeight;
-    const key = w + "x" + h;
-    if (key !== last) {
-      last = key;
-      const html = document.documentElement.style, body = document.body.style;
-      html.width = body.width = w + "px";
-      html.height = body.height = h + "px";
-    }
     if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
   };
   let timers = [];
@@ -68,10 +61,13 @@
   const cover = document.getElementById("settle");
   const wide = () => window.innerWidth > window.innerHeight;
   const phone = () => matchMedia("(pointer: coarse)").matches;
+  // If the facing signal ever disagrees with a settled page for good (a
+  // tablet whose 0 degrees is landscape, say), stop listening to it.
+  let distrust = false;
   const facingWide = () => {
-    if (!phone()) return wide();
-    if (typeof window.orientation === "number") return Math.abs(window.orientation) === 90;
+    if (!phone() || distrust) return wide();
     if (screen.orientation && screen.orientation.type) return screen.orientation.type.indexOf("landscape") === 0;
+    if (typeof window.orientation === "number") return Math.abs(window.orientation) === 90;
     return wide();
   };
   let wasWide = wide();
@@ -98,6 +94,7 @@
         (!phone() || upright.matches === !wide()) &&     // the upright card agrees
         Date.now() - started > 450;                      // and the phone's own turn has played out
       if (ready || Date.now() - started > 3000) {
+        if (!ready && wide() !== facingWide()) distrust = true;
         clearInterval(settling);
         settling = null;
         wasWide = wide();
@@ -111,6 +108,11 @@
   };
 
   addEventListener("resize", () => { if (wide() !== wasWide) settle(); refit(); });
+  // Whatever order the phone's events come in, the moment the way it is
+  // facing and the page's shape disagree, the cover goes up.
+  setInterval(() => {
+    if (!settling && phone() && facingWide() !== wide()) settle();
+  }, 100);
   addEventListener("orientationchange", () => { settle(); refit(); });
   if (screen.orientation && screen.orientation.addEventListener) {
     screen.orientation.addEventListener("change", () => { settle(); refit(); });

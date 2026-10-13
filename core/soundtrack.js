@@ -84,7 +84,7 @@ SOUNDTRACK.volumeIgnored = (() => {
 // The gain glides over 20ms rather than stepping, so a fade has no zipper.
 SOUNDTRACK._setVol = (v) => {
   SOUNDTRACK._v = v;
-  const g = SOUNDTRACK._gain;
+  const g = SOUNDTRACK._src ? SOUNDTRACK._src.gain : SOUNDTRACK._gain;
   if (g) g.gain.setTargetAtTime(v, g.context.currentTime, 0.02);
   else SOUNDTRACK._audio().volume = v;
 };
@@ -136,8 +136,68 @@ SOUNDTRACK._rampTo = (target, secs, done) => {
 };
 
 SOUNDTRACK.syncMute = () => {
+  const muted = typeof SFX !== "undefined" && SFX.muted;
   const a = SOUNDTRACK._el;
-  if (a) a.muted = (typeof SFX !== "undefined" && SFX.muted);
+  if (a) a.muted = muted;
+  if (SOUNDTRACK._src) SOUNDTRACK._src.mute.gain.value = muted ? 0 : 1;
+};
+
+// ---------- iPhones: the title song played from memory ----------
+// Routing an element through Web Audio (above) gives an iPhone its volume
+// back, but on the way the sound picks up a delay the element's clock does
+// not know about, so the title's reveals landed a touch ahead of the beat
+// (Ollie, 13 Oct 2026; WebKit's media-element route has a history of sync
+// trouble). So on an iPhone the title song is fetched and decoded whole
+// and played as a Web Audio buffer, whose clock is the audio engine's own:
+// time() then says exactly which beat is sounding. About 90MB of memory
+// while it plays; it is let go as soon as another song takes over. If it
+// is not decoded by the time of the tap, the element plays it as before.
+// Bluetooth headphones add a delay no iPhone browser reports, so through
+// them the beat can still sit a little late.
+SOUNDTRACK._decoded = {};   // track id -> AudioBuffer, or "loading"
+SOUNDTRACK._src = null;     // { node, gain, mute, t0, at, dur } while a decoded song plays
+
+SOUNDTRACK.fromMemory = () => SOUNDTRACK.volumeIgnored && location.protocol !== "file:";
+
+SOUNDTRACK.prepare = (id) => {
+  if (!SOUNDTRACK.fromMemory() || SOUNDTRACK._decoded[id] || typeof TRACKS === "undefined") return;
+  const track = TRACKS.filter((x) => x.id === id)[0];
+  const ctx = track && typeof SFX !== "undefined" && SFX.ctx();
+  if (!ctx) return;
+  SOUNDTRACK._decoded[id] = "loading";
+  const fail = () => { delete SOUNDTRACK._decoded[id]; };
+  fetch("music/" + track.file)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))
+    .then((bytes) => ctx.decodeAudioData(bytes, (buf) => { SOUNDTRACK._decoded[id] = buf; }, fail))
+    .catch(fail);
+};
+
+SOUNDTRACK._stopDecoded = () => {
+  const s = SOUNDTRACK._src;
+  if (!s) return;
+  SOUNDTRACK._src = null;
+  try { s.node.stop(); } catch (e) {}
+  try { s.node.disconnect(); s.gain.disconnect(); s.mute.disconnect(); } catch (e) {}
+};
+
+// Starts `track` from memory if it is ready there; false if not.
+SOUNDTRACK._playDecoded = (track, at) => {
+  const buf = SOUNDTRACK._decoded[track.id];
+  const ctx = typeof SFX !== "undefined" && SFX._ctx;
+  if (!buf || buf === "loading" || !ctx) return false;
+  const node = ctx.createBufferSource();
+  node.buffer = buf;
+  node.loop = true;          // as the element loops
+  const gain = ctx.createGain(), mute = ctx.createGain();
+  gain.gain.value = 0;
+  node.connect(gain);
+  gain.connect(mute);
+  mute.connect(ctx.destination);
+  const t0 = ctx.currentTime;
+  node.start(t0, at % buf.duration);
+  SOUNDTRACK._src = { node, gain, mute, t0, at, dur: buf.duration };
+  if (SOUNDTRACK._el) SOUNDTRACK._el.pause();
+  return true;
 };
 
 // `at` seeks the track before it starts, in seconds. The title sequence needs
@@ -156,8 +216,15 @@ SOUNDTRACK.play = (track, at = 0, fadeIn = SOUNDTRACK.FADE) => {
   const a = SOUNDTRACK._audio();
 
   const start = () => {
+    SOUNDTRACK._stopDecoded();
     SOUNDTRACK.current = track;
     SOUNDTRACK.token++;
+    if (SOUNDTRACK._playDecoded(track, at)) {
+      SOUNDTRACK.syncMute();
+      SOUNDTRACK._setVol(0);
+      if (fadeIn !== null) SOUNDTRACK._rampTo(SOUNDTRACK.full(track), fadeIn);
+      return;
+    }
     a.src = "music/" + track.file;
     // Seeking before the source has any metadata throws, so wait for it.
     const seek = () => { try { a.currentTime = at; } catch (e) {} };
@@ -211,6 +278,7 @@ SOUNDTRACK.stop = () => {
   SOUNDTRACK._requested = null;
   SOUNDTRACK._rampTo(0, 0.4, () => {
     SOUNDTRACK._el.pause();
+    SOUNDTRACK._stopDecoded();
     SOUNDTRACK.current = null;
   });
 };
@@ -308,6 +376,16 @@ SOUNDTRACK.playForKey = (key) => {
 // the beat is the thing the eye is being asked to feel, so the beat is the
 // clock that everything else follows.
 SOUNDTRACK.time = () => {
+  const s = SOUNDTRACK._src;
+  if (s) {
+    const ctx = s.node.context;
+    if (ctx.state !== "running") return null;
+    // the moment being heard, not the moment being worked out: the engine
+    // runs a little ahead of the speaker by its own stated latency
+    const lag = (ctx.baseLatency || 0) + (ctx.outputLatency || 0);
+    const t = ctx.currentTime - s.t0 - lag;
+    return t > 0 ? (s.at + t) % s.dur : null;
+  }
   const a = SOUNDTRACK._el;
   return a && !a.paused && a.currentTime > 0 ? a.currentTime : null;
 };

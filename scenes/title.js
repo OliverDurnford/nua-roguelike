@@ -72,6 +72,8 @@ scene("title", () => {
   let clock = replay ? TSEQ.END : 0;          // video time, seconds
 
   if (replay) TITLEVIDEO.toEnd(TSEQ.END);
+  // an iPhone plays the song from memory, so the beat is exact (core/soundtrack.js)
+  else SOUNDTRACK.prepare("dare-8-bit");
 
   // ---------- the cover ----------
   // The title and the ten are children of an invisible sleeve-shaped card, so

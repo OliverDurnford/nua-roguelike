@@ -18,6 +18,10 @@
   <meta name="robots" content="noindex">
   <style>
     html, body { margin: 0; padding: 0; background: #0c0c10; height: 100%; overflow: hidden; }
+    /* The page is pinned to the screen by the browser itself, so it takes a
+       turned phone's new shape in the same instant as the phone does. Sizing
+       it from code lagged a turn behind on an iPhone (core/turn.js). */
+    body { position: fixed; inset: 0; overscroll-behavior: none; }
     canvas { touch-action: none; }
 
     /* The loading screen and the turn-your-phone card (core/loader.js,
