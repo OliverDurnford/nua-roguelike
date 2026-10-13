@@ -296,7 +296,7 @@ CRACKVOICE.play = (steps, at, done) => {
       return;
     }
     const seg = CRACKVOICE.seg(s, name);
-    const keep = prev && prev.cut && !prev.by && note.segs.length;
+    const keep = prev && (prev.cut || prev.keep) && !prev.by && note.segs.length;
     if (!keep) note.op = 0;   // a fresh note fades up
     note.set(keep ? note.segs.concat([seg]) : [seg]);
     run.seg = seg;

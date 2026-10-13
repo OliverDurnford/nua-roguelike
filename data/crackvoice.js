@@ -16,6 +16,8 @@
 //   { say, small, fade: true }  ...and fading away as it goes
 //   { say, cut: true }          cut off: the next step barges in,
 //                               under it in the same note
+//   { say, keep: true }         the next step goes under it in the
+//                               same note, after the usual pause
 //   { say, laugh: true }        shaking, with HA!s off the crack
 //   { ring: "..." }             a phone goes off, the words wobbling
 //   { by: "you", say }          you answer, in your own note
@@ -32,9 +34,11 @@ const CRACK_VOICE = {
     { say: "You'll never reach them in time!" },
     { say: "HAHAHAHAHA!", laugh: true },
   ],
-  // Mercy Stage, the DJ beaten: just the laugh, out of the big crack
+  // Mercy Stage, the DJ beaten (Ollie's line)
   "1-5": [
-    { say: "HAHAHAHAHA!", laugh: true },
+    { say: "Mercy? Your friends will be begging me for mercy!", cut: true },
+    { say: "HAHAHAHAHA!", laugh: true, keep: true },
+    { say: "Hope that's not taken in a sexual way...", small: true },
   ],
   // The Lecture Theatre: two friends in by now
   "2-5": [
