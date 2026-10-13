@@ -52,6 +52,8 @@
   const poster = new Image();
   poster.onload = poster.onerror = () => { posterDone = true; };
   poster.src = "video/title-poster.jpg";
+  // and the parked framing, for a skip or a return to the title; not waited for
+  new Image().src = "video/title-end.jpg";
 
   // The screen's lettering is the game's own pixel face, once its file has
   // run. Until then the words stay hidden rather than flash up in Courier.

@@ -14,6 +14,12 @@
 // or turn it measures again, now and a few more times over the next
 // second and a half, until the numbers settle. The engine watches the
 // page's size and refits the game whenever it changes.
+//
+// Even then, for a moment after the turn the phone shows the page laid
+// out for the old shape before it catches up, and the game visibly
+// jumped into place (Ollie, same day). So a plain dark cover (#settle)
+// goes up the instant a turn starts and comes down, with a short fade,
+// once the size has held still and the game has been redrawn to it.
 // ============================================================
 
 (function () {
@@ -53,8 +59,46 @@
     timers = [80, 250, 500, 900, 1500].map((ms) => setTimeout(() => { fit(); hold(); }, ms));
   };
 
-  addEventListener("resize", refit);
-  addEventListener("orientationchange", refit);
+  // ---------- the cover while a turn settles ----------
+  const cover = document.getElementById("settle");
+  const wide = () => window.innerWidth > window.innerHeight;
+  let wasWide = wide();
+  let settling = null, lifting = null;
+  const settle = () => {
+    clearTimeout(lifting);
+    cover.style.display = "block";
+    cover.style.opacity = "1";
+    const started = Date.now();
+    let prev = "", same = 0;
+    clearInterval(settling);
+    settling = setInterval(() => {
+      fit();
+      hold();
+      const key = window.innerWidth + "x" + window.innerHeight;
+      same = key === prev ? same + 1 : 0;
+      prev = key;
+      // the page has taken the new size, and the upright card agrees with it
+      const c = document.querySelector("canvas");
+      const fitted = !c || (Math.abs(c.clientWidth - window.innerWidth) <= 2 && Math.abs(c.clientHeight - window.innerHeight) <= 2);
+      const agrees = !matchMedia("(pointer: coarse)").matches || upright.matches === (window.innerHeight >= window.innerWidth);
+      if ((same >= 4 && fitted && agrees) || Date.now() - started > 2500) {
+        clearInterval(settling);
+        settling = null;
+        wasWide = wide();
+        // a few frames for the engine to redraw at the new size, then fade
+        lifting = setTimeout(() => {
+          cover.style.opacity = "0";
+          lifting = setTimeout(() => { cover.style.display = "none"; }, 200);
+        }, 90);
+      }
+    }, 50);
+  };
+
+  addEventListener("resize", () => { if (wide() !== wasWide) settle(); refit(); });
+  addEventListener("orientationchange", () => { settle(); refit(); });
+  if (screen.orientation && screen.orientation.addEventListener) {
+    screen.orientation.addEventListener("change", () => { settle(); refit(); });
+  }
   if (window.visualViewport) visualViewport.addEventListener("resize", refit);
   if (upright.addEventListener) upright.addEventListener("change", refit);
   // the idle pause (core/idle.js) lets go on focus; if the phone is still

@@ -66,9 +66,16 @@ SOUNDTRACK._fade = null;
 SOUNDTRACK._gain = null;          // the Web Audio gain, on iPhones only
 SOUNDTRACK._v = 0;                // the volume last asked for, 0 to 1
 
-// True on a browser that ignores an audio element's volume (iOS Safari,
-// and every iOS browser, since they are all Safari underneath).
+// True on a browser that ignores an audio element's volume: every iPhone
+// and iPad browser, since they are all Safari underneath. Asking the element
+// is not enough: newer iOS accepts a volume and reads it back while still
+// playing at full, which is how the first version of this fix stayed off
+// on Ollie's phone (13 Oct 2026). So iOS is recognised by name, and an
+// element that visibly refuses a volume counts too.
 SOUNDTRACK.volumeIgnored = (() => {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/.test(ua)) return true;
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return true;   // an iPad asking for the desktop site
   try { const t = document.createElement("audio"); t.volume = 0.5; return t.volume !== 0.5; }
   catch (e) { return false; }
 })();

@@ -5,6 +5,14 @@
 // underneath. Cards slide in staggered, hover to lift, the chosen
 // one is taped down and a gold glow glides between them. Details
 // on a paper card along the bottom.
+//
+// The cards are drawn a LAYER at a time across all ten (every
+// paper, then every photo, the friends, every name, the tape),
+// not card by card. Each switch between the paper, the park photo,
+// a friend's sheet and the lettering is a separate trip to the
+// graphics chip; card by card that was some sixty a frame and the
+// screen lagged on a phone (Ollie, 13 Oct 2026: 46 fps against 60
+// in a room). The cards never overlap, so it looks the same.
 // ============================================================
 
 scene("select", () => {
@@ -42,31 +50,12 @@ scene("select", () => {
     const p = vec2(x0 + col * GX, y0 + row * GY);
     const delay = 0.05 * (col + row * 2);
 
-    // the polaroid itself is drawn, so it gets the kit's notched corners
-    // and inset shadow; the friend and the caption are children on top
+    // The card itself only holds the place, the hover box and the fade; the
+    // layers below draw it. The friend stays a child, above the photo.
     const card = add([
-      pos(p), area({ shape: new Rect(vec2(-CW / 2, -CH / 2), CW, CH) }), z(5), opacity(1),
-      { idx: i, home: p.clone(), lift: 0, born: time() + delay },
+      pos(p), area({ shape: new Rect(vec2(-CW / 2, -CH / 2), CW, CH) }), z(5.3), opacity(1),
+      { idx: i, home: p.clone(), lift: 0, born: time() + delay, name: c.name.toLowerCase() },
     ]);
-    card.onDraw(() => {
-      const op = card.opacity;
-      UI.card(vec2(0, 0), CW, CH, { center: true, fill: UI.WHITE, opacity: op });
-      UI.R(-PW / 2, photoY - PH / 2, PW, PH, UI.INK, op);
-      UI.R(-PW / 2 + 1, photoY - PH / 2 + 1, PW - 2, PH - 2, UI.PHOTO, op);
-      // each card takes its own window of the one park panorama, so the ten
-      // snapshots are the same afternoon in the same place
-      drawSprite({
-        sprite: "photo-park",
-        quad: new Quad(i / 10, 0, 1 / 10, 1),
-        pos: vec2(-PW / 2 + 1, photoY - PH / 2 + 1),
-        width: PW - 2, height: PH - 2, opacity: op,
-      });
-      // a soft shadow puts the friend on the grass rather than in front of it
-      drawEllipse({
-        pos: vec2(0, feetY - 1), radiusX: 20, radiusY: 5,
-        color: rgb(30, 48, 24), opacity: op * 0.45,
-      });
-    });
     const figure = card.add([...ART.charComps(c.id, 84), pos(0, feetY - 42), opacity(1)]);
     // At rest everyone poses for the photo, in a way that is theirs (Ollie,
     // 8 Oct). A pose sheet of their own, so each breathe starts at its own
@@ -75,14 +64,7 @@ scene("select", () => {
       ? card.add([...ART.poseComps(c.id, 84), pos(0, feetY - 42), opacity(1)])
       : null;
     if (poser) wait((i * 0.37) % 1.05, () => poser.play("pose"));
-    const name = card.add([
-      text(c.name.toLowerCase(), { size: 32, font: UI.VT }), pos(0, CH / 2 - 21), anchor("center"),
-      color(UI.rgb(UI.TEXT)), opacity(1),
-    ]);
-    // a strip of silver tape holds the chosen one down
-    const tapeInk = card.add([rect(40, 14), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.INK)), opacity(1)]);
-    const tape = card.add([rect(36, 10), pos(0, -CH / 2), anchor("center"), color(UI.rgb(UI.STEEL)), opacity(1)]);
-    const kids = [figure, name, tapeInk, tape].concat(poser ? [poser] : []);
+    const kids = [figure].concat(poser ? [poser] : []);
 
     // The chosen one strikes the first frame of their throw, item up and
     // ready to go (Ollie, 7 Oct); everyone else holds their pose.
@@ -109,7 +91,6 @@ scene("select", () => {
       if (time() > card.born + 0.5) card.pos.y = card.home.y - 6 * card.lift;
       figure.pos.y = feetY - 42 + (selected === i ? Math.sin(time() * 3 + 1) * 2.5 : 0);
       for (const k of kids) k.opacity = card.opacity;
-      tapeInk.hidden = tape.hidden = selected !== i;
     });
 
     card.onClick(() => {
@@ -117,6 +98,49 @@ scene("select", () => {
       else { selected = i; SFX.play("uitick"); }
     });
     cards.push(card);
+  });
+
+  // ----- the layers, each across all ten cards -----
+  const layer = (zz, drawOne) => add([z(zz), {
+    draw() {
+      for (const card of cards) {
+        pushTransform();
+        pushTranslate(card.pos);
+        drawOne(card, card.opacity);
+        popTransform();
+      }
+    },
+  }]);
+  // the polaroid: the kit's notched paper card and the dark photo window
+  layer(5, (card, op) => {
+    UI.card(vec2(0, 0), CW, CH, { center: true, fill: UI.WHITE, opacity: op });
+    UI.R(-PW / 2, photoY - PH / 2, PW, PH, UI.INK, op);
+    UI.R(-PW / 2 + 1, photoY - PH / 2 + 1, PW - 2, PH - 2, UI.PHOTO, op);
+  });
+  // each card takes its own window of the one park panorama, so the ten
+  // snapshots are the same afternoon in the same place
+  layer(5.1, (card, op) => drawSprite({
+    sprite: "photo-park",
+    quad: new Quad(card.idx / 10, 0, 1 / 10, 1),
+    pos: vec2(-PW / 2 + 1, photoY - PH / 2 + 1),
+    width: PW - 2, height: PH - 2, opacity: op,
+  }));
+  // a soft shadow puts the friend on the grass rather than in front of it
+  layer(5.2, (card, op) => drawEllipse({
+    pos: vec2(0, feetY - 1), radiusX: 20, radiusY: 5,
+    color: rgb(30, 48, 24), opacity: op * 0.45,
+  }));
+  // (the friends are the cards' own children, at 5.3)
+  // their names written underneath
+  layer(5.4, (card, op) => drawText({
+    text: card.name, size: 32, font: UI.VT, pos: vec2(0, CH / 2 - 21), anchor: "center",
+    color: UI.rgb(UI.TEXT), opacity: op,
+  }));
+  // a strip of silver tape holds the chosen one down
+  layer(5.5, (card, op) => {
+    if (selected !== card.idx) return;
+    drawRect({ pos: vec2(0, -CH / 2), width: 40, height: 14, anchor: "center", color: UI.rgb(UI.INK), opacity: op });
+    drawRect({ pos: vec2(0, -CH / 2), width: 36, height: 10, anchor: "center", color: UI.rgb(UI.STEEL), opacity: op });
   });
 
   glow.onUpdate(() => {
@@ -142,7 +166,8 @@ scene("select", () => {
   });
 
   const hintTxt = add([
-    text("click once to look, again to pick   ·   arrows + ENTER", { size: 16, font: UI.VT }),
+    text(isTouchscreen() ? "tap once to look, again to pick" : "click once to look, again to pick   ·   arrows + ENTER",
+      { size: 16, font: UI.VT }),
     pos(G.W / 2, G.H - 12), anchor("center"), color(170, 175, 190), z(9), opacity(0),
   ]);
   UI.fadeObj(hintTxt, 1, 0.6, 0.8);

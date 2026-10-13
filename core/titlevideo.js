@@ -23,21 +23,41 @@
 const TITLEVIDEO = {};
 
 TITLEVIDEO.SRC = "video/title-move.mp4";
-// Its first frame as a still. An iPhone shows nothing of a video that has not
-// played yet, so without this the room was black behind "tap to start".
-// Rebuilt alongside the video by tools/titlesequence/build_title_assets.py.
+// Its first and last frames as stills, in an <img> laid exactly over the
+// video. An iPhone shows nothing of a video that has not played yet (the room
+// was black behind "tap to start"), shows a gap between a poster and the
+// first real frame (a flash as the sequence began), and goes back to the
+// poster on a video that has been hidden and shown again (the room's first
+// frame behind the finished cover). So the game shows its own still until the
+// video has genuinely drawn a frame, and the last frame whenever it holds on
+// the parked framing (Ollie, 13 Oct 2026). Rebuilt alongside the video by
+// tools/titlesequence/build_title_assets.py.
 TITLEVIDEO.POSTER = "video/title-poster.jpg";
+TITLEVIDEO.END_STILL = "video/title-end.jpg";
 TITLEVIDEO.seen = false;   // true once the sequence has run, so coming back to
                            // the title from a game does not replay it
 
 TITLEVIDEO._el = null;
+TITLEVIDEO._still = null;
+TITLEVIDEO._stillToken = 0;   // bumps whenever a still is put up, so a late
+                              // "the video is showing now" cannot take down a newer one
 TITLEVIDEO._box = "";      // last layout applied, so we only touch style on change
+
+TITLEVIDEO.showStill = (src) => {
+  const s = TITLEVIDEO._still;
+  if (!s) return;
+  TITLEVIDEO._stillToken++;
+  if (s.getAttribute("src") !== src) s.src = src;
+  s.style.visibility = "visible";
+};
+TITLEVIDEO.hideStill = () => {
+  if (TITLEVIDEO._still) TITLEVIDEO._still.style.visibility = "hidden";
+};
 
 TITLEVIDEO.el = () => {
   if (!TITLEVIDEO._el) {
     const v = document.createElement("video");
     v.src = TITLEVIDEO.SRC;
-    v.poster = TITLEVIDEO.POSTER;
     v.muted = true;              // the soundtrack carries the audio
     v.playsInline = true;        // iOS refuses to inline an unflagged video
     v.preload = "auto";
@@ -53,6 +73,29 @@ TITLEVIDEO.el = () => {
       "image-rendering: crisp-edges",
     ].join(";");
     document.body.insertBefore(v, document.body.firstChild);
+    // the still sits straight after it, so it paints over it
+    const s = document.createElement("img");
+    s.alt = "";
+    s.setAttribute("aria-hidden", "true");
+    s.style.cssText = v.style.cssText;
+    s.style.visibility = "hidden";
+    v.after(s);
+    TITLEVIDEO._still = s;
+    // Take the still down only once the video has actually PRESENTED a
+    // frame of its own: "playing" fires before an iPhone has one to show.
+    v.addEventListener("playing", () => {
+      const token = TITLEVIDEO._stillToken;
+      const down = () => { if (token === TITLEVIDEO._stillToken && !v.paused) TITLEVIDEO.hideStill(); };
+      if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(down);
+      else {
+        const tick = () => {
+          if (token !== TITLEVIDEO._stillToken || v.paused) return;
+          if (v.currentTime > 0.08) down();
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    });
     // Kaboom leaves its canvas statically positioned, and a positioned element
     // paints over a static one whatever the DOM order says. Lift the canvas
     // into its own layer so the video really does end up behind it.
@@ -89,16 +132,21 @@ TITLEVIDEO.layout = () => {
   const box = [left, top, w, h].map(Math.round).join(",");
   if (box === TITLEVIDEO._box) return;
   TITLEVIDEO._box = box;
-  v.style.left = Math.round(left) + "px";
-  v.style.top = Math.round(top) + "px";
-  v.style.width = Math.round(w) + "px";
-  v.style.height = Math.round(h) + "px";
+  for (const el of [v, TITLEVIDEO._still]) {
+    if (!el) continue;
+    el.style.left = Math.round(left) + "px";
+    el.style.top = Math.round(top) + "px";
+    el.style.width = Math.round(w) + "px";
+    el.style.height = Math.round(h) + "px";
+  }
 };
 
 // Show it, parked on the first frame. Returns the element.
 TITLEVIDEO.mount = () => {
   const v = TITLEVIDEO.el();
   v.style.display = "block";
+  TITLEVIDEO._still.style.display = "block";
+  TITLEVIDEO.showStill(TITLEVIDEO.POSTER);
   TITLEVIDEO._box = "";
   TITLEVIDEO.layout();
   return v;
@@ -112,6 +160,7 @@ TITLEVIDEO.unmount = () => {
   if (!v) return;
   v.pause();
   v.style.display = "none";
+  if (TITLEVIDEO._still) TITLEVIDEO._still.style.display = "none";
 };
 
 // Jump to the parked framing without playing. Used when the sequence is
@@ -119,6 +168,7 @@ TITLEVIDEO.unmount = () => {
 TITLEVIDEO.toEnd = (t) => {
   const v = TITLEVIDEO.el();
   v.pause();
+  TITLEVIDEO.showStill(TITLEVIDEO.END_STILL);
   const land = () => { try { v.currentTime = t; } catch (e) {} };
   if (v.readyState >= 1) land();
   else v.addEventListener("loadedmetadata", land, { once: true });
