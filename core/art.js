@@ -519,6 +519,14 @@ ART.init = () => {
       loadSprite("wp-" + c.id, REAL_WEAPONS[c.id].src);
     }
   }
+  // two friends in one drawing (core/sprites-pair.js): Sam and Josh's kiss
+  if (typeof REAL_PAIRS !== "undefined") {
+    for (const id in REAL_PAIRS) {
+      const rp = REAL_PAIRS[id], key = "pair-" + id;
+      loadSprite(key, rp.src, { sliceX: rp.sliceX });
+      G.SPR[key] = { name: key, h: rp.charH, anims: rp.anims, left: rp.left, right: rp.right };
+    }
+  }
 
   // Sized against a person (G.CHAR_H) so the whole room stays in proportion:
   // a runner is a scrawny thing, a brute is bigger than you are.
