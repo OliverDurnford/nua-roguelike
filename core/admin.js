@@ -14,7 +14,7 @@
 
 const ADMIN = {};
 
-ADMIN.PIN = "1010";   // ten and ten: ten years
+ADMIN.PIN = "2105";
 ADMIN.KEY = "tenyears-admin";
 ADMIN.on = (() => { try { return localStorage.getItem(ADMIN.KEY) === "on"; } catch (e) { return false; } })();
 ADMIN.padOpen = false;
