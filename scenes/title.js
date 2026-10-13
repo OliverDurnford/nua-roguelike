@@ -400,6 +400,8 @@ scene("title", () => {
   // finger lifting. The scene's own press() leaves "armed" alone.
   const GESTURES = ["keydown", "mousedown", "touchend"];
   const armedPress = () => {
+    // a tap on the loading screen (core/loader.js) is not a tap on the title
+    if (window.LOADER && !LOADER.done) return;
     unhook();
     if (phase === "armed") begin();
   };

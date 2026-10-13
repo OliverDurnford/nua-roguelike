@@ -10,6 +10,12 @@
 // A plain audio element with .volume set directly survives both,
 // and streams instead of decoding a whole 2MB track up front.
 //
+// EXCEPT on an iPhone, which ignores an element's volume outright: no
+// fade up on the title, and the loudness levelling between tracks did
+// nothing (13 Oct 2026). There, and only there, the element is routed
+// through a Web Audio gain instead. That is safe because an iPhone is
+// always on the website, never on file://, so nothing taints.
+//
 // One element, reused. Track changes dip the volume down, swap
 // the source and bring it back up.
 // ============================================================
@@ -57,6 +63,24 @@ SOUNDTRACK.full = (track) => Math.min(1, SOUNDTRACK.volume * ((track && track.ga
 
 SOUNDTRACK._el = null;
 SOUNDTRACK._fade = null;
+SOUNDTRACK._gain = null;          // the Web Audio gain, on iPhones only
+SOUNDTRACK._v = 0;                // the volume last asked for, 0 to 1
+
+// True on a browser that ignores an audio element's volume (iOS Safari,
+// and every iOS browser, since they are all Safari underneath).
+SOUNDTRACK.volumeIgnored = (() => {
+  try { const t = document.createElement("audio"); t.volume = 0.5; return t.volume !== 0.5; }
+  catch (e) { return false; }
+})();
+
+// The volume, through whichever route this browser actually listens to.
+// The gain glides over 20ms rather than stepping, so a fade has no zipper.
+SOUNDTRACK._setVol = (v) => {
+  SOUNDTRACK._v = v;
+  const g = SOUNDTRACK._gain;
+  if (g) g.gain.setTargetAtTime(v, g.context.currentTime, 0.02);
+  else SOUNDTRACK._audio().volume = v;
+};
 SOUNDTRACK._retryWired = false;   // true while a one-shot retry pair is attached
 
 SOUNDTRACK._audio = () => {
@@ -66,6 +90,19 @@ SOUNDTRACK._audio = () => {
     a.preload = "none";
     a.volume = 0;
     SOUNDTRACK._el = a;
+    if (SOUNDTRACK.volumeIgnored && location.protocol !== "file:") {
+      const ctx = typeof SFX !== "undefined" && SFX.ctx();
+      if (ctx) {
+        try {
+          const g = ctx.createGain();
+          g.gain.value = 0;
+          ctx.createMediaElementSource(a).connect(g);
+          g.connect(ctx.destination);
+          SOUNDTRACK._gain = g;
+          a.volume = 1;   // the gain does the work now
+        } catch (e) {}
+      }
+    }
   }
   return SOUNDTRACK._el;
 };
@@ -76,13 +113,13 @@ SOUNDTRACK._rampTo = (target, secs, done) => {
   const a = SOUNDTRACK._audio();
   if (SOUNDTRACK._fade) clearInterval(SOUNDTRACK._fade);
   const dur = Math.max(1, (secs === undefined ? SOUNDTRACK.FADE : secs) * 1000);
-  const from = a.volume;
+  const from = SOUNDTRACK._v;
   const step = 40;
   let t = 0;
   SOUNDTRACK._fade = setInterval(() => {
     t += step;
     const k = Math.min(1, t / dur);
-    a.volume = Math.max(0, Math.min(1, from + (target - from) * k));
+    SOUNDTRACK._setVol(Math.max(0, Math.min(1, from + (target - from) * k)));
     if (k >= 1) {
       clearInterval(SOUNDTRACK._fade);
       SOUNDTRACK._fade = null;
@@ -120,7 +157,7 @@ SOUNDTRACK.play = (track, at = 0, fadeIn = SOUNDTRACK.FADE) => {
     if (at && a.readyState < 1) a.addEventListener("loadedmetadata", seek, { once: true });
     else seek();
     SOUNDTRACK.syncMute();
-    a.volume = 0;
+    SOUNDTRACK._setVol(0);
     // Browsers refuse audio before the first interaction, which is
     // exactly the state of a fresh page load: go("title") calls playById
     // before the player has clicked or pressed anything, so this rejects.
@@ -244,7 +281,7 @@ SOUNDTRACK.level = (k, secs) => {
   const v = SOUNDTRACK.full(SOUNDTRACK._requested) * Math.max(0, Math.min(1, k));
   if (secs) return SOUNDTRACK._rampTo(v, secs);
   if (SOUNDTRACK._fade) { clearInterval(SOUNDTRACK._fade); SOUNDTRACK._fade = null; }
-  SOUNDTRACK._audio().volume = v;
+  SOUNDTRACK._setVol(v);
 };
 
 // The track Ollie pinned to a slot that is not a room: "select",

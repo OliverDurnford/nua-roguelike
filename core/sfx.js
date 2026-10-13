@@ -37,6 +37,22 @@ SFX.ctx = () => {
   return SFX._ctx;
 };
 
+// An iPhone suspends the audio after a call, a trip to the home screen or
+// the lock screen, and will only start it again inside a tap. On iPhones
+// the music runs through this context too (core/soundtrack.js), so every
+// tap or key nudges it back awake.
+(() => {
+  const wake = () => {
+    const c = SFX._ctx;
+    if (c && c.state !== "running") c.resume().catch(() => {});
+  };
+  for (const ev of ["touchend", "mousedown", "keydown"]) addEventListener(ev, wake, true);
+  // Web Audio on an iPhone obeys the silent switch, a plain audio element
+  // never did. "playback" keeps the music sounding as it always has, now
+  // that it goes through Web Audio there, and the effects come with it.
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+})();
+
 // one pitched beep: oscillator with a frequency slide + fade-out
 SFX.tone = ({ type = "square", from = 440, to = null, dur = 0.1, vol = 1, delay = 0 }) => {
   const ctx = SFX.ctx();
