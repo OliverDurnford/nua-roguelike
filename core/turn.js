@@ -60,8 +60,20 @@
   };
 
   // ---------- the cover while a turn settles ----------
+  // The first version lifted too early (Ollie, 13 Oct 2026, "the rotation
+  // still pops"): mid-turn an iPhone goes on reporting the OLD size, and an
+  // old size that holds still looked settled. So the cover now waits for a
+  // size that matches the way the phone says it is facing, which it says
+  // the moment the turn starts.
   const cover = document.getElementById("settle");
   const wide = () => window.innerWidth > window.innerHeight;
+  const phone = () => matchMedia("(pointer: coarse)").matches;
+  const facingWide = () => {
+    if (!phone()) return wide();
+    if (typeof window.orientation === "number") return Math.abs(window.orientation) === 90;
+    if (screen.orientation && screen.orientation.type) return screen.orientation.type.indexOf("landscape") === 0;
+    return wide();
+  };
   let wasWide = wide();
   let settling = null, lifting = null;
   const settle = () => {
@@ -77,11 +89,15 @@
       const key = window.innerWidth + "x" + window.innerHeight;
       same = key === prev ? same + 1 : 0;
       prev = key;
-      // the page has taken the new size, and the upright card agrees with it
       const c = document.querySelector("canvas");
-      const fitted = !c || (Math.abs(c.clientWidth - window.innerWidth) <= 2 && Math.abs(c.clientHeight - window.innerHeight) <= 2);
-      const agrees = !matchMedia("(pointer: coarse)").matches || upright.matches === (window.innerHeight >= window.innerWidth);
-      if ((same >= 4 && fitted && agrees) || Date.now() - started > 2500) {
+      const ready =
+        wide() === facingWide() &&                       // the NEW size has arrived
+        same >= 5 &&                                     // and held for a quarter second
+        (!c || (Math.abs(c.clientWidth - window.innerWidth) <= 2 &&
+                Math.abs(c.clientHeight - window.innerHeight) <= 2)) &&   // the page has taken it
+        (!phone() || upright.matches === !wide()) &&     // the upright card agrees
+        Date.now() - started > 450;                      // and the phone's own turn has played out
+      if (ready || Date.now() - started > 3000) {
         clearInterval(settling);
         settling = null;
         wasWide = wide();
@@ -89,7 +105,7 @@
         lifting = setTimeout(() => {
           cover.style.opacity = "0";
           lifting = setTimeout(() => { cover.style.display = "none"; }, 200);
-        }, 90);
+        }, 120);
       }
     }, 50);
   };

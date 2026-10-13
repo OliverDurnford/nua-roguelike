@@ -1096,8 +1096,11 @@ UI.PAUSE_BTN = isTouchscreen()
   : { x: G.W / 2 - 30, y: 8, w: 60, h: 20, pad: 0, size: 8 };
 UI.inPauseBtn = (p) => {
   const b = UI.PAUSE_BTN;
+  if (ADMIN.arrowAt(p)) return false;   // the admin arrows either side win their own taps
   return p.x >= b.x - b.pad && p.x <= b.x + b.w + b.pad && p.y >= b.y - b.pad && p.y <= b.y + b.h + b.pad;
 };
+// anything along the top that a stick must not take: PAUSE and the admin arrows
+UI.inTopButtons = (p) => UI.inPauseBtn(p) || ADMIN.arrowAt(p) !== 0;
 
 UI.pause = () => {
   const touch = isTouchscreen();
@@ -1163,6 +1166,7 @@ UI.pause = () => {
       if (G.cutscene) return;
       UI.card(vec2(b.x, b.y), b.w, b.h, { fill: UI.CHIP, shade: null, notch: false, opacity: 0.85 });
       UI.label("PAUSE", b.x + b.w / 2, b.y + b.h / 2 + 1, { size: b.size, anchor: "center", color: UI.TEXT, shadow: false, opacity: 0.85 });
+      ADMIN.drawArrows();
       return;
     }
     UI.R(0, 0, G.W, G.H, UI.INK, 0.6);
@@ -1193,7 +1197,12 @@ UI.pause = () => {
   });
   onMousePress(() => {
     const m = mousePos();
-    if (!UI.pauseOpen) { if (UI.inPauseBtn(m)) open(); return; }
+    if (!UI.pauseOpen) {
+      const d = ADMIN.arrowAt(m);
+      if (d) ADMIN.jump(d);
+      else if (UI.inPauseBtn(m)) open();
+      return;
+    }
     ITEMS.forEach((_, i) => { if (hit(m, rowRect(i))) { sel = i; activate(); } });
   });
 };
@@ -1288,7 +1297,7 @@ UI.mobileControls = () => {
     onTouchStart((raw, t) => {
       if (st.id !== null || UI.pauseOpen) return;
       const p = UI.toGame(raw);
-      if (!inZone(p) || UI.inPauseBtn(p)) return;
+      if (!inZone(p) || UI.inTopButtons(p)) return;
       st.id = t ? t.identifier : 0;
       st.at = p.dist(home) < S.r + 40 ? home : p;
       base.opacity = 0.9;

@@ -8,6 +8,7 @@
 scene("tutorial", () => {
   SPEECH.endArea();   // no room loaded: nothing to test a line against
   G.paused = false;
+  G.where = "tutorial";   // for the admin arrows (core/admin.js)
   SAVE.write("tutorial");   // checkpoint: a quit here resumes into the park
   SOUNDTRACK.playForKey("tutorial");   // blank slot: the title song carries on
   // The park is a painted plate, so everyone stands at its own ground

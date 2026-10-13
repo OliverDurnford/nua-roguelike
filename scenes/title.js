@@ -282,6 +282,26 @@ scene("title", () => {
     startPieces.forEach((pc, i) => { pc.opacity = i % 2 === 0 ? k * 0.85 : k; });
   });
 
+  // ---------- admin ----------
+  // Ollie's testing controls (core/admin.js): a quiet chip bottom left, up
+  // with the cover. A PIN turns admin on; tapped again it turns it off.
+  const adminChip = UI.chipObj(ADMIN.on ? "admin on" : "admin", 62, G.H - 18,
+    { opacity: 0, z: 20, fixed: false, area: true });
+  const adminTap = () => {
+    if (ADMIN.on) {
+      ADMIN.set(false);
+      adminChip.set("admin");
+      UI.toast("admin off");
+      SFX.play("uitick");
+      return;
+    }
+    ADMIN.pinPad(() => {
+      ADMIN.set(true);
+      adminChip.set("admin on");
+      UI.toast("admin on: arrows beside PAUSE skip rooms");
+    });
+  };
+
   let newChip = null;
   if (saved) {
     newChip = UI.chipObj(touch ? "tap here to start a new game" : "n · start a new game", G.W / 2, G.H - 18,
@@ -345,6 +365,7 @@ scene("title", () => {
         UI.fadeObj(floorFade, 0.85, 0.35, 0.15);
         UI.fadeObj(newChip, 1, 0.3, 0.55);
       }
+      UI.fadeObj(adminChip, 0.45, 0.3, 0.8);
       phase = "ready";
     }
   };
@@ -432,6 +453,7 @@ scene("title", () => {
     fn();
   };
   const press = (newGame) => {
+    if (ADMIN.busy()) return;        // the PIN pad has the keys and taps
     if (phase === "armed") return;   // armedPress starts it, inside the browser's event
     if (phase === "running") return skip();
     launch(() => (saved && !newGame ? SAVE.resume(saved) : go("select")));
@@ -442,5 +464,8 @@ scene("title", () => {
   onKeyPress((key) => press(key === "n"));
   // isHovering understands the letterboxed canvas, so a tap only counts as
   // "new game" when it actually lands on that chip.
-  onMousePress(() => press(!!newChip && newChip.isHovering()));
+  onMousePress(() => {
+    if (phase === "ready" && !ADMIN.busy() && adminChip.opacity > 0.1 && adminChip.isHovering()) return adminTap();
+    press(!!newChip && newChip.isHovering());
+  });
 });

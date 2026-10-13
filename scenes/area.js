@@ -289,6 +289,7 @@ MAPS.buildPlate = (plate) => {
 // calling it "area" would shadow Kaboom's area() component function.
 scene("area", ({ chapter, area: areaNum, retry = false }) => {
   G.paused = false;
+  G.where = "area";   // for the admin arrows (core/admin.js)
   const ch = CHAPTERS[chapter - 1];
   const a = ch.areas[areaNum - 1];
   G.run.chapter = chapter;
@@ -661,7 +662,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     });
 
     const retry = () => {
-      if (!dead || UI.pauseOpen) return;
+      if (!dead || UI.pauseOpen || ADMIN.arrowAt(mousePos())) return;
       dead = false;
       G.run.hp = G.stats().maxHp;
       go("area", { chapter, area: retryArea, retry: !!a.boss });   // a retried finale skips its opening
