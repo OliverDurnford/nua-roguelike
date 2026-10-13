@@ -609,8 +609,12 @@ scene("area", ({ chapter, area: areaNum }) => {
 
     const big = UI.labelObj("YOU DIED", G.W / 2, G.H * 0.38, { size: 32, anchor: "center", color: UI.RED, shadowOff: 4, z: 211 });
     UI.slideIn(big, vec2(G.W / 2, G.H * 0.3), vec2(G.W / 2, G.H * 0.38), 0.55, 0.15 + koHold);
+    // Losing a boss fight puts you back at the boss, not the start of the
+    // chapter (Ollie, 13 Oct 2026); anywhere else the chapter starts again.
+    const retryArea = a.boss ? areaNum : 1;
     const subT = add([
-      text("Chapter " + chapter + " starts again. Companions stay with you.", { size: 16, font: UI.VT, align: "center" }),
+      text(a.boss ? "The boss fight starts again. Companions stay with you."
+        : "Chapter " + chapter + " starts again. Companions stay with you.", { size: 16, font: UI.VT, align: "center" }),
       pos(G.W / 2, G.H * 0.53), anchor("center"), color(200, 202, 214), fixed(), z(211), opacity(0),
     ]);
     UI.fadeObj(subT, 1, 0.4, 0.7 + koHold);
@@ -629,7 +633,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       if (!dead || UI.pauseOpen) return;
       dead = false;
       G.run.hp = G.stats().maxHp;
-      go("area", { chapter, area: 1 });
+      go("area", { chapter, area: retryArea });
     };
     onKeyPress("enter", retry);
     wait(0.6, () => onMousePress(retry));

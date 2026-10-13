@@ -74,7 +74,7 @@ const CRACKS = (() => {
     { seed: 37, len: 48, w: 7 },
     { seed: 41, len: 44, w: 6.5 },
     { seed: 53, len: 38, w: 6 },
-    { seed: 67, len: 32, w: 5 },
+    { seed: 67, len: 32, w: 5.5 },   // 5 was too narrow for a glyph (Ollie, 13 Oct: every crack carries them)
   ];
 
   // A small seeded generator, so every crack is the same every run.
