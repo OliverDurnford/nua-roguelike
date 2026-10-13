@@ -268,7 +268,7 @@ MAPS.buildPlate = (plate) => {
 // ---------- the scene ----------
 // NOTE: the second argument is renamed to areaNum inside the scene -
 // calling it "area" would shadow Kaboom's area() component function.
-scene("area", ({ chapter, area: areaNum }) => {
+scene("area", ({ chapter, area: areaNum, retry = false }) => {
   G.paused = false;
   const ch = CHAPTERS[chapter - 1];
   const a = ch.areas[areaNum - 1];
@@ -539,7 +539,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   // The finale runs its own camera instead (scenes/finale.js): close on you,
   // up to Busy You, out for their name, back in to you.
   const reveal = a.finale
-    ? FINALE.start(m, player, ch, areaNum, spawnEnemies)
+    ? FINALE.start(m, player, ch, areaNum, spawnEnemies, { retry })
     : UI.reveal(m.w, m.h, {
       onPush: () => { G.paused = false; },
       onDone: () => {
@@ -633,7 +633,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       if (!dead || UI.pauseOpen) return;
       dead = false;
       G.run.hp = G.stats().maxHp;
-      go("area", { chapter, area: retryArea });
+      go("area", { chapter, area: retryArea, retry: !!a.boss });   // a retried finale skips its opening
     };
     onKeyPress("enter", retry);
     wait(0.6, () => onMousePress(retry));

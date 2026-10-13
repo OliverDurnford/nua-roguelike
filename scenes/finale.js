@@ -42,7 +42,9 @@ FINALE.setup = (m) => {
 
 // The camera for the whole finale, in place of the usual room reveal. It
 // opens on you and runs the opening; onFight is the scene's spawnEnemies.
-FINALE.start = (m, player, ch, areaNum, onFight) => {
+// After a death the opening is skipped and the fight starts at once
+// (Ollie, 13 Oct 2026): it has been seen, and a second time is a wait.
+FINALE.start = (m, player, ch, areaNum, onFight, opts = {}) => {
   FINALE.m = m;
   const dir = CAMSHOTS.director({ x1: 0, y1: 0, x2: m.w, y2: m.h }, G.W, G.H);
   FINALE.dir = dir;
@@ -50,6 +52,13 @@ FINALE.start = (m, player, ch, areaNum, onFight) => {
   FINALE.wide = Math.max(0.3, Math.min(1, fit) * 0.85);   // the room reveal's own pull-back
   const boss = get("boss")[0];
   boss.speechLift = FINALE.BOSS_H() * 0.55;   // bubbles clear the boss's head
+  if (opts.retry) {
+    dir.cut(player.pos, 1);
+    G.paused = false;
+    G.cutscene = false;
+    onFight();
+    return dir;
+  }
   G.paused = true;
   G.cutscene = true;
   onSceneLeave(() => { G.cutscene = false; });   // quitting mid-cutscene must not leave it on
