@@ -916,18 +916,18 @@ UI.hud = () => {
       }
     }
 
-    // ===== mobile special button =====
+    // ===== mobile special button: just above the aim stick =====
     if (isTouchscreen()) {
-      const bp = vec2(G.W - 72, G.H - 72);
+      const B = UI.SP_BTN, bp = vec2(B.x, B.y);
       const ready = r.meter >= 1;
       const op = ready ? 0.85 + Math.sin(time() * 5) * 0.15 : 0.35;
-      drawCircle({ pos: bp, radius: 46, color: UI.rgb(UI.WHITE), opacity: op });
-      drawCircle({ pos: bp, radius: 45, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op });
+      drawCircle({ pos: bp, radius: B.r, color: UI.rgb(UI.WHITE), opacity: op });
+      drawCircle({ pos: bp, radius: B.r - 1, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op });
       // a gold ring: yellow, with an amber edge inside it
-      drawCircle({ pos: bp, radius: 41.5, fill: false, outline: { width: 5, color: UI.rgb(UI.SPECIAL_CHROME[1]) }, opacity: op });
-      drawCircle({ pos: bp, radius: 38.5, fill: false, outline: { width: 1.5, color: UI.rgb(UI.SPECIAL_CHROME[5]) }, opacity: op });
+      drawCircle({ pos: bp, radius: B.r - 4.5, fill: false, outline: { width: 5, color: UI.rgb(UI.SPECIAL_CHROME[1]) }, opacity: op });
+      drawCircle({ pos: bp, radius: B.r - 7.5, fill: false, outline: { width: 1.5, color: UI.rgb(UI.SPECIAL_CHROME[5]) }, opacity: op });
       UI.label("SP", bp.x, bp.y + 1, { size: 16, anchor: "center", color: UI.SPECIAL_CHROME[2], shadow: false, opacity: op });
-      if (ready) UI.buzzRing(bp.x, bp.y, 46, Math.floor(time() * 16));
+      if (ready) UI.buzzRing(bp.x, bp.y, B.r, Math.floor(time() * 16));
     }
 
     // ===== desktop crosshair: ring + dot =====
@@ -1013,12 +1013,10 @@ UI.specialTutorial = (c, onDone) => {
     leaving = t;
     SFX.play("uiconfirm");
   };
-  const b = UI.PAUSE_BTN;
   const handlers = [
     onKeyPress((key) => { if (key !== "escape" && key !== "p") dismiss(); }),
     onMousePress(() => {
-      const m = mousePos();
-      if (m.x >= b.x && m.x <= b.x + b.w && m.y >= b.y && m.y <= b.y + b.h) return;
+      if (UI.inPauseBtn(mousePos())) return;
       dismiss();
     }),
   ];
@@ -1054,7 +1052,7 @@ UI.wireControls = () => {
         return;
       }
     }
-    if (isTouchscreen() && m.dist(vec2(G.W - 72, G.H - 72)) < 52) {
+    if (isTouchscreen() && UI.inSpBtn(m)) {
       COMPANIONS.trySpecial();
     }
   });
@@ -1091,17 +1089,24 @@ UI.wireControls = () => {
 // keys underneath (space for the special) do nothing. Installed once per
 // gameplay scene; its objects die with the scene.
 UI.pauseOpen = false;
-UI.PAUSE_BTN = { x: G.W / 2 - 30, y: 8, w: 60, h: 20 };
+// On a phone the chip is bigger and a tap counts well outside it: at phone
+// size the old 60 x 20 chip was a 43 x 14 point target (Ollie, 13 Oct 2026).
+UI.PAUSE_BTN = isTouchscreen()
+  ? { x: G.W / 2 - 50, y: 6, w: 100, h: 32, pad: 22, size: 16 }
+  : { x: G.W / 2 - 30, y: 8, w: 60, h: 20, pad: 0, size: 8 };
 UI.inPauseBtn = (p) => {
   const b = UI.PAUSE_BTN;
-  return p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+  return p.x >= b.x - b.pad && p.x <= b.x + b.w + b.pad && p.y >= b.y - b.pad && p.y <= b.y + b.h + b.pad;
 };
 
 UI.pause = () => {
+  const touch = isTouchscreen();
   const ITEMS = ["carry on", "sound", "back to the title"];
-  const W = 360, ROW_W = 260, ROW_H = 28, ROW_GAP = 10, LINE = 18;
-  const help = isTouchscreen()
-    ? ["drag on the left to move, aim is automatic", "tap SP for the special, tap a polaroid to swap"]
+  // phone rows are taller, wider and in bigger type, so a thumb can hit them
+  const W = touch ? 420 : 360, ROW_W = touch ? 320 : 260, ROW_H = touch ? 46 : 28;
+  const ROW_GAP = touch ? 12 : 10, LINE = 18, ROW_SIZE = touch ? 32 : 16;
+  const help = touch
+    ? ["left thumb walks, right thumb aims and throws", "tap SP for the special, tap a polaroid to swap"]
     : ["WASD or arrows move, the mouse aims", "SPACE special, 1 to 4 or Q / E swap, N sound"];
   const H = 20 + 16 + 22 + ITEMS.length * ROW_H + (ITEMS.length - 1) * ROW_GAP + 22 + help.length * LINE + 18;
   const x0 = G.W / 2 - W / 2, y0 = Math.round(G.H / 2 - H / 2);
@@ -1157,7 +1162,7 @@ UI.pause = () => {
     if (!UI.pauseOpen) {
       if (G.cutscene) return;
       UI.card(vec2(b.x, b.y), b.w, b.h, { fill: UI.CHIP, shade: null, notch: false, opacity: 0.85 });
-      UI.label("PAUSE", b.x + b.w / 2, b.y + b.h / 2 + 1, { anchor: "center", color: UI.TEXT, shadow: false, opacity: 0.85 });
+      UI.label("PAUSE", b.x + b.w / 2, b.y + b.h / 2 + 1, { size: b.size, anchor: "center", color: UI.TEXT, shadow: false, opacity: 0.85 });
       return;
     }
     UI.R(0, 0, G.W, G.H, UI.INK, 0.6);
@@ -1168,7 +1173,7 @@ UI.pause = () => {
       UI.card(vec2(r.x, r.y), r.w, r.h, {
         fill: on ? UI.STEEL : UI.CHIP, shade: on ? UI.BLUE : null, notch: false,
       });
-      UI.text(label(i), r.x + r.w / 2, r.y + r.h / 2 + 1, { anchor: "center" });
+      UI.text(label(i), r.x + r.w / 2, r.y + r.h / 2 + 1, { anchor: "center", size: ROW_SIZE });
     });
     const fy = y0 + H - 18 - help.length * LINE;
     help.forEach((ln, i) => {
@@ -1193,52 +1198,117 @@ UI.pause = () => {
   });
 };
 
-// ---------- mobile virtual joystick ----------
+// ---------- mobile sticks ----------
+// Two sticks, the twin-stick way (Ollie, 13 Oct 2026): the left one walks,
+// the right one aims, and you only throw while you hold it, because
+// auto-aim made it too easy. Both sit lifted off the bottom edge so there
+// is room to pull down without the thumb running off the glass, and the SP
+// button sits just above the aim stick.
+UI.STICK = { x: 110, y: G.H - 130, r: 54 };
+UI.AIM_STICK = { x: G.W - 110, y: G.H - 130, r: 54 };
+UI.SP_BTN = { x: G.W - 110, y: G.H - 240, r: 40 };
+UI.inSpBtn = (p) => p.dist(vec2(UI.SP_BTN.x, UI.SP_BTN.y)) < UI.SP_BTN.r + 12;
 
-// The stick lives bottom left, mirroring the SP button (Ollie, 18 Sep 2026).
-UI.STICK = { x: 72, y: G.H - 72, r: 54 };
+// Mobile aim, -1..1 on each axis like G.joy. Throwing needs it pushed past
+// a little dead zone (PLAYER.aimDir).
+G.aim = vec2(0, 0);
+
+// Kaboom hands touch handlers the finger in window pixels, measured from
+// the canvas's corner, not in game pixels. The canvas fills the window and
+// the 960 x 540 picture is letterboxed inside it, so on a phone the two
+// differ a lot. This repeats the engine's own letterbox sum, the same one
+// TITLEVIDEO.layout uses.
+UI.toGame = (p) => {
+  const r = canvas.getBoundingClientRect();
+  const k = Math.min(r.width / G.W, r.height / G.H);
+  return vec2((p.x - (r.width - G.W * k) / 2) / k, (p.y - (r.height - G.H * k) / 2) / k);
+};
+
+// Let go of both sticks. A stick only lets go when its own finger lifts,
+// and that lift can be lost: a new room loads between the press and the
+// lift (the old room's handlers are gone by then), or iOS takes the touch
+// for one of its own gestures. Either way the player kept walking in the
+// last direction held. So every lift that leaves no finger on the glass,
+// every cancel and every trip away from the page lets go of everything.
+UI._sticks = [];
+UI.releaseSticks = () => {
+  G.joy = vec2(0, 0);
+  G.aim = vec2(0, 0);
+  for (const s of UI._sticks) s.release();
+};
+(() => {
+  const allUp = (e) => { if (!e.touches || e.touches.length === 0) UI.releaseSticks(); };
+  addEventListener("touchend", allUp, true);
+  addEventListener("touchcancel", UI.releaseSticks, true);
+  addEventListener("blur", UI.releaseSticks);
+  document.addEventListener("visibilitychange", UI.releaseSticks);
+})();
 
 UI.mobileControls = () => {
   if (!isTouchscreen()) return;
+  // whatever a finger was doing in the last room, this one starts at rest
+  UI._sticks = [];
+  UI.releaseSticks();
 
-  let stickId = null;
-  let anchorPos = null;
-  // A touch anywhere on the left half drives the stick: starting on the
-  // stick itself steers from its centre, starting elsewhere steers from
-  // where the finger landed, and either way the knob shows the direction.
+  // One stick. A touch that lands on it (or near it) steers from its
+  // centre; one that lands anywhere else in its half steers from where the
+  // finger landed, and the stick is drawn there until the finger lifts.
   // Silver and blue like the rest of the accent; drawn as one entity so
   // the translucency never stacks where the rings meet.
-  const S = UI.STICK;
-  const base = add([pos(S.x, S.y), opacity(0.7), fixed(), z(185)]);
-  base.onDraw(() => {
-    const op = base.opacity;
-    drawCircle({ pos: vec2(0, 0), radius: 45, color: UI.rgb(UI.SILVER), opacity: op });
-    drawCircle({ pos: vec2(0, 0), radius: 49.5, fill: false, outline: { width: 5, color: UI.rgb(UI.STEEL) }, opacity: op });
-    drawCircle({ pos: vec2(0, 0), radius: 46, fill: false, outline: { width: 2, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op });
-    drawCircle({ pos: vec2(0, 0), radius: 53, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op + 0.2 });
-    const k = G.joy.scale(S.r);
-    drawCircle({ pos: k, radius: 21, color: UI.rgb(UI.BLUE), opacity: op + 0.2 });
-    drawCircle({ pos: k, radius: 22.5, fill: false, outline: { width: 3, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op + 0.2 });
-    drawCircle({ pos: k, radius: 25, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op + 0.2 });
-  });
+  const stick = (S, inZone, set) => {
+    const home = vec2(S.x, S.y);
+    const st = { id: null, at: home, k: vec2(0, 0) };
+    const base = add([pos(home), opacity(0.7), fixed(), z(185)]);
+    base.onDraw(() => {
+      const op = base.opacity;
+      const c = st.at.sub(home);
+      drawCircle({ pos: c, radius: 45, color: UI.rgb(UI.SILVER), opacity: op });
+      drawCircle({ pos: c, radius: 49.5, fill: false, outline: { width: 5, color: UI.rgb(UI.STEEL) }, opacity: op });
+      drawCircle({ pos: c, radius: 46, fill: false, outline: { width: 2, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op });
+      drawCircle({ pos: c, radius: 53, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op + 0.2 });
+      const k = c.add(st.k.scale(S.r));
+      drawCircle({ pos: k, radius: 21, color: UI.rgb(UI.BLUE), opacity: op + 0.2 });
+      drawCircle({ pos: k, radius: 22.5, fill: false, outline: { width: 3, color: UI.rgb(UI.BLUE_DEEP) }, opacity: op + 0.2 });
+      drawCircle({ pos: k, radius: 25, fill: false, outline: { width: 2, color: UI.rgb(UI.INK) }, opacity: op + 0.2 });
+    });
+    const steer = (p) => {
+      let d = p.sub(st.at);
+      if (d.len() > S.r) d = d.unit().scale(S.r);
+      st.k = d.scale(1 / S.r);
+      set(st.k);
+    };
+    st.release = () => {
+      st.id = null;
+      st.at = home;
+      st.k = vec2(0, 0);
+      base.opacity = 0.7;
+    };
+    UI._sticks.push(st);
 
-  onTouchStart((p, t) => {
-    if (p.x < G.W * 0.5 && stickId === null && !UI.inPauseBtn(p)) {
-      stickId = t ? t.identifier : 0;
-      anchorPos = p.dist(vec2(S.x, S.y)) < S.r + 24 ? vec2(S.x, S.y) : p;
+    onTouchStart((raw, t) => {
+      if (st.id !== null || UI.pauseOpen) return;
+      const p = UI.toGame(raw);
+      if (!inZone(p) || UI.inPauseBtn(p)) return;
+      st.id = t ? t.identifier : 0;
+      st.at = p.dist(home) < S.r + 40 ? home : p;
       base.opacity = 0.9;
-    }
-  });
-  onTouchMove((p, t) => {
-    if (stickId === null || (t && t.identifier !== stickId)) return;
-    let d = p.sub(anchorPos);
-    if (d.len() > S.r) d = d.unit().scale(S.r);
-    G.joy = d.scale(1 / S.r);
-  });
-  onTouchEnd((p, t) => {
-    if (stickId === null || (t && t.identifier !== stickId)) return;
-    G.joy = vec2(0, 0);
-    stickId = null;
-    base.opacity = 0.7;
-  });
+      steer(p);
+    });
+    onTouchMove((raw, t) => {
+      if (st.id === null || (t && t.identifier !== st.id)) return;
+      steer(UI.toGame(raw));
+    });
+    onTouchEnd((raw, t) => {
+      if (st.id === null || (t && t.identifier !== st.id)) return;
+      st.release();
+      set(vec2(0, 0));
+    });
+  };
+
+  // left half walks
+  stick(UI.STICK, (p) => p.x < G.W / 2, (v) => { G.joy = v; });
+  // right half aims, except the SP button and the polaroids along the top
+  stick(UI.AIM_STICK,
+    (p) => p.x >= G.W / 2 && !UI.inSpBtn(p) && p.y > UI.PORTRAIT.y + UI.PORTRAIT.h + 8,
+    (v) => { G.aim = v; });
 };

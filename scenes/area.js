@@ -579,12 +579,16 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     });
 
   // --- exit door logic ---
+  let aimLean = vec2(0, 0);   // phones: the camera's lean, eased so a flick of the stick never jolts it
   onUpdate(() => {
     // camera follows player, leans toward the aim, clamps to the map
     let target = player.pos;
     if (!isTouchscreen()) {
       const lean = toWorld(mousePos()).sub(player.pos);
       target = player.pos.add(lean.scale(0.12).len() > 42 ? lean.unit().scale(42) : lean.scale(0.12));
+    } else {
+      aimLean = aimLean.lerp(G.aim.scale(42), Math.min(1, dt() * 6));   // the aim stick leans it the same way
+      target = player.pos.add(aimLean);
     }
     const cx = m.w <= G.W ? m.w / 2 : G.clamp(target.x, G.W / 2, m.w - G.W / 2);
     const cy = m.h <= G.H ? m.h / 2 : G.clamp(target.y, G.H / 2, m.h - G.H / 2);

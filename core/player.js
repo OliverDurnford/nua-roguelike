@@ -2,8 +2,9 @@
 // PLAYER: movement, aiming, auto-attack, getting hurt.
 // Combat rules per CHARACTER_ROSTER.md:
 //   - WASD / joystick to move
-//   - fires toward the mouse on desktop, auto-aims on mobile
-//   - auto-attack runs whenever enemies are alive in the area
+//   - fires toward the mouse on desktop, the right stick on mobile
+//   - auto-attack runs whenever enemies are alive in the area (on mobile,
+//     only while the right stick is held)
 // ============================================================
 
 const PLAYER = {};
@@ -96,16 +97,11 @@ PLAYER.make = (spawnPos) => {
   return p;
 };
 
-// Desktop: aim at the mouse. Mobile: auto-aim at the nearest enemy.
+// Desktop: aim at the mouse. Mobile: wherever the right stick points, and
+// nothing at all while it is let go. It used to auto-aim at the nearest
+// enemy, which played itself (Ollie, 13 Oct 2026).
 PLAYER.aimDir = (p, targets) => {
-  if (isTouchscreen()) {
-    let best = null, bd = Infinity;
-    for (const t of targets) {
-      const d = t.pos.dist(p.pos);
-      if (d < bd) { bd = d; best = t; }
-    }
-    return best ? best.pos.sub(p.pos).unit() : null;
-  }
+  if (isTouchscreen()) return G.aim.len() > 0.3 ? G.aim.unit() : null;
   const m = toWorld(mousePos());
   const d = m.sub(p.pos);
   return d.len() < 4 ? vec2(1, 0) : d.unit();

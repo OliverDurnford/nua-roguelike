@@ -23,6 +23,10 @@
 const TITLEVIDEO = {};
 
 TITLEVIDEO.SRC = "video/title-move.mp4";
+// Its first frame as a still. An iPhone shows nothing of a video that has not
+// played yet, so without this the room was black behind "tap to start".
+// Rebuilt alongside the video by tools/titlesequence/build_title_assets.py.
+TITLEVIDEO.POSTER = "video/title-poster.jpg";
 TITLEVIDEO.seen = false;   // true once the sequence has run, so coming back to
                            // the title from a game does not replay it
 
@@ -33,6 +37,7 @@ TITLEVIDEO.el = () => {
   if (!TITLEVIDEO._el) {
     const v = document.createElement("video");
     v.src = TITLEVIDEO.SRC;
+    v.poster = TITLEVIDEO.POSTER;
     v.muted = true;              // the soundtrack carries the audio
     v.playsInline = true;        // iOS refuses to inline an unflagged video
     v.preload = "auto";

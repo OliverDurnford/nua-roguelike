@@ -238,7 +238,8 @@ scene("title", () => {
   // holds on its first frame until they do. Starting the song and the video in
   // the same gesture is also the only way the two are guaranteed to be locked.
   const promptY = G.H - 26;
-  const prompt = UI.chipObj("press any key", G.W / 2, promptY, { opacity: 0, z: 20, fixed: false });
+  const touch = isTouchscreen();
+  const prompt = UI.chipObj(touch ? "tap to start" : "press any key", G.W / 2, promptY, { opacity: 0, z: 20, fixed: false });
   if (!replay) {
     prompt.onUpdate(() => {
       if (phase !== "armed") return;
@@ -283,7 +284,8 @@ scene("title", () => {
 
   let newChip = null;
   if (saved) {
-    newChip = UI.chipObj("n · start a new game", G.W / 2, G.H - 18, { opacity: 0, z: 20, fixed: false, area: true });
+    newChip = UI.chipObj(touch ? "tap here to start a new game" : "n · start a new game", G.W / 2, G.H - 18,
+      { opacity: 0, z: 20, fixed: false, area: true });
   }
 
   // ---------- the cues ----------
@@ -381,11 +383,29 @@ scene("title", () => {
     phase = "running";
     prompt.opacity = 0;
     TITLEVIDEO.seen = true;
+    SFX.ctx();   // wakes the sound effects inside the same tap
     SOUNDTRACK.playById("dare-8-bit", TSEQ.MUSIC_LEAD, null);
     video.currentTime = 0;
     const p = video.play();
     if (p && p.catch) p.catch(() => {});
   };
+
+  // ---------- starting inside the tap ----------
+  // Kaboom hands input to the scene a frame AFTER the browser's own event,
+  // and by then an iPhone no longer counts it as the player's tap: it
+  // refused the song and the video both, and the room stayed black (Ollie,
+  // 13 Oct 2026). So the press that starts the sequence is caught straight
+  // off the page, inside the browser's event, where every phone allows a
+  // play(). touchend rather than touchstart, because iOS only counts the
+  // finger lifting. The scene's own press() leaves "armed" alone.
+  const GESTURES = ["keydown", "mousedown", "touchend"];
+  const armedPress = () => {
+    unhook();
+    if (phase === "armed") begin();
+  };
+  const unhook = () => GESTURES.forEach((g) => removeEventListener(g, armedPress, true));
+  if (!replay) GESTURES.forEach((g) => addEventListener(g, armedPress, true));
+  onSceneLeave(unhook);
 
   // Skipping. Held off for a moment after the start so the same press that
   // begins the sequence cannot also skip it.
@@ -410,7 +430,7 @@ scene("title", () => {
     fn();
   };
   const press = (newGame) => {
-    if (phase === "armed") return begin();
+    if (phase === "armed") return;   // armedPress starts it, inside the browser's event
     if (phase === "running") return skip();
     launch(() => (saved && !newGame ? SAVE.resume(saved) : go("select")));
   };

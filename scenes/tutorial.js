@@ -221,7 +221,7 @@ scene("tutorial", () => {
     if (st === 0 && player.pos.dist(startPos) > 70) {
       st = 1;
       setPrompt(isTouchscreen()
-        ? "tap near the batter to throw them the ball"
+        ? "push the right stick towards the batter to throw"
         : "HOLD the mouse button to throw the ball to the batter");
       batterMark = add([text("v", { size: 16, font: UI.PX }), pos(batterPos.add(0, -52)), anchor("center"), color(255, 220, 120), z(61), opacity(1)]);
       batterMark.onUpdate(() => { batterMark.pos.y = batterPos.y - 52 + Math.sin(time() * 4) * 6; });
@@ -233,13 +233,16 @@ scene("tutorial", () => {
         if (holdT > 0.35) throwBall();
       } else holdT = 0;
     }
+    // On a phone the throw teaches the aim stick (Ollie, 13 Oct 2026): it
+    // has to point roughly at the batter, within about 70 degrees either side.
+    if (st === 1 && isTouchscreen()) {
+      const toBatter = batterPos.sub(player.pos).unit();
+      if (G.aim.len() > 0.3 && G.aim.unit().dot(toBatter) > 0.34) {
+        holdT += dt();
+        if (holdT > 0.15) throwBall();
+      } else holdT = 0;
+    }
   });
-
-  if (isTouchscreen()) {
-    onMousePress(() => {
-      if (st === 1 && !UI.pauseOpen) throwBall();
-    });
-  }
 
   UI.mobileControls();
   UI.pause();
