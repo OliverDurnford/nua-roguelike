@@ -596,9 +596,10 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
       text("JUMP IN", { size: 8, font: UI.PX }), anchor("center"), pos(at.pos),
       color(240, 205, 250), opacity(0), z(61),   // above the field, as the door's sign
     ]);
-    // the voice in the cracks speaks out of it first, in some rooms
-    const voiced = crackVoice(() => at.pos, GROW);
-    let shownT = voiced ? -1 : GROW;   // when JUMP IN starts to show
+    // the voice in the cracks speaks out of it first, in some rooms; in the
+    // rest, if it opened out of view, the camera goes and shows you it
+    const held = crackVoice(() => at.pos, GROW) || CRACKVOICE.showCrack(at.pos, GROW + 0.6);
+    let shownT = held ? -1 : GROW;   // when JUMP IN starts to show
     lbl.onUpdate(() => {
       if (shownT < 0 && !G.cutscene) shownT = crack.growT;
       lbl.opacity = shownT < 0 ? 0 : 0.85 * Math.max(0, Math.min(1, (crack.growT - shownT) / 0.5));

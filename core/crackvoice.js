@@ -77,15 +77,41 @@ CRACKVOICE.run = ({ chapter, area, at, delay = 1 }) => {
   G.run.voiceSaid.push(CRACKVOICE.key(chapter, area));
   const steps = CRACKVOICE.steps(beat, G.run.companions.concat([G.run.charId]));
 
+  const hold = CRACKVOICE.freeze();
+  const bars = CRACKVOICE.bars();
+  const look = CRACKVOICE.look(at && at());
+  wait(delay, () => {
+    CRACKVOICE.play(steps, (at && at()) || camPos(), () => {
+      bars.out();
+      look.back(hold.release);   // back to you, then hand back
+    });
+  });
+  return true;
+};
+
+// A boss room's way-on crack with nothing to say (no line in this room, or
+// heard already this run) that opened out of view: the same glide over to
+// it while it grows and back, so you see where the way on is (Ollie, 13 Oct
+// 2026). Nothing happens when it is in view. True if it looked.
+CRACKVOICE.showCrack = (p, dur) => {
+  const look = CRACKVOICE.look(p);
+  if (!look.to) { destroy(look); return false; }
+  const hold = CRACKVOICE.freeze();
+  wait(dur, () => look.back(hold.release));
+  return true;
+};
+
+// Freeze the room for a story beat (G.paused and G.cutscene), with everyone
+// stood breathing rather than stopped dead mid-step or mid-throw; a throw or
+// a victory pose plays out first. release() hands back once the bars are
+// nearly gone, and never from under the pause menu, which puts back
+// whatever it found when it closes.
+CRACKVOICE.freeze = () => {
   FIDGET.stop();
   UI.releaseSticks();
   G.paused = true;
   G.cutscene = true;
-  onSceneLeave(() => { G.cutscene = false; G.camTo = null; });   // quitting mid-voice must not leave it on
-  const bars = CRACKVOICE.bars();
-  const look = CRACKVOICE.look(at && at());
-  // Everyone stands and breathes while it talks, rather than stopping dead
-  // mid-step or mid-throw; a throw or a victory pose plays out first.
+  onSceneLeave(() => { G.cutscene = false; G.camTo = null; });   // quitting mid-beat must not leave it on
   const still = add([]);
   still.onUpdate(() => {
     if (UI.pauseOpen) return;
@@ -95,31 +121,24 @@ CRACKVOICE.run = ({ chapter, area, at, delay = 1 }) => {
       FIDGET.idle(o, o.charId);
     }
   });
-  wait(delay, () => {
-    CRACKVOICE.play(steps, (at && at()) || camPos(), () => {
-      bars.out();
-      // back to you, then hand back once the bars are nearly gone, and never
-      // from under the pause menu, which puts back whatever it found
-      look.back(() => {
-        const back = add([{ t: 0 }]);
-        back.onUpdate(() => {
-          back.t += dt();
-          if (back.t < 0.35 || UI.pauseOpen) return;
-          G.paused = false;
-          G.cutscene = false;
-          destroy(still);
-          destroy(back);
-        });
-      });
+  const release = () => {
+    const back = add([{ t: 0 }]);
+    back.onUpdate(() => {
+      back.t += dt();
+      if (back.t < 0.35 || UI.pauseOpen) return;
+      G.paused = false;
+      G.cutscene = false;
+      destroy(still);
+      destroy(back);
     });
-  });
-  return true;
+  };
+  return { release };
 };
 
 // A crack that opened out of view (a boss can fall a long way from where
 // you stand, and a big crack only fits where the floor is open): the
-// camera glides over to it for the voice, which shows you the way on too,
-// and back to you after. G.camTo overrides the room's own follow while it
+// camera glides over to it, which shows you the way on, and back to you
+// after (back()). G.camTo overrides the room's own follow while it
 // is set, and G.camFollow is where that follow would be (scenes/area.js).
 CRACKVOICE.look = (p) => {
   const c = camPos(), M = 110;
