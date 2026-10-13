@@ -497,7 +497,7 @@ UI.titleCard = ({ num, name, sub, hold = 3.6 }) => {
 UI.bigTitle = ({ num, name, sub }) => {
   const IN = 0.2, MID = 2.0, OUT = 0.2;   // the rush in, the read (Ollie: a bit longer, 12 Oct), the rush out
   const DUR = IN + MID + OUT;
-  const DRIFT = 90;          // px/s through the middle, where it is read
+  const DRIFT = 12;          // px/s through the middle: it all but stops there to be read (Ollie, 13 Oct: was 90, moved too much)
   const POW = 3;             // how hard it brakes in and kicks out
   const cx = G.W / 2, cy = Math.round(G.H * 0.42);
   // Press Start 2P is an 8px grid, so any multiple of 8 stays crisp: as big
