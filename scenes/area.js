@@ -691,16 +691,63 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     }
   }
   if (a.dread) {
-    // Only ever on the floor (core/cracks.js spot): with no grass round
-    // them any more, a crack in the canal or across a boat would show.
-    // ...and never across each other.
+    // The cracks follow you down the towpath (Ollie, 13 Oct 2026): every
+    // few steps one opens under your feet, bigger the further you get, and
+    // past halfway a run of them races in from the right, from Victoria
+    // Park, to meet you. Only ever on the floor (core/cracks.js spot): with
+    // no grass round them any more, a crack in the canal or across a boat
+    // would show. ...and never across each other.
     const placed = [];
-    for (let i = 0; i < 6; i++) {
-      const at = CRACKS.spot([m.w * 0.4, 0, m.w, m.h], { variant: i, placed, plate: a.plate });
-      if (!at) continue;
+    const smallest = CRACKS.VARIANTS.length - 1;
+    const STEP = 150;   // px walked along the towpath between two cracks
+    const open = (at) => {
       placed.push(at);
-      add([...CRACKS.comps(at.variant, { flip: at.flip, delay: 0.6 + i * 0.5, dur: 1.4 }), pos(at.pos), opacity(0.85), z(2)]);
-    }
+      add([...CRACKS.comps(at.variant, { flip: at.flip, dur: 1.4 }), pos(at.pos), opacity(0.85), z(2)]);
+    };
+    // A crack of about size `want` centred within w x h of (x, y). Each size
+    // is its own shape, so where the one asked for will not fit the towpath
+    // (beside the first boat the smallest never does) the next two sizes up
+    // are tried, and then twice the room. A miss costs a fraction of a ms.
+    const fit = (x, y, w, h, want) => {
+      for (const k of [1, 2]) {
+        for (let v = want; v >= Math.max(0, want - 2); v--) {
+          const at = CRACKS.spot([x - w * k, y - h * k, x + w * k, y + h * k], { variant: v, placed, plate: a.plate });
+          if (at) return at;
+        }
+      }
+      return null;
+    };
+    const feet = () => player.pos.add(player.feet.dx + player.feet.w / 2, player.feet.dy + player.feet.h / 2);
+    let nextX = feet().x + STEP, rushed = false;
+    // Up to five from the right-hand end in towards you, a beat apart. Each
+    // beat looks further left for the next place one fits: under the road
+    // bridge the towpath is too narrow for any, so the first comes out of
+    // the bridge's mouth.
+    let rushX = m.w - 70, rushN = 0;
+    const rush = () => {
+      const p = feet();
+      for (; rushX > p.x + 160 && rushN < 5; rushX -= 40) {
+        const at = fit(rushX, p.y, 30, 40, 1 + (rushN % 3));
+        if (!at) continue;
+        rushX -= 40;
+        rushN++;
+        open(at);
+        shake(4);
+        SFX.play("rumble");
+        wait(0.35, rush);
+        return;
+      }
+    };
+    onUpdate(() => {
+      if (G.paused) return;
+      const f = feet(), along = f.x / m.w;
+      if (f.x >= nextX) {
+        nextX = f.x + STEP;
+        const at = fit(f.x, f.y, 18, 10, smallest - Math.round(along * 3));
+        if (at) { open(at); shake(2); }
+      }
+      if (!rushed && along > 0.58) { rushed = true; rush(); }
+    });
     UI.subtitleSeq([
       "...do you feel that?",
       "The cracks. They're coming from Victoria Park.",
