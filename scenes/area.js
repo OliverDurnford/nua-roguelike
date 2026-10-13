@@ -526,7 +526,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
       if (bar.disp > 0.005) blocks(bar.disp, UI.RED);
     });
 
-    if (a.finale) FINALE.setup(m);
+    if (a.finale) FINALE.setup(m, a.plate);
 
     G.onBossDeath = (snap) => {
       G.onBossDeath = null;

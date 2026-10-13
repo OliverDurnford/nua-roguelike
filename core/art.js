@@ -454,6 +454,69 @@ ART.genCar = () => {
   return cv.toDataURL();
 };
 
+// The finale's cage, in two layers so the friend stands between them: the
+// back (the cage floor, the far bars and a drop shadow) and the front (the
+// lid, the posts, two near bars, a brace and a padlock). Drawn on a small
+// canvas and scaled up, so it shares the plate's chunky pixels. The near
+// bars run either side of the face and the brace sits at the hips, so the
+// scared face always reads through the cage.
+ART.CAGE_W = 36;
+ART.CAGE_H = 58;
+ART.CAGE_FLOOR = 6;    // canvas rows from the bottom rail up to where the friend stands
+ART.CAGE_DEPTH = 10;   // canvas rows from the front bottom edge back to the far one
+ART.genCage = (part) => {
+  const W = ART.CAGE_W, H = ART.CAGE_H, B = H - 2;   // B: the bottom of the rail; two rows of shadow under it
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+  const R = (col, rx, ry, rw, rh) => { x.fillStyle = col; x.fillRect(rx, ry, rw, rh); };
+  const INK = "#0b0c11", D = "#2a2d38", M = "#4b5060", L = "#7d8496", HL = "#a9b0c0";
+  if (part === "back") {
+    R("rgba(0,0,0,0.35)", 2, B - 1, W - 4, 3);         // shadow on the grass
+    R("#1b1c22", 3, B - 11, W - 6, 7);                 // the cage floor, seen from above
+    R(D, 3, B - 12, W - 6, 1);                         // the far bottom rail
+    for (const bx of [6, 13, 21, 28]) R(D, bx, 4, 2, B - 16);   // the far bars
+    return cv.toDataURL();
+  }
+  // corner posts, full height, lit on the left
+  for (const px of [0, W - 3]) {
+    R(INK, px, 0, 3, B);
+    R(M, px + 1, 1, 1, B - 2);
+    R(px === 0 ? HL : L, px, 1, 1, B - 2);
+  }
+  // the two near bars, either side of the face, each lit down its left side
+  for (const bx of [9, 25]) { R(L, bx, 7, 1, B - 11); R(D, bx + 1, 7, 1, B - 11); }
+  // the brace at the hips
+  const by = B - 18;
+  R(INK, 3, by, W - 6, 1); R(M, 3, by + 1, W - 6, 1); R(INK, 3, by + 2, W - 6, 1);
+  // the lid: its top face seen from above, then its front edge
+  R(INK, 0, 0, W, 7);
+  R(L, 1, 1, W - 2, 1); R(M, 1, 2, W - 2, 2); R(D, 1, 4, W - 2, 2);
+  R(HL, 2, 1, 6, 1);
+  // the bottom rail, with a little rust
+  R(INK, 0, B - 5, W, 5);
+  R(L, 1, B - 5, W - 2, 1); R(M, 1, B - 4, W - 2, 2); R(D, 1, B - 2, W - 2, 1);
+  R("#7a4a2c", 6, B - 3, 2, 1); R("#7a4a2c", 29, B - 4, 1, 2); R("#7a4a2c", 31, 4, 2, 1);
+  // a padlock hanging off the brace
+  const ly = by + 2;
+  R(INK, 22, ly, 5, 3); R(L, 23, ly, 3, 1); R(INK, 23, ly + 1, 3, 2);
+  R(L, 22, ly + 1, 1, 2); R(L, 26, ly + 1, 1, 2);
+  R(INK, 21, ly + 3, 7, 6); R("#c09040", 22, ly + 4, 5, 4); R("#8a6226", 22, ly + 7, 5, 1); R("#e0b860", 22, ly + 4, 2, 1);
+  R(INK, 24, ly + 5, 1, 2);
+  return cv.toDataURL();
+};
+
+// a cartoon bead of sweat that flicks off a scared head: pointed at the top
+ART.genSweat = () => {
+  const cv = document.createElement("canvas");
+  cv.width = 5; cv.height = 7;
+  const x = cv.getContext("2d");
+  const rows = ["..D..", ".DLD.", ".DLD.", "DLWLD", "DLLLD", "DLLLD", ".DDD."];
+  const col = { D: "#1d3a5a", L: "#8fd0f0", W: "#ffffff" };
+  rows.forEach((r, y) => [...r].forEach((ch, i) => { if (col[ch]) { x.fillStyle = col[ch]; x.fillRect(i, y, 1, 1); } }));
+  return cv.toDataURL();
+};
+
 // ---------- load everything ----------
 ART.init = () => {
   // The UI kit's two pixel faces (core/fonts-real.js). Press Start 2P is
@@ -494,6 +557,14 @@ ART.init = () => {
       const key = "ch-" + c.id + "-fidget";
       loadSprite(key, rf.src, { sliceX: rf.sliceX, anims: rf.anims });
       G.SPR[key] = { name: key, h: rf.charH, anchorY: rf.anchorY, anims: rf.anims };
+    }
+    // scared in a cage (core/sprites-scared.js, the finale): its own sheet
+    // too, two frames glancing left and right that the finale picks itself
+    if (typeof REAL_SCARED !== "undefined" && REAL_SCARED[c.id]) {
+      const rs = REAL_SCARED[c.id];
+      const key = "ch-" + c.id + "-scared";
+      loadSprite(key, rs.src, { sliceX: rs.sliceX, anims: rs.anims });
+      G.SPR[key] = { name: key, h: rs.charH, anchorY: rs.anchorY, anims: rs.anims };
     }
     // old-age variant: the code-drawn grey-haired placeholder, kept only as
     // the final boss's last fallback. The generated old-age stills
@@ -634,6 +705,9 @@ ART.init = () => {
   loadSprite("glow", ART.genGlow());
   loadSprite("vignette", ART.genVignette());
   loadSprite("pixstar", ART.genPixStar());
+  loadSprite("cage-back", ART.genCage("back"));
+  loadSprite("cage-front", ART.genCage("front"));
+  loadSprite("sweat", ART.genSweat());
   loadSprite("raywheel", ART.genRayWheel());
   loadSprite("photo-park", ART.genPolaroidPark());
   loadSprite("bg-night", ART.genVGrad("#101322", "#1d1430"));

@@ -118,6 +118,8 @@ SFX.LIB = {
   // events
   recruit: () => [523, 659, 784, 1047].forEach((f, i) => SFX.tone({ type: "square", from: f, dur: 0.1, vol: 0.45, delay: i * 0.08 })),
   door:    () => { SFX.tone({ type: "square", from: 150, dur: 0.07, vol: 0.5 }); SFX.tone({ type: "square", from: 110, dur: 0.09, vol: 0.5, delay: 0.09 }); },
+  // a cage in the finale rattled by the friend inside it
+  clank:   () => { SFX.noise({ dur: 0.05, vol: 0.3, freq: 2600, q: 2 }); SFX.tone({ type: "square", from: 1250, to: 980, dur: 0.06, vol: 0.14 }); SFX.tone({ type: "square", from: 1660, dur: 0.04, vol: 0.1, delay: 0.08 }); },
   roar:    () => { SFX.tone({ type: "sawtooth", from: 85, to: 48, dur: 0.7, vol: 0.85 }); SFX.noise({ dur: 0.5, vol: 0.5, freq: 160, q: 0.5 }); },
   bossdie: () => {
     SFX.tone({ type: "sine", from: 220, to: 28, dur: 0.9, vol: 0.95 });
