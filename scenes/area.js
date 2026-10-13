@@ -389,7 +389,10 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     if (cracked || a.quiet || a.finale) return;
     cracked = true;
     const n = (chapter - 1) * 5 + (areaNum - 1);      // 0 at Gonzo's, 24 at the end
-    const count = 1 + Math.floor(n / 6);               // 1, 2, 3, then 4
+    // 1, 2, 3, then 4, but two at Gonzo's: straight after the tutorial a
+    // lone crack read as the way on, and the player went looking for a way
+    // in instead of finding the door (Ollie, 13 Oct 2026).
+    const count = n === 0 ? 2 : 1 + Math.floor(n / 6);
     const smallest = CRACKS.VARIANTS.length - 1;
     const size = Math.max(0, smallest - Math.floor(n / 5));   // a size up each chapter
     const c = camPos(), M = 70;
