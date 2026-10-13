@@ -51,9 +51,6 @@
   let posterDone = false;
   const poster = new Image();
   poster.onload = poster.onerror = () => { posterDone = true; };
-  poster.src = "video/title-poster.jpg";
-  // and the parked framing, for a skip or a return to the title; not waited for
-  new Image().src = "video/title-end.jpg";
 
   // The screen's lettering is the game's own pixel face, once its file has
   // run. Until then the words stay hidden rather than flash up in Courier.
@@ -62,6 +59,17 @@
     const url = Function("return typeof REAL_FONTS !== 'undefined' ? REAL_FONTS.pixel : null")();
     if (!url || typeof FontFace === "undefined") return;
     const f = new FontFace("NUA Pixel", "url(" + url + ")");
+    f.load().then(() => {
+      document.fonts.add(f);
+      document.documentElement.classList.add("fonts-ready");
+    }).catch(() => {});
+  };
+  // the same face straight from the file's text, before it has run: the turn
+  // card needs it while the phone is upright and nothing else has loaded
+  const fontFromText = (text) => {
+    const m = /pixel:\s*"(data:font\/ttf;base64,[^"]+)"/.exec(text);
+    if (!m || typeof FontFace === "undefined") return;
+    const f = new FontFace("NUA Pixel", "url(" + m[1] + ")");
     f.load().then(() => {
       document.fonts.add(f);
       document.documentElement.classList.add("fonts-ready");
@@ -118,9 +126,11 @@
   };
 
   // ---------- fetching, all at once ----------
-  for (const f of files) {
+  const fetchFile = (f) => {
+    if (f.fetching) return;
+    f.fetching = true;
     const x = new XMLHttpRequest();
-    try { x.open("GET", f.src); } catch (e) { f.failed = true; continue; }
+    try { x.open("GET", f.src); } catch (e) { f.failed = true; return; }
     x.onreadystatechange = () => {
       if (x.readyState !== 2 || f.total) return;
       f.total = +x.getResponseHeader("Content-Length") || 0;
@@ -134,13 +144,41 @@
       if (x.status === 200 || (x.status === 0 && x.responseText)) {
         f.text = x.responseText;
         if (!f.total) f.total = f.text.length;
+        if (f.src === "core/fonts-real.js") fontFromText(f.text);
       } else f.failed = true;
       run();
     };
     x.onerror = () => { f.failed = true; run(); };
     try { x.send(); } catch (e) { f.failed = true; }
-  }
-  run();
+  };
+
+  // ---------- not while the phone is upright ----------
+  // Opened upright, the game waits for the phone to be turned before it
+  // loads anything heavy. A phone cannot redraw a busy page, and loading is
+  // the busiest the page ever gets: turned mid-load, the page stayed laid
+  // out upright, the turn card cut off along the bottom of a sideways
+  // screen, for seconds (Ollie's recording, 13 Oct 2026; breaking the work
+  // into pieces was not enough). Upright, the page is only the turn card,
+  // which turns at once, and the bar runs once it is sideways. Only the
+  // font comes first, for the card's lettering.
+  const upright = matchMedia("(orientation: portrait) and (pointer: coarse)");
+  let begun = false;
+  const begin = () => {
+    if (begun) return;
+    begun = true;
+    poster.src = "video/title-poster.jpg";
+    // and the parked framing, for a skip or a return to the title; not waited for
+    new Image().src = "video/title-end.jpg";
+    for (const f of files) fetchFile(f);
+    run();
+    timer = setInterval(tick, 33);
+  };
+  const fonts = files.find((f) => f.src === "core/fonts-real.js");
+  if (fonts) fetchFile(fonts);
+  const beginWhenSideways = () => { if (!upright.matches) begin(); };
+  if (upright.addEventListener) upright.addEventListener("change", beginWhenSideways);
+  // and in case the change is missed, a look every so often
+  const look = setInterval(() => { if (begun) clearInterval(look); else beginWhenSideways(); }, 250);
 
   // ---------- the bar ----------
   const downloaded = () => {
@@ -183,5 +221,6 @@
       }
     }
   };
-  const timer = setInterval(tick, 33);
+  let timer = null;
+  beginWhenSideways();
 })();
