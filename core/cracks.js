@@ -322,16 +322,28 @@ const CRACKS = (() => {
   };
 
   const OCC = [];   // per variant: where its crack lies
+  // One variant at a time, a task apart, instead of all at once while the
+  // game starts: together they held the page for ~0.2s (~0.75s at phone
+  // speed), and a phone cannot redraw a busy page, which is what kept a
+  // turn made during loading from landing (Ollie, 13 Oct 2026). Nothing
+  // needs a crack until a room does, and anything that wants one before
+  // its turn has come bakes it there and then (ensure).
+  const ensure = (n) => {
+    n = n % VARIANTS.length;
+    if (OCC[n]) return;
+    const { W, H, frames, occ } = bake(VARIANTS[n]);
+    OCC[n] = occ;
+    const cv = document.createElement("canvas");
+    cv.width = W * STAGES; cv.height = H;
+    const x = cv.getContext("2d");
+    frames.forEach((f, k) => x.putImageData(new ImageData(f, W, H), k * W, 0));
+    loadSprite("crack" + n, cv.toDataURL(), { sliceX: STAGES });
+  };
   const load = () => {
-    VARIANTS.forEach((v, n) => {
-      const { W, H, frames, occ } = bake(v);
-      OCC[n] = occ;
-      const cv = document.createElement("canvas");
-      cv.width = W * STAGES; cv.height = H;
-      const x = cv.getContext("2d");
-      frames.forEach((f, k) => x.putImageData(new ImageData(f, W, H), k * W, 0));
-      loadSprite("crack" + n, cv.toDataURL(), { sliceX: STAGES });
-    });
+    if (typeof setTimeout !== "function") { VARIANTS.forEach((_, n) => ensure(n)); return; }
+    let n = 0;
+    const step = () => { if (n < VARIANTS.length) { ensure(n++); setTimeout(step, 0); } };
+    setTimeout(step, 0);
   };
 
   // Plays a crack open: hidden for `delay` seconds, then grows over
@@ -351,12 +363,12 @@ const CRACKS = (() => {
     },
   });
 
-  const comps = (variant, opts = {}) => [
+  const comps = (variant, opts = {}) => (ensure(variant), [
     sprite("crack" + (variant % VARIANTS.length)),
     anchor("center"),
     scale(PX * G.areaScale),
     grow(opts.delay || 0, opts.dur || 1.1, opts.flip !== undefined ? opts.flip : Math.random() < 0.5),
-  ];
+  ]);
 
   // Where crack `variant` can open with its centre inside box
   // [x1, y1, x2, y2]: every part of it on open floor, clear of the
@@ -378,11 +390,13 @@ const CRACKS = (() => {
 
     // Does crack c ({ pos, variant, flip }) touch any of the above?
     const clashes = (c) => {
+      ensure(c.variant);
       const o = OCC[c.variant];
       for (const [dx, dy] of o.pts) {
         const wx = c.pos.x + (c.flip ? -dx : dx) * k, wy = c.pos.y + dy * k;
         for (const r of blocks) if (wx > r.x1 - 4 && wx < r.x2 + 4 && wy > r.y1 - 4 && wy < r.y2 + 4) return true;
         for (const q of placed) {
+          ensure(q.variant);
           const qo = OCC[q.variant];
           let lx = Math.round((wx - q.pos.x) / k), ly = Math.round((wy - q.pos.y) / k);
           if (q.flip) lx = -lx;
@@ -402,5 +416,5 @@ const CRACKS = (() => {
     return null;
   };
 
-  return { STAGES, VARIANTS, bake, load, comps, spot };
+  return { STAGES, VARIANTS, bake, load, ensure, comps, spot };
 })();

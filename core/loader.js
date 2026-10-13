@@ -71,13 +71,25 @@
   setTimeout(() => document.documentElement.classList.add("fonts-ready"), 2500);
 
   // ---------- running the files in order ----------
+  // A few at a time, then a break. Run back to back, the art files kept the
+  // page busy for seconds on end, and a phone cannot redraw a busy page: a
+  // turn made during loading left the page laid out upright, half off a
+  // sideways screen, for seven seconds (Ollie's screen recording, 13 Oct
+  // 2026). With a break every ~12ms of work it can turn, and the bar moves.
+  LOADER.timings = [];   // [file, ms to run], for checking what holds the page
+  let queued = false;
+  const later = () => {
+    if (queued) return;
+    queued = true;
+    setTimeout(() => { queued = false; run(); }, 0);
+  };
   const ran = (f) => {
     f.ran = true;
     next++;
     if (f.src === "core/fonts-real.js") fontFrom();
-    run();
   };
   const run = () => {
+    const t0 = performance.now();
     while (next < files.length) {
       const f = files[next];
       if (f.failed) {
@@ -86,7 +98,7 @@
         f.tag = document.createElement("script");
         f.tag.src = f.src;
         f.tag.async = false;
-        f.tag.onload = f.tag.onerror = () => ran(f);
+        f.tag.onload = f.tag.onerror = () => { ran(f); later(); };
         document.body.appendChild(f.tag);
         return;
       }
@@ -95,12 +107,14 @@
       // sourceURL keeps each file's own name in error messages
       s.text = f.text + "\n//# sourceURL=" + f.src;
       f.text = "";
+      const t = performance.now();
       document.body.appendChild(s);   // runs it, there and then
       s.remove();
+      LOADER.timings.push([f.src, Math.round(performance.now() - t)]);
       ran(f);
-      return;
+      if (performance.now() - t0 > 12) { later(); return; }
     }
-    if (!scriptsDone) scriptsDone = true;
+    if (next >= files.length) scriptsDone = true;
   };
 
   // ---------- fetching, all at once ----------
