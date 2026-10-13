@@ -55,6 +55,12 @@ FIDGET.at = (seq, t) => {
   return null;
 };
 
+// Whether the player is walking. The player's own `standing` (from the
+// keys, the stick, actions and cutscene walks) decides it; distance only
+// catches being pushed along. A per-frame distance alone failed on fast
+// screens: at 120 or 144 Hz a full-speed walk is under 2 px a frame.
+FIDGET.isMoving = (s) => !s.standing || s.dist > 30 * s.dt;
+
 // A fidget stops at once if the player moves, the room stops being calm,
 // or the friend doing it is no longer standing (hurt, walking off).
 FIDGET.shouldCancel = (s) => s.moving || !s.calm || !s.standing;
@@ -126,7 +132,13 @@ FIDGET.play = (obj, id, onDone) => {
   const reg = FIDGET.sheet(id);
   const a = reg.anims.fidget || reg.anims.pose;
   const seq = FIDGETS[id];
-  const sub = add([sprite(reg.name), anchor(vec2(0, reg.anchorY)), pos(obj.pos), scale(obj.scale), opacity(1), z(obj.z)]);
+  // born facing, flickering and framed like the friend: it is drawn once
+  // before its own onUpdate first runs, and a left-facing friend flashed
+  // the wrong way for that frame
+  const sub = add([
+    sprite(reg.name, { flipX: obj.flipX, frame: a.from }), anchor(vec2(0, reg.anchorY)),
+    pos(obj.pos), scale(obj.scale), opacity(obj.opacity), z(obj.z),
+  ]);
   obj.hidden = true;
   let t = 0, over = false;
   const end = () => {
@@ -158,7 +170,7 @@ FIDGET.beginArea = (player, calm) => {
   let was = null, now = null, cancel = null;
   onUpdate(() => {
     if (!G.run || G.paused) return;
-    const moving = !!was && player.pos.dist(was) >= 2;
+    const moving = FIDGET.isMoving({ standing: player.standing, dist: was ? player.pos.dist(was) : 0, dt: dt() });
     was = player.pos.clone();
     const ok = calm() && !G.cutscene;
     if (now && FIDGET.shouldCancel({ moving, calm: ok, standing: now.exists() && now.standing })) cancel();
