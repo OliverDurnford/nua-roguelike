@@ -487,9 +487,10 @@ ART.init = () => {
       loadSprite(key, rp.src, { sliceX: rp.sliceX, anims: rp.anims });
       G.SPR[key] = { name: key, h: rp.charH, anchorY: rp.anchorY, anims: rp.anims };
     }
-    // old-age variant (used by the final boss): the generated elderly version
-    // of the approved sprite when core/old-real.js has one, else the
-    // code-drawn grey-haired placeholder
+    // old-age variant: the code-drawn grey-haired placeholder, kept only as
+    // the final boss's last fallback. The generated old-age stills
+    // (core/old-real.js) left the game on 13 Oct 2026 once every friend had
+    // a Busy You sheet; their art stays in Extras/old/.
     if (typeof REAL_OLD !== "undefined" && REAL_OLD[c.id]) {
       loadSprite("ch-" + c.id + "-old", REAL_OLD[c.id]);
       G.SPR["ch-" + c.id + "-old"] = { name: "ch-" + c.id + "-old", h: 128 };
