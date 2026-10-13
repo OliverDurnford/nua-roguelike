@@ -32,8 +32,16 @@
   const DOWNLOAD = 0.85;
   // A file whose size the server has not said yet counts as this many bytes.
   const UNKNOWN = 30000;
+  // GitHub Pages sends every file compressed, and says only the compressed
+  // size; the browser then counts progress in UNcompressed bytes and calls
+  // the length unknown. The art files are nearly all base64 pictures, which
+  // come out about 1.35 times bigger than they travel. (Code files squash
+  // far better, but they are a sliver of the total.)
+  const UNZIP = 1.35;
 
-  const files = srcs.map((src) => ({ src, loaded: 0, total: 0, text: null, failed: false, ran: false }));
+  // total: the file's size on the wire, its share of the bar
+  // expect: what the browser's byte count will reach when it has it all
+  const files = srcs.map((src) => ({ src, loaded: 0, total: 0, expect: 0, text: null, failed: false, ran: false }));
   let next = 0;          // the next file to run
   let scriptsDone = false;
   let shown = 0;         // what the bar shows; only ever goes up
@@ -97,14 +105,19 @@
   for (const f of files) {
     const x = new XMLHttpRequest();
     try { x.open("GET", f.src); } catch (e) { f.failed = true; continue; }
+    x.onreadystatechange = () => {
+      if (x.readyState !== 2 || f.total) return;
+      f.total = +x.getResponseHeader("Content-Length") || 0;
+      f.expect = x.getResponseHeader("Content-Encoding") ? f.total * UNZIP : f.total;
+    };
     x.onprogress = (e) => {
       f.loaded = e.loaded;
-      if (e.lengthComputable) f.total = e.total;
+      if (e.lengthComputable) f.total = f.expect = e.total;
     };
     x.onload = () => {
       if (x.status === 200 || (x.status === 0 && x.responseText)) {
         f.text = x.responseText;
-        f.loaded = f.total = f.total || f.text.length;
+        if (!f.total) f.total = f.text.length;
       } else f.failed = true;
       run();
     };
@@ -119,7 +132,8 @@
     for (const f of files) {
       const w = f.total || UNKNOWN;
       want += w;
-      have += f.ran ? w : Math.min(f.loaded, w) * 0.97;   // fetched but not yet run is nearly there
+      // fetched but not yet run is nearly there
+      have += f.ran ? w : f.text !== null ? w * 0.97 : f.expect ? w * Math.min(0.97, f.loaded / f.expect) : 0;
     }
     return want ? have / want : 1;
   };
