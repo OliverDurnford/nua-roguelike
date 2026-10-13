@@ -148,6 +148,19 @@ MAPS.addOver = (t, tiles, plate) => {
       .then((m) => { cut = m; })
       .catch((e) => console.warn(`see-through cut failed for "${t.name}":`, e));
   }
+  // The outline as texture coordinates on its tile of the painting: a sprite
+  // drawn at its own size is one world pixel per texture pixel, so a point's
+  // place on the tile, over the texture's size, offset by where the tile
+  // sits in its atlas. Only for an outline on one tile.
+  let flat = null;
+  const flatFor = () => {
+    if (patches.length !== 1) return null;
+    const tile = tiles.find((tl) => tl.sprite === patches[0].sprite);
+    const d = getSprite(tile.sprite) && getSprite(tile.sprite).data;
+    if (!d) return null;
+    const q = d.frames[0], tw = d.tex.width, th = d.tex.height, ox = tile.x0 * U;
+    return { tex: d.tex, uv: pts.map((p) => vec2(q.x + (p.x - ox) / tw, q.y + p.y / th)) };
+  };
   return add([
     pos(0, 0), z(DEPTH.z(base)), "plateOver",
     {
@@ -155,15 +168,21 @@ MAPS.addOver = (t, tiles, plate) => {
       cutReady: () => !!cut,
       draw() {
         // off screen there is nobody to hide, so skip it: a room can have a
-        // hundred outlines and each one costs a masked draw
+        // hundred outlines
         const c = camPos(), sc = camScale(), hw = width() / 2 / sc.x + U, hh = height() / 2 / sc.y + U;   // a unit spare for camera shake
         if (bx2 * U < c.x - hw || bx1 * U > c.x + hw || by2 * U < c.y - hh || by1 * U > c.y + hh) return;
-        drawMasked(
+        // Never through a mask if it can be helped: on a phone each masked
+        // draw stalls the graphics chip, and a busy room ran at 18 fps with
+        // them (13 Oct 2026). A railing's cut-out carries the painting's own
+        // colours, so it is drawn as it is; any other outline is the same
+        // polygon textured straight from the painting, which batches with
+        // everything else. The mask stays only for the moment before a cut
+        // is ready and for an outline that crosses from one tile to the next.
+        if (cut) for (const m of cut) drawSprite({ sprite: m.sprite, pos: m.pos });
+        else if (!t.see && (flat || (flat = flatFor()))) drawPolygon({ pts, indices, tex: flat.tex, uv: flat.uv });
+        else drawMasked(
           () => { for (const p of patches) drawSprite({ sprite: p.sprite, pos: p.pos, quad: p.quad }); },
-          () => {
-            if (cut) for (const m of cut) drawSprite({ sprite: m.sprite, pos: m.pos });
-            else drawPolygon({ pts, indices });
-          },
+          () => drawPolygon({ pts, indices }),
         );
         if (G.showBlocks) {
           // see-through outlines show teal, ordinary ones blue

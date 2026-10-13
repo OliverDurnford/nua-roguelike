@@ -44,8 +44,9 @@
     }
   </script>
 
-  <!-- Engine: Kaboom.js, pinned version, loaded from CDN (needs internet) -->
-  <script src="https://unpkg.com/kaboom@3000.1.17/dist/kaboom.js"></script>
+  <!-- Engine: Kaboom.js 3000.1.17, kept in lib/ rather than loaded from a CDN,
+       with two small speed fixes for phones (listed at the top of the file) -->
+  <script src="lib/kaboom-3000.1.17.js"></script>
 
   <!-- Idle: goes quiet when the window is not the one being looked at.
        Must load BEFORE boot.js, because kaboom() starts the frame loop

@@ -25,8 +25,8 @@ flagged for your review.
 
 Two options:
 
-1. **Double-click `index.html`** — opens in your browser. Needs internet
-   (the game engine loads from a CDN). That's it.
+1. **Double-click `index.html`** — opens in your browser. The game engine
+   lives in `lib/`, so it no longer needs another site to be up. That's it.
 2. When you're ready for phone testing: put this folder in your GitHub repo
    and turn on GitHub Pages (steps in `TECH_STACK.md` section 4).
 

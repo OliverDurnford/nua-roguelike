@@ -151,8 +151,8 @@ SEETHROUGH.tilePixels = (key) => SEETHROUGH.tiles[key] || (SEETHROUGH.tiles[key]
   img.src = PLATES[key];
 }));
 
-// The cut-out for one patch: a sprite the size of the patch, opaque on the
-// railing, clear on the floor between its bars. m: { key, px, py, pw, ph,
+// The cut-out for one patch: a sprite the size of the patch, the painting on
+// the railing, clear on the floor between its bars. m: { key, px, py, pw, ph,
 // pos } in tile pixels; pts: the outline in world px. Kept, so going back
 // into a room reuses it.
 SEETHROUGH.cache = {};
@@ -168,8 +168,11 @@ SEETHROUGH.maskFor = async (m, pts, U) => {
   c.width = m.pw; c.height = m.ph;
   const g2 = c.getContext("2d");
   const img = g2.createImageData(m.pw, m.ph);
+  // the painting's own colours where it is kept, so the cut can be drawn
+  // as it is, with no mask (the rows read start `band` rows higher)
   for (let i = 0; i < keep.length; i++) {
-    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = 255;
+    const j = (i + band * m.pw) * 4;
+    img.data[i * 4] = data[j]; img.data[i * 4 + 1] = data[j + 1]; img.data[i * 4 + 2] = data[j + 2];
     img.data[i * 4 + 3] = keep[i];
   }
   g2.putImageData(img, 0, 0);
