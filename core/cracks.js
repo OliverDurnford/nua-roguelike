@@ -418,40 +418,24 @@ const CRACKS = (() => {
     return null;
   };
 
-  // --- life round the cracks (Ollie, 13 Oct 2026) ---
-  // A puff of earth as one opens, then pale motes drifting up out of it.
-  // One object draws every particle as a square pixel in the cracks' own
-  // colours, a few hundred at most and no masks, so a phone barely
-  // notices. Use:  const fx = CRACKS.fx(63);  fx.burst(at);  fx.seep(at);
+  // --- earth thrown up as a crack opens (Ollie, 13 Oct 2026) ---
+  // One object draws every chip as a square pixel, a few hundred at most
+  // and no masks, so a phone barely notices. No pink: the motes and sparks
+  // that rose out of the cracks came out the same evening (Ollie).
+  // Use:  const fx = CRACKS.fx(63);  fx.burst(at);
   const fx = (zz) => {
-    const parts = [], vents = [];
+    const parts = [];
     const EARTH = [rgb(92, 64, 40), rgb(60, 42, 28), rgb(124, 90, 58)];
-    const MOTE = [PAL.glyph, PAL.hot, PAL.halo].map((c) => rgb(c[0], c[1], c[2]));
     const pick = (a) => a[Math.floor(Math.random() * a.length)];
-    const px = (at) => PX * G.areaScale * (at.mult || 1);   // world px per crack pixel
-    // a pixel somewhere along crack `at`, in world px
-    const along = (at) => {
-      ensure(at.variant);
-      const [dx, dy] = pick(OCC[at.variant % VARIANTS.length].pts), k = px(at);
-      return [at.pos.x + (at.flip ? -dx : dx) * k, at.pos.y + dy * k];
-    };
-    const spawn = (p) => { if (parts.length < 320) parts.push({ ...p, max: p.life }); };
 
     add([pos(0, 0), z(zz), {
       update() {
         const t = dt();
-        for (const v of vents) {
-          if ((v.wait -= t) > 0) continue;
-          v.wait = rand(0.05, 0.12);
-          const [x, y] = along(v.at);
-          spawn({ x, y, vx: rand(-6, 6), vy: -rand(20, 44), g: 0, sway: rand(0, 6.3),
-            life: rand(1.8, 3), s: px(v.at) * (Math.random() < 0.3 ? 3 : 2), c: pick(MOTE) });
-        }
         for (let i = parts.length - 1; i >= 0; i--) {
           const p = parts[i];
           if ((p.life -= t) <= 0) { parts.splice(i, 1); continue; }
-          p.vy += p.g * t;
-          p.x += (p.vx + (p.g ? 0 : Math.sin(time() * 2 + p.sway) * 6)) * t;
+          p.vy += 520 * t;
+          p.x += p.vx * t;
           p.y += p.vy * t;
         }
       },
@@ -465,18 +449,16 @@ const CRACKS = (() => {
     }]);
 
     return {
-      // earth flung up from the epicentre as crack `at` opens, and a few sparks
+      // earth flung up from the epicentre as crack `at` opens
       burst(at, n = 20) {
-        const k = px(at);
-        for (let i = 0; i < n; i++) {
-          const spark = i % 4 === 0;
-          spawn({ x: at.pos.x + rand(-8, 8) * k, y: at.pos.y + rand(-3, 3) * k,
-            vx: rand(-110, 110), vy: -rand(120, 240), g: spark ? 160 : 520,
-            life: rand(0.6, 1), s: k * (spark ? 2 : Math.random() < 0.5 ? 2 : 3), c: spark ? MOTE[1] : pick(EARTH) });
+        const k = PX * G.areaScale * (at.mult || 1);   // world px per crack pixel
+        for (let i = 0; i < n && parts.length < 320; i++) {
+          const life = rand(0.6, 1);
+          parts.push({ x: at.pos.x + rand(-8, 8) * k, y: at.pos.y + rand(-3, 3) * k,
+            vx: rand(-110, 110), vy: -rand(120, 240), life, max: life,
+            s: k * (Math.random() < 0.5 ? 2 : 3), c: pick(EARTH) });
         }
       },
-      // motes rising out of crack `at`, once it has had `delay` seconds to open
-      seep(at, delay = 0.6) { vents.push({ at, wait: delay }); },
     };
   };
 

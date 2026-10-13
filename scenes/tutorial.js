@@ -124,8 +124,8 @@ scene("tutorial", () => {
     SOUNDTRACK.playById("the-cracks", 0, 0.3);
     UI.subtitleSeq(["...that wasn't the car.", "What IS that?!"]);
     // The park dims as the ground goes, towards the cracks' own purple, and
-    // their earth and motes carry on above it, so they glow (Ollie, 13 Oct
-    // 2026). Under the prompts and subtitles, over everyone on the field.
+    // the earth they throw up flies above it (Ollie, 13 Oct 2026). Under
+    // the prompts and subtitles, over everyone on the field.
     const dim = add([rect(G.W, G.H), color(28, 10, 40), opacity(0), fixed(), z(62)]);
     dim.onUpdate(() => { dim.opacity = Math.min(0.34, dim.opacity + dt() * 0.34 / 1.5); });
     const fx = CRACKS.fx(63);
@@ -143,7 +143,6 @@ scene("tutorial", () => {
         cracks.push(at.pos);
         add([...CRACKS.comps(at.variant, { flip: at.flip }), pos(at.pos), z(3)]);   // grows open, see core/cracks.js
         fx.burst(at);
-        fx.seep(at);
       });
     }
     wait(2.2, pullFriendsIn);
