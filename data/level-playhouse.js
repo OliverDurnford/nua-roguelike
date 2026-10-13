@@ -16,7 +16,10 @@ const PLAYHOUSE_PLATE = {
   rows: 24,
   unit: 48,
 
-  charScale: 1.15,
+  // The plate is painted big (its chairs and doors are about 1.4 times
+  // the Beehive's), so people stand bigger too: at 1.15 they looked tiny
+  // (Ollie, 13 Oct 2026). reach.py passes at this size.
+  charScale: 1.5,
 
   // Edited on the level board (tools/levels/board.html): one entry per
   // painted thing, a footprint and, for tall things, an outline.

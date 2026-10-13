@@ -186,7 +186,7 @@ ENEMIES.hit = (e, dmg, critChance) => {
   if (e.real && e.real.hurtAnim && e.hp > 0) { e.hurtT = 0.2; e.play(e.real.hurtAnim); }
 
   UI.floatText(e.pos.add(rand(-8, 8), -14), String(d) + (isCrit ? "!" : ""), isCrit ? [255, 220, 80] : [240, 240, 240]);
-  G.run.meter = Math.min(1, G.run.meter + 0.03 * s.chargeRate);
+  if (G.run.companions.length > 0) G.run.meter = Math.min(1, G.run.meter + 0.03 * s.chargeRate);   // no friend yet, no special
   SFX.play("hit");
 
   if (e.hp > 0) return;
@@ -236,6 +236,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
     {
       hp: def.hp, maxHp: def.hp,
       bname: opts.name || def.name,
+      bossId: def.id,   // what a "boss:<id>" line on the speech board names
       stun: 0, flashT: 0,
       patI: 0, patT: 2,
       charging: null, spiral: null, spiralT: 0,

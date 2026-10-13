@@ -91,8 +91,9 @@ SPEECH.present = (who) => {
   // "who" may be a pair, for the lines the girls say in unison
   if (Array.isArray(who)) return who.length > 0 && who.every((w) => SPEECH.present(w));
   if (who.startsWith("boss:")) {
-    // the beaten finale boss speaks from under its pile
-    const b = get("boss")[0] || get("bossPile")[0];
+    // Only the boss the line names: the Dean's lines are not the DJ's.
+    // The beaten finale boss speaks from under its pile.
+    const b = SPEECH.sprite(who);
     return !!(b && b.exists());
   }
   if (who.startsWith("npc:")) return !!SPEECH.npcSprite(who.slice(4));
@@ -110,7 +111,10 @@ SPEECH.npcSprite = (name) => {
 // The sprite a bubble should hang off. Friends go through COMPANIONS,
 // which already falls back to a named subtitle when they are off field.
 SPEECH.sprite = (who) => {
-  if (who.startsWith("boss:")) return get("boss")[0] || get("bossPile")[0];
+  if (who.startsWith("boss:")) {
+    const id = who.slice(5);
+    return get("boss").concat(get("bossPile")).find((b) => !b.bossId || b.bossId === id);
+  }
   if (who.startsWith("npc:")) return SPEECH.npcSprite(who.slice(4));
   return COMPANIONS.fieldSprite(who);
 };

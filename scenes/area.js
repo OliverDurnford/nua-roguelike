@@ -275,6 +275,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   G.run.chapter = chapter;
   G.run.area = areaNum;
   SAVE.write("area");   // checkpoint: the run as it stood at this door
+  if (!G.run.companions.length) G.run.meter = 0;   // no friend yet, no special (and an old save may have charged it)
 
   // How big people stand in THIS room. Must be set before anything is
   // added, because every sprite reads it on the way in.
@@ -314,8 +315,7 @@ scene("area", ({ chapter, area: areaNum }) => {
   // lands within 260px of where the player is standing unless the room has
   // no spawn point further away. Placement is random each run. Until the
   // last wave is in, the room does not count as cleared.
-  const WAVE_NAMES = ["WAVE 1", "WAVE 2", "FINAL WAVE"];
-  const WAVE_SUBS = ["HERE THEY COME", "THEY'VE BROUGHT FRIENDS", "LAST ONES, THEN THE DOOR"];   // PLACEHOLDER wording, Ollie's call
+  const WAVE_NAMES = ["WAVE 1", "WAVE 2", "FINAL WAVE"];   // just the name, no line under it (Ollie, 13 Oct)
   const WAVE_LEAD = 0.6;   // the card is up this long before the wave arrives
   const BREATHER = 1.5;    // between one wave cleared and the next card
   const waves = (a.enemyBudget > 0 && m.enemySpawns.length)
@@ -328,7 +328,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     if (dead || exiting) return;
     wave++;
     waveBusy = true;
-    UI.titleCard({ num: String(wave + 1), name: WAVE_NAMES[wave], sub: WAVE_SUBS[wave], hold: 2.2 });
+    UI.titleCard({ num: String(wave + 1), name: WAVE_NAMES[wave], hold: 2.2 });
     wait(WAVE_LEAD, () => {
       if (dead || exiting) return;
       const from = wave === 0 ? m.playerSpawn : player.pos;
@@ -353,6 +353,37 @@ scene("area", ({ chapter, area: areaNum }) => {
     if (waveBusy || spawned || wave < 0 || get("enemy").length) return;
     waveBusy = true;
     wait(BREATHER, sendWave);
+  };
+
+  // --- the cracks follow you ---
+  // Each time a room is won, the ground splits a little where you can see
+  // it: one small crack early on, a few bigger ones by the last chapter,
+  // never a lot (Ollie, 13 Oct 2026). Not in quiet rooms, where there is
+  // nothing to win, nor the finale, whose plate has its cracks painted in.
+  let cracked = false;
+  const crackOpen = () => {
+    if (cracked || a.quiet || a.finale) return;
+    cracked = true;
+    const n = (chapter - 1) * 5 + (areaNum - 1);      // 0 at Gonzo's, 24 at the end
+    const count = 1 + Math.floor(n / 6);               // 1, 2, 3, then 4
+    const smallest = CRACKS.VARIANTS.length - 1;
+    const size = Math.max(0, smallest - Math.floor(n / 5));   // a size up each chapter
+    const c = camPos(), M = 70;
+    const box = [
+      Math.max(M, c.x - G.W / 2 + M), Math.max(M, c.y - G.H / 2 + M),
+      Math.min(m.w - M, c.x + G.W / 2 - M), Math.min(m.h - M, c.y + G.H / 2 - M),
+    ];
+    const placed = [];
+    shake(3);
+    SFX.play("rumble");
+    for (let i = 0; i < count; i++) {
+      wait(0.25 + i * 0.4, () => {
+        const at = CRACKS.spot(box, { variant: Math.min(smallest, size + (i % 2)), placed, plate: a.plate });
+        if (!at) return;
+        placed.push(at);
+        add([...CRACKS.comps(at.variant, { flip: at.flip, dur: 1.4 }), pos(at.pos), opacity(0.8), z(2)]);
+      });
+    }
   };
 
   // --- companion pickup (quiet areas, chapters 1-4) ---
@@ -391,7 +422,9 @@ scene("area", ({ chapter, area: areaNum }) => {
       ? { finale: true, name: "BUSY " + G.playerChar().name.toUpperCase() }
       : {};
     ENEMIES.spawnBoss(ch, m.bossSpawn, finaleOpts);
-    if (!a.finale) wait(0.6, () => SPEECH.fire("bossStart"));   // the finale says it in its opening
+    // The boss's opening line comes once the room's name has gone (see the
+    // reveal below): fired from here it fell in the paused hold and was
+    // never heard. The finale says its own in its opening.
 
     // boss health bar: a paper card at the foot of the screen, the name in
     // pixel type over a wristband meter like the HUD's, in red, with a pink
@@ -428,6 +461,7 @@ scene("area", ({ chapter, area: areaNum }) => {
       if (a.finale) {
         FINALE.win(player, snap);
       } else {
+        crackOpen();
         COMPANIONS.onAreaExit();   // any exit line plays during the victory pause
         wait(1.6, () => { if (!exiting) { exiting = true; G.advance(); } });
       }
@@ -516,6 +550,7 @@ scene("area", ({ chapter, area: areaNum }) => {
         });
         if (waves.length) wait(dur - 0.35, spawnEnemies);
         else spawnEnemies();
+        if (a.boss) wait(dur - 0.2, () => SPEECH.fire("bossStart"));
       },
     });
 
@@ -534,7 +569,7 @@ scene("area", ({ chapter, area: areaNum }) => {
     nextWave();
     // the finale never clears: its ending takes over when the boss drops
     const cleared = !a.finale && spawned && get("enemy").length === 0 && get("boss").length === 0;
-    if (cleared && !clearedSaid) { clearedSaid = true; SPEECH.fire("cleared"); }
+    if (cleared && !clearedSaid) { clearedSaid = true; SPEECH.fire("cleared"); crackOpen(); }
     for (const d of m.exits) {
       if (cleared && !d.unlocked) {
         d.unlocked = true;

@@ -49,6 +49,12 @@ SOUNDTRACK.hudToken = -1;    // last SOUNDTRACK.token the HUD has accounted for
 // this back into one field.
 SOUNDTRACK._requested = null;
 
+// The element's volume for a track at full level: the music volume times
+// the track's own gain, which make_registry.py works out from its measured
+// loudness so every song plays equally loud (13 Oct 2026: Busy Earnin' was
+// 7 dB under the rest). An element cannot go past 1.
+SOUNDTRACK.full = (track) => Math.min(1, SOUNDTRACK.volume * ((track && track.gain) || 1));
+
 SOUNDTRACK._el = null;
 SOUNDTRACK._fade = null;
 SOUNDTRACK._retryWired = false;   // true while a one-shot retry pair is attached
@@ -144,7 +150,7 @@ SOUNDTRACK.play = (track, at = 0, fadeIn = SOUNDTRACK.FADE) => {
         window.addEventListener("keydown", retry);
       });
     }
-    if (fadeIn !== null) SOUNDTRACK._rampTo(SOUNDTRACK.volume, fadeIn);
+    if (fadeIn !== null) SOUNDTRACK._rampTo(SOUNDTRACK.full(track), fadeIn);
   };
 
   if (SOUNDTRACK.current) SOUNDTRACK._rampTo(0, 0.35, start);
@@ -213,8 +219,9 @@ SOUNDTRACK.forArea = (chapter, areaNum, a) => {
   // No track is labelled "quiet" yet, so this fallback is what quiet
   // areas actually draw from. Excluding "boss" keeps White Noise reserved
   // for boss arenas instead of it turning up in a quiet room too.
-  if (!pool.length) pool = TRACKS.filter((t) => !(t.areas || []).length && t.mood !== "boss");
-  if (!pool.length) pool = TRACKS;
+  // A "cue" (the tutorial's quake) is only ever played by name.
+  if (!pool.length) pool = TRACKS.filter((t) => !(t.areas || []).length && t.mood !== "boss" && t.mood !== "cue");
+  if (!pool.length) pool = TRACKS.filter((t) => t.mood !== "cue");
 
   const dealt = SOUNDTRACK._dealt(pool);
   return dealt[SOUNDTRACK._ordinal(chapter, areaNum) % dealt.length];
@@ -234,7 +241,7 @@ SOUNDTRACK.playById = (id, at = 0, fadeIn = SOUNDTRACK.FADE) => {
 // Set the volume as a fraction of full (0 to 1): outright, cancelling any
 // ramp, or over `secs` when given.
 SOUNDTRACK.level = (k, secs) => {
-  const v = SOUNDTRACK.volume * Math.max(0, Math.min(1, k));
+  const v = SOUNDTRACK.full(SOUNDTRACK._requested) * Math.max(0, Math.min(1, k));
   if (secs) return SOUNDTRACK._rampTo(v, secs);
   if (SOUNDTRACK._fade) { clearInterval(SOUNDTRACK._fade); SOUNDTRACK._fade = null; }
   SOUNDTRACK._audio().volume = v;

@@ -200,7 +200,17 @@ UI.chipObj = (str, x, y, o = {}) => {
       center: true, fill: o.fill || UI.CHIP, shade: o.shade === undefined ? null : o.shade, notch: false, opacity: root.opacity,
     });
   });
-  root.onUpdate(() => { txt.opacity = root.opacity; txt.hidden = root.label === ""; });
+  // A chip made before its font has finished loading measures its text as
+  // nothing wide, and the box came up tiny round the full-size words (the
+  // title's prompt, now and then on a fresh load). Measure again until the
+  // text has a real width, then stop.
+  let sized = root.label === "" || root.w > padX * 2 + 4;
+  root.onUpdate(() => {
+    txt.opacity = root.opacity; txt.hidden = root.label === "";
+    if (!sized && Math.ceil(UI.measure(root.label, font, size).width) > 0) { root.set(root.label); sized = true; }
+  });
+  const set = root.set;
+  root.set = (s) => { set(s); sized = s === "" || root.w > padX * 2 + 4; };
   return root;
 };
 
@@ -445,15 +455,15 @@ UI.toast = (str) => UI._bottomChip(str, { fill: UI.STEEL, shade: UI.BLUE, padY: 
 // Slides in from the left, holds, fades. It carried the room's name until
 // 12 Oct 2026, when the room's name went big and central (UI.bigTitle) and
 // the waves took this spot (Ollie).
-UI.titleCard = ({ num, name, sub, hold = 3.6 }) => {
+UI.titleCard = ({ num, name, sub = "", hold = 3.6 }) => {
   const x0 = 14, y0 = 112;
-  const NAME = 16, SUB = 8, NUM = 24;
+  const NAME = 16, SUB = sub ? 8 : 0, NUM = 24;   // no sub: the card closes up round the name
   const nameW = Math.ceil(UI.measure(name, UI.PX, NAME).width);
   const subW = Math.ceil(UI.measure(sub, UI.PX, SUB, { letterSpacing: 1 }).width);
   const numW = Math.ceil(UI.measure(num, UI.PX, NUM).width);
   const leftW = 2 + 12 + numW + 12;               // ink on the left only: the seam is the name block's outline
   const rightW = 4 + 14 + Math.max(nameW, subW) + 16 + 4;
-  const h = 4 + 8 + NAME + 6 + SUB + 8 + 4;
+  const h = 4 + 8 + NAME + (sub ? 6 + SUB : 0) + 8 + 4;
   const w = leftW + rightW;
 
   const card = add([pos(x0, y0), opacity(0), fixed(), z(194)]);
@@ -471,7 +481,7 @@ UI.titleCard = ({ num, name, sub, hold = 3.6 }) => {
     UI.R(rx + 4, 4, rightW - 8, h - 8, UI.NAVY, op);
     const tx = rx + 4 + 14, ty = 4 + 8;
     UI.chromeText(name, tx, ty, NAME, op);
-    UI.label(sub, tx, ty + NAME + 6, { size: SUB, letterSpacing: 1, color: UI.PALE, shadow: false, opacity: op });
+    if (sub) UI.label(sub, tx, ty + NAME + 6, { size: SUB, letterSpacing: 1, color: UI.PALE, shadow: false, opacity: op });
   });
   UI.slideIn(card, vec2(x0 - 46, y0), vec2(x0, y0), 0.5);
   wait(hold, () => {
@@ -614,6 +624,118 @@ UI.reveal = (mapW, mapH, opts = {}) => {
   return r;
 };
 
+// ---------- the special meter ----------
+// The wristband meter: white track in a 2px ink border, filled with 8px
+// blocks a pixel apart. It fills in the special screens' gold chrome, not
+// the UI's silver and blue (Ollie, 7 Oct), banded the same way, with a
+// glint that sweeps along whatever is filled. Full, it buzzes with
+// electricity (Ollie, 13 Oct 2026). Drawn by the HUD and by the card that
+// teaches the special, so the two are the same bar. 13 px tall; `k` is 0..1.
+UI.specialMeter = (mx, my, mw, k, full) => {
+  const mh = 13;
+  // the whole bar shivers a pixel now and then while it is charged
+  const step = Math.floor(time() * 16);
+  const jit = full && UI._hash(step, 99) < 0.3 ? (UI._hash(step, 98) < 0.5 ? -1 : 1) : 0;
+  my += jit;
+  UI.R(mx - 2, my - 2, mw + 4, mh + 4, UI.INK);
+  UI.R(mx, my, mw, mh, UI.WHITE);
+  const fw = Math.round((mw - 2) * k);
+  const SC = UI.SPECIAL_CHROME;
+  for (let off = 0; off < fw; off += 9) {
+    const bw = Math.min(8, fw - off), bx = mx + 1 + off;
+    UI.R(bx, my + 1, bw, 1, SC[0]);
+    UI.R(bx, my + 2, bw, 2, SC[3]);
+    UI.R(bx, my + 4, bw, 4, SC[1]);
+    UI.R(bx, my + 8, bw, 3, SC[5]);
+    UI.R(bx, my + 11, bw, 1, SC[2]);
+  }
+  // the glint: a slanted sliver of light, quicker once the meter is full
+  if (fw > 0) {
+    const period = full ? 1.1 : 2.4;
+    const gx = mx + 1 - 12 + ((time() % period) / period) * (fw + 24);
+    for (let row = 1; row < 12; row++) {
+      const sx = Math.round(gx + (12 - row) * 0.5);
+      for (let off = 0; off < fw; off += 9) {
+        const bx = mx + 1 + off, bw = Math.min(8, fw - off);
+        const a = Math.max(sx, bx), b = Math.min(sx + 3, bx + bw);
+        if (b > a) UI.R(a, my + row, b - a, 1, SC[0], 0.85);
+      }
+    }
+  }
+  if (full) UI.buzz(mx - 2, my - 2, mw + 4, mh + 4, step);
+};
+
+// A cheap repeatable random number in 0..1 from two integers, so a crackle
+// holds its shape for a whole step instead of changing every frame.
+UI._hash = (a, b) => {
+  let h = (a * 374761393 + b * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+
+// Electricity round a box: two or three arcs jumping off its edges and
+// back, a few sparks, and a flicker over the whole thing. In 2 px squares
+// so it sits with the pixel art. Each arc holds for one step (a sixteenth
+// of a second) then jumps somewhere else.
+UI.ZAP_CORE = [255, 253, 232];
+UI.ZAP_GLOW = [255, 214, 64];
+UI._zapPix = (px, py, size, c, op) => UI.R(Math.round(px / 2) * 2 - size / 2, Math.round(py / 2) * 2 - size / 2, size, size, c, op);
+// A zigzag from (ax, ay) to (bx, by), bowing out by up to `amp` along
+// (nx, ny).
+UI._zap = (step, ax, ay, bx, by, nx, ny, amp, seed) => {
+  const n = 5, pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, bow = Math.sin(t * Math.PI) * amp;
+    const wob = i === 0 || i === n ? 0 : (UI._hash(step, seed + i) - 0.5) * amp;
+    pts.push([ax + (bx - ax) * t + nx * (bow + wob), ay + (by - ay) * t + ny * (bow + wob)]);
+  }
+  // amber edge, yellow body, white core: reads on the paper card and on a dark room alike
+  for (const [size, c, op] of [[6, UI.SPECIAL_CHROME[5], 0.45], [4, UI.ZAP_GLOW, 0.95], [2, UI.ZAP_CORE, 1]]) {
+    for (let i = 0; i < n; i++) {
+      const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+      const len = Math.max(1, Math.round(Math.hypot(x2 - x1, y2 - y1) / 2));
+      for (let k = 0; k <= len; k++) UI._zapPix(x1 + (x2 - x1) * k / len, y1 + (y2 - y1) * k / len, size, c, op);
+    }
+  }
+};
+UI.buzz = (x, y, w, h, step) => {
+  const H = (i) => UI._hash(step, i);
+  const arcs = 2 + (H(1) < 0.5 ? 1 : 0);
+  for (let a = 0; a < arcs; a++) {
+    const top = H(10 + a) < 0.5;
+    const span = 14 + H(20 + a) * Math.min(40, w * 0.3);
+    const x1 = x + H(30 + a) * (w - span);
+    const ey = top ? y : y + h;
+    UI._zap(step, x1, ey, x1 + span, ey, 0, top ? -1 : 1, 5 + H(40 + a) * 6, 100 + a * 10);
+  }
+  // now and then one leaps off an end of the bar instead
+  if (H(2) < 0.35) {
+    const left = H(3) < 0.5, ex = left ? x : x + w, cy = y + h / 2;
+    UI._zap(step, ex, cy - 3, ex, cy + 3, left ? -1 : 1, 0, 8 + H(4) * 6, 200);
+  }
+  // sparks thrown clear of the edges
+  for (let i = 0; i < 4; i++) {
+    const sx = x + H(50 + i) * w, top = H(60 + i) < 0.5;
+    UI._zapPix(sx, top ? y - 4 - H(70 + i) * 8 : y + h + 4 + H(70 + i) * 8, 2, H(90 + i) < 0.5 ? UI.ZAP_GLOW : UI.SPECIAL_CHROME[5], 0.7 + H(80 + i) * 0.3);
+  }
+  // and the bar itself flickers brighter
+  if (H(5) < 0.4) UI.R(x + 2, y + 2, w - 4, h - 4, UI.ZAP_CORE, 0.12 + H(6) * 0.18);
+};
+// The same round a circle (the phone's SP button).
+UI.buzzRing = (cx, cy, r, step) => {
+  const H = (i) => UI._hash(step, i);
+  const arcs = 2 + (H(1) < 0.5 ? 1 : 0);
+  for (let a = 0; a < arcs; a++) {
+    const a1 = H(10 + a) * Math.PI * 2, a2 = a1 + 0.35 + H(20 + a) * 0.5, am = (a1 + a2) / 2;
+    UI._zap(step, cx + Math.cos(a1) * r, cy + Math.sin(a1) * r, cx + Math.cos(a2) * r, cy + Math.sin(a2) * r,
+      Math.cos(am), Math.sin(am), 6 + H(40 + a) * 6, 100 + a * 10);
+  }
+  for (let i = 0; i < 4; i++) {
+    const t = H(50 + i) * Math.PI * 2, d = r + 5 + H(70 + i) * 10;
+    UI._zapPix(cx + Math.cos(t) * d, cy + Math.sin(t) * d, 2, H(90 + i) < 0.5 ? UI.ZAP_GLOW : UI.SPECIAL_CHROME[5], 0.7 + H(80 + i) * 0.3);
+  }
+};
+
 // ---------- HUD ----------
 
 // The companions' polaroids, top right. Screen positions from the kit.
@@ -700,36 +822,8 @@ UI.hud = () => {
       drawSprite({ sprite: filled ? "heart" : "heart-empty", pos: vec2(hx, hy), anchor: "center", scale: sc });
     }
 
-    // the wristband meter: white track in a 2px ink border, filled with
-    // 8px blocks a pixel apart. It fills in the special screens' gold
-    // chrome, not the UI's silver and blue (Ollie, 7 Oct), banded the same
-    // way, with a glint that sweeps along whatever is filled.
-    const mx = 24, my = 68, mw = cw - 20, mh = 13;
-    UI.R(mx - 2, my - 2, mw + 4, mh + 4, UI.INK);
-    UI.R(mx, my, mw, mh, UI.WHITE);
-    const fw = Math.round((mw - 2) * hud.meterDisp);
-    const SC = UI.SPECIAL_CHROME;
-    for (let off = 0; off < fw; off += 9) {
-      const bw = Math.min(8, fw - off), bx = mx + 1 + off;
-      UI.R(bx, my + 1, bw, 1, SC[0]);
-      UI.R(bx, my + 2, bw, 2, SC[3]);
-      UI.R(bx, my + 4, bw, 4, SC[1]);
-      UI.R(bx, my + 8, bw, 3, SC[5]);
-      UI.R(bx, my + 11, bw, 1, SC[2]);
-    }
-    // the glint: a slanted sliver of light, quicker once the meter is full
-    if (fw > 0) {
-      const period = r.meter >= 1 ? 1.1 : 2.4;
-      const gx = mx + 1 - 12 + ((time() % period) / period) * (fw + 24);
-      for (let row = 1; row < 12; row++) {
-        const sx = Math.round(gx + (12 - row) * 0.5);
-        for (let off = 0; off < fw; off += 9) {
-          const bx = mx + 1 + off, bw = Math.min(8, fw - off);
-          const a = Math.max(sx, bx), b = Math.min(sx + 3, bx + bw);
-          if (b > a) UI.R(a, my + row, b - a, 1, SC[0], 0.85);
-        }
-      }
-    }
+    // the wristband meter (UI.specialMeter): gold, and crackling once full
+    UI.specialMeter(24, 68, cw - 20, hud.meterDisp, r.meter >= 1);
     if (r.shield > 0) {
       UI.label("cosy shield " + r.shield.toFixed(1) + "s", 26, L.y + L.h + 6, { color: [140, 185, 235] });
     }
@@ -833,6 +927,7 @@ UI.hud = () => {
       drawCircle({ pos: bp, radius: 41.5, fill: false, outline: { width: 5, color: UI.rgb(UI.SPECIAL_CHROME[1]) }, opacity: op });
       drawCircle({ pos: bp, radius: 38.5, fill: false, outline: { width: 1.5, color: UI.rgb(UI.SPECIAL_CHROME[5]) }, opacity: op });
       UI.label("SP", bp.x, bp.y + 1, { size: 16, anchor: "center", color: UI.SPECIAL_CHROME[2], shadow: false, opacity: op });
+      if (ready) UI.buzzRing(bp.x, bp.y, 46, Math.floor(time() * 16));
     }
 
     // ===== desktop crosshair: ring + dot =====
@@ -844,6 +939,90 @@ UI.hud = () => {
   });
 
   return hud;
+};
+
+// ---------- teaching the special ----------
+// Straight after the first friend's collection screen, once a run: a paper
+// card that explains the special (Ollie, 13 Oct 2026). Play stays paused
+// until any key or a tap, accepted after a beat so a key still held from
+// the fight does not throw it away unread. The meter on it is the HUD's own
+// bar, filling and crackling on a loop. `c` is the friend who just joined.
+UI.specialTutorial = (c, onDone) => {
+  const touch = isTouchscreen();
+  const W = 640, CX = G.W / 2;
+  const LINE = { font: UI.VT, size: 32, width: W - 72, align: "center" };
+  const lines = [
+    "Hit things to fill your special meter.",
+    touch
+      ? "When it's full, tap SP for " + c.name + "'s special move."
+      : "When it's full, press SPACE for " + c.name + "'s special move.",
+  ];
+  const hint = touch
+    ? "With more friends, tap a polaroid to choose whose special it is."
+    : "With more friends, Q / E or 1 to 4 chooses whose special it is.";
+  const hgt = (str, o) => UI.measure(str, o.font, o.size, o).height;
+  const HINT = { font: UI.VT, size: 16, width: W - 72, align: "center" };
+  const METER_W = 300, GAP = 18;
+  const H = 28 + 24 + GAP + hgt(lines[0], LINE) + GAP + 13 + GAP + hgt(lines[1], LINE) + 12 + hgt(hint, HINT) + GAP + 20 + 22;
+  const Y0 = Math.round(G.H / 2 - H / 2);
+
+  G.paused = true;
+  let t = 0, leaving = -1;
+  const root = add([fixed(), z(220), pos(0, 0)]);
+  root.onUpdate(() => {
+    t += dt();
+    if (leaving >= 0 && t - leaving > 0.2) {
+      root.destroy();
+      for (const h of handlers) h.cancel();
+      G.paused = false;
+      if (onDone) onDone();
+    }
+  });
+  root.onDraw(() => {
+    const inK = UI.ease(Math.min(1, t / 0.25));
+    const op = leaving >= 0 ? Math.max(0, 1 - (t - leaving) / 0.2) : inK;
+    UI.R(0, 0, G.W, G.H, UI.INK, 0.55 * op);
+    const y0 = Y0 + Math.round((1 - inK) * 24);
+    UI.card(vec2(CX - W / 2, y0), W, H, { drop: 4, opacity: op });
+    let y = y0 + 28;
+    // the heading in the special screens' gold chrome
+    const tw = Math.ceil(UI.measure("SPECIAL MOVES", UI.PX, 24).width);
+    UI.chromeText("SPECIAL MOVES", CX - tw / 2, y, 24, op, UI.SPECIAL_CHROME);
+    y += 24 + GAP;
+    const o = (extra) => Object.assign({}, extra, { color: UI.TEXT, anchor: "top", opacity: op });
+    UI.text(lines[0], CX, y, o(LINE));
+    y += hgt(lines[0], LINE) + GAP;
+    // the bar fills over 1.6s, crackles full for 1.8s, empties, again
+    const cyc = t % 3.8;
+    const k = cyc < 1.6 ? UI.ease(cyc / 1.6) : cyc < 3.4 ? 1 : 1 - (cyc - 3.4) / 0.4;
+    const full = cyc >= 1.6 && cyc < 3.4;
+    if (op > 0.6) UI.specialMeter(CX - METER_W / 2, y, METER_W, k, full);
+    y += 13 + GAP;
+    UI.text(lines[1], CX, y, o(LINE));
+    y += hgt(lines[1], LINE) + 12;
+    UI.text(hint, CX, y, Object.assign(o(HINT), { color: UI.BLUE_DEEP }));
+    y += hgt(hint, HINT) + GAP;
+    if (t > 0.9 && leaving < 0) {
+      UI.chip(touch ? "tap to carry on" : "press any key", CX, y + 10, {
+        anchor: "center", opacity: op * (0.7 + Math.sin(time() * 3.2) * 0.3),
+      });
+    }
+  });
+  const dismiss = () => {
+    if (t < 0.9 || leaving >= 0 || UI.pauseOpen) return;
+    leaving = t;
+    SFX.play("uiconfirm");
+  };
+  const b = UI.PAUSE_BTN;
+  const handlers = [
+    onKeyPress((key) => { if (key !== "escape" && key !== "p") dismiss(); }),
+    onMousePress(() => {
+      const m = mousePos();
+      if (m.x >= b.x && m.x <= b.x + b.w && m.y >= b.y && m.y <= b.y + b.h) return;
+      dismiss();
+    }),
+  ];
+  SFX.play("uitick");
 };
 
 // ---------- input wiring (called once per gameplay scene) ----------

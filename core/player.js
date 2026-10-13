@@ -70,7 +70,9 @@ PLAYER.make = (spawnPos) => {
     p.opacity = p.iframes > 0 ? 0.5 + Math.sin(time() * 30) * 0.3 : 1;
 
     // --- special meter trickle ---
-    G.run.meter = Math.min(1, G.run.meter + 0.012 * s.chargeRate * dt());
+    // Only once a friend has joined: until then there is nobody to do a
+    // special, so the bar stays empty (Ollie, 13 Oct 2026).
+    if (G.run.companions.length > 0) G.run.meter = Math.min(1, G.run.meter + 0.012 * s.chargeRate * dt());
 
     // ding once when the special meter fills
     if (G.run.meter >= 1 && !p.meterWasFull && G.run.companions.length > 0) SFX.play("ready");

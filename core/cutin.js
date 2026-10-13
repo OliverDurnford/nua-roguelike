@@ -22,18 +22,22 @@ const CUTIN = {};
 // friend) and 3 the far layer. Depth drives all three of: how far a layer
 // travels in, how fast it cruises, and how late it arrives. dir is +1 for
 // a layer moving rightwards (so it entered from the left), -1 for leftwards.
+// Ollie, 13 Oct 2026: there is a lot to read now, so the screen holds
+// longer (5.0 to 6.5s). The cruise speeds came down in proportion, so each
+// layer ends the hold where it always did and the compositions he approved
+// are unchanged; they just drift more slowly.
 CUTIN.JOIN = {
   LAYERS: [
-    { travel: 1100, cruise: 26, dir: 1 },
-    { travel: 520, cruise: 17, dir: -1 },
-    { travel: 320, cruise: 11, dir: 1 },
-    { travel: 180, cruise: 5, dir: -1 },
+    { travel: 1100, cruise: 19, dir: 1 },
+    { travel: 520, cruise: 12, dir: -1 },
+    { travel: 320, cruise: 8, dir: 1 },
+    { travel: 180, cruise: 4, dir: -1 },
   ],
   ENTER_DUR: 0.44,   // how long a layer takes to come in
   EXIT_DUR: 0.45,    // how long its acceleration away lasts
   STAGGER: 0.06,     // gap between consecutive layers
   EXIT_MULT: 1.6,    // exit travel, as a multiple of entry travel
-  TOTAL: 5.0,        // the whole screen, in seconds (Ollie, 20 Sep)
+  TOTAL: 6.5,        // the whole screen, in seconds (Ollie: 5.0 on 20 Sep, 6.5 on 13 Oct)
   FADE_IN: 0.12,
   FADE_OUT: 0.22,
   LINES: 1,          // speed line speed, as a multiple of the base

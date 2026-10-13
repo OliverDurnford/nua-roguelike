@@ -36,7 +36,12 @@ COMPANIONS.spawnFollowers = (player) => {
 
 COMPANIONS.addFollower = (player, id, spawnAt) => {
   const i = G.followers.length;
-  const start = spawnAt || player.pos.add(-(i + 1) * G.charH(0.76), G.charH(0.38));
+  // Everyone comes into a room stood on the player's own spot and walks out
+  // from there, one after another as the chain pays out. A spot set off to
+  // the side could land in a wall or off the edge of the room, and a friend
+  // stuck there popped in later (Ollie, 13 Oct 2026). The player's spot is
+  // always clear floor, and being a touch shorter they stand just behind.
+  const start = spawnAt || player.pos.clone();
   const h = G.charH(0.86);
   const f = add([
     ...ART.charComps(id, h),   // a touch smaller than you, so you read as the lead
@@ -129,11 +134,19 @@ COMPANIONS.recruit = (id) => {
   // The collection screen: four parallax layers, their name in the title's
   // chrome, their stat boost and their line. core/cutin.js raises and drops
   // G.paused itself.
-  CUTIN.play(CUTIN.forJoin(c), () => {
+  const after = () => {
     COMPANIONS.checkPairs();
     // The screen has already given them their recruit line; this is the
     // first thing they say once they are actually stood next to you.
     wait(0.8, () => SPEECH.fire("join", { by: id }));
+  };
+  // The first friend of a run brings the special with them, so a card
+  // explaining it follows their screen (Ollie, 13 Oct 2026).
+  const first = G.run.companions.length === 1 && !G.run.specialTaught;
+  CUTIN.play(CUTIN.forJoin(c), () => {
+    if (!first) return after();
+    G.run.specialTaught = true;
+    UI.specialTutorial(c, after);
   });
 };
 

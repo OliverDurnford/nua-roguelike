@@ -177,12 +177,17 @@ const CHAPTERS = [
     num: 4, title: "EARLY LONDON", era: "The move, lockdown, first steps",
     year: 2020, lanyard: "LONDON 2020",   // the HUD lanyard card (12 chars max) and the title card - PLACEHOLDER wording, Ollie's call
     enemySet: [
-      { type: "chaser",  name: "Covid Particle", id: "covid",  color: [110, 200, 90] },
       { type: "shooter", name: "Estate Agent", id: "agent",    color: [70, 110, 190] },
       { type: "brute",   name: "Moving Box", id: "box",      color: [170, 130, 80] },
       { type: "runner",  name: "Lockdown Jogger", id: "jogger", color: [230, 230, 70] },
     ],
-    boss: { name: "THE COVID", id: "covid_boss", hp: 190, size: G.charH(2.2), color: [80, 180, 70], patterns: ["spiral", "spawn", "radial"], speed: 42 },
+    // The little COVIDs only ever come with the big one, and nothing else
+    // joins that fight (Ollie, 13 Oct 2026).
+    boss: { name: "COVID", id: "covid_boss", hp: 190, size: G.charH(2.2), color: [80, 180, 70], patterns: ["spiral", "spawn", "radial"], speed: 42,
+      minions: ["covid"] },
+    extraEnemies: [
+      { type: "chaser",  name: "Covid Particle", id: "covid",  color: [110, 200, 90] },
+    ],
     areas: [
       {
         name: "The Train Carriage", feel: "long, narrow, confined", enemyBudget: 7, sidescroll: true,

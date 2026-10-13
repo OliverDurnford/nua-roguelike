@@ -66,7 +66,20 @@ scene("tutorial", () => {
   let batterMark = null;
   let ballFocus = null;  // where the ball is while it flies, for the camera
   let cam = null;        // the camera's smoothed position
-  const WIDE = Math.min(G.W / m.w, G.H / m.h);   // zoom that fits the whole park
+  // How far the camera pulls back once the ground goes: until the park
+  // fills the screen edge to edge, and no further. Fitting ALL of it left
+  // black bands down the sides, and on a phone the friends were specks
+  // (Ollie, 13 Oct 2026). The park is taller than the screen's shape, so
+  // a strip top and bottom stays off screen; the fielders all fit inside.
+  const WIDE = Math.min(1, Math.max(G.W / m.w, G.H / m.h));
+  const wideCentre = () => {
+    const vw = G.W / WIDE, vh = G.H / WIDE;
+    // the middle of everyone still standing, held inside the park
+    const ps = friends.filter((f) => f.exists()).map((f) => f.pos).concat([player.pos]);
+    const mid = ps.reduce((a, p) => a.add(p), vec2(0)).scale(1 / ps.length);
+    return vec2(G.clamp(mid.x, vw / 2, m.w - vw / 2), G.clamp(mid.y, vh / 2, m.h - vh / 2));
+  };
+  let wideAt = null;     // fixed once, as the ground goes
   let wideK = 0;         // 0 in close on the player, 1 pulled back to the park
 
   // --- the throw ---
@@ -106,6 +119,8 @@ scene("tutorial", () => {
   const placed = [];   // what CRACKS.spot needs to keep them apart
   const quake = () => {
     st = 3;
+    // the music turns with the ground: Ollie's cue for the cracks
+    SOUNDTRACK.playById("the-cracks", 0, 0.3);
     UI.subtitleSeq(["...that wasn't the car.", "What IS that?!"]);
     for (let i = 0; i < 9; i++) {
       wait(i * 0.18, () => {
@@ -196,10 +211,11 @@ scene("tutorial", () => {
     // would be dragged under off the edges of the frame, and the whole
     // point of the beat is watching it happen to everybody.
     if (st >= 3) {
+      if (!wideAt) wideAt = wideCentre();
       wideK = Math.min(1, wideK + dt() / 1.4);
       const k = UI.ease(wideK);
       camScale(vec2(1 + (WIDE - 1) * k));
-      camPos(cam.lerp(vec2(m.w / 2, m.h / 2), k));
+      camPos(cam.lerp(wideAt, k));
     }
 
     if (st === 0 && player.pos.dist(startPos) > 70) {

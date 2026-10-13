@@ -206,7 +206,7 @@ FINALE.bury = (stand) => {
   }));
   wait(0.15 + 5 * 0.32 + 0.3, () => {
     const pile = FINALE.duty("pile", G.charH(2.6));
-    const p = FINALE.fall([...pile.comps, "bossPile", { speechLift: pile.h + 6, drawH: pile.h }], feet, zf + 0.3, () => {
+    const p = FINALE.fall([...pile.comps, "bossPile", { speechLift: pile.h + 6, drawH: pile.h, bossId: "oldage" }], feet, zf + 0.3, () => {
       shake(12);
       SFX.play("bossdie");
       UI.pop(feet.add(0, -pile.h * 0.4), [200, 190, 170], 50);
