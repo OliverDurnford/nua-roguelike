@@ -44,6 +44,14 @@ FINALE.due = (frac, said) => {
 // cackle until then, or null (a wobble) with no Busy sheet at all.
 FINALE.laughAnim = (anims) => (anims && anims.skylaugh ? "skylaugh" : anims && anims.cackle ? "cackle" : null);
 
+// Is p inside a viewW x viewH view centred on cam at this zoom, with
+// margins in screen px (top clears the HUD band)? Pure, for the tests.
+FINALE.inView = (p, cam, zoom, viewW, viewH, top, side, bottom) => {
+  const hw = viewW / 2 / zoom, hh = viewH / 2 / zoom;
+  return p.x >= cam.x - hw + side / zoom && p.x <= cam.x + hw - side / zoom &&
+    p.y >= cam.y - hh + top / zoom && p.y <= cam.y + hh - bottom / zoom;
+};
+
 // Who speaks for the script's roles: you, one caged friend, two different
 // friends from your group (never you), and everyone together.
 FINALE.pickRoles = (you, caged, group, rnd = Math.random) => {
@@ -228,6 +236,23 @@ FINALE.laugh = (boss, done) => {
   wait(FINALE.LAUGH_T, () => { FINALE.stopCackle(boss); done(); });
 };
 
+// A line from Busy You during the fight, said only once their bubble
+// would be seen: the boss can be off the top of the screen or under the HUD
+// (a retry starts with the camera on you, the boss at the top of the park).
+// Given up after `limit` seconds of play without them in view.
+FINALE.sayWhenSeen = (boss, text, limit = 6) => {
+  let t = 0;
+  const h = boss.onUpdate(() => {
+    if (G.paused || G.cutscene) return;
+    t += dt();
+    const top = boss.pos.sub(0, FINALE.HEAD() + 50);   // the top of a two-line bubble
+    if (FINALE.inView(top, camPos(), camScale().y || 1, G.W, G.H, 70, 120, 40)) {
+      SPEECH.speak("boss:oldage", text);
+      h.cancel();
+    } else if (t > limit) h.cancel();
+  });
+};
+
 // The two mid-fight lines, once each an attempt, as the boss's health
 // passes two thirds and one third. Play never stops for them.
 FINALE.watch = (boss) => {
@@ -237,9 +262,11 @@ FINALE.watch = (boss) => {
     const k = FINALE.due(boss.hp / boss.maxHp, said);
     if (!k) return;
     const line = typeof FINALE_SCRIPT[k] === "string" ? { say: FINALE_SCRIPT[k] } : FINALE_SCRIPT[k];
-    const say = () => { if (boss.exists() && !G.cutscene) SPEECH.speak("boss:oldage", line.say); };
-    if (line.ring) { SFX.play("ring"); wait(0.75, () => SFX.play("ring")); wait(1.0, say); }
-    else say();
+    if (line.ring) {
+      SFX.play("ring");
+      wait(0.75, () => { if (boss.exists()) SFX.play("ring"); });
+      wait(1.0, () => { if (boss.exists()) FINALE.sayWhenSeen(boss, line.say); });
+    } else FINALE.sayWhenSeen(boss, line.say);
   });
 };
 
@@ -257,18 +284,20 @@ FINALE.start = (m, player, ch, areaNum, onFight, opts = {}) => {
   FINALE.wide = Math.max(0.3, Math.min(1, fit) * 0.85);   // the room reveal's own pull-back
   const boss = get("boss")[0];
   boss.speechLift = FINALE.BOSS_H() * 0.55;   // bubbles clear the boss's head
+  // quitting mid-cutscene (the opening, or the ending of any attempt, a
+  // retried one too) must not leave it on into the next run
+  onSceneLeave(() => { G.cutscene = false; });
   if (opts.retry) {
     dir.cut(player.pos, 1);
     G.paused = false;
     G.cutscene = false;
     onFight();
     FINALE.watch(boss);
-    wait(1.0, () => { if (boss.exists()) SPEECH.speak("boss:oldage", FINALE_SCRIPT.retry); });
+    wait(1.0, () => { if (boss.exists()) FINALE.sayWhenSeen(boss, FINALE_SCRIPT.retry); });
     return dir;
   }
   G.paused = true;
   G.cutscene = true;
-  onSceneLeave(() => { G.cutscene = false; });   // quitting mid-cutscene must not leave it on
   dir.cut(player.pos, 1);
   // the camera rides FINALE.cam through the scene, gliding to each speaker
   const cam = FINALE.cam(boss.pos);
