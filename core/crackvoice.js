@@ -102,6 +102,14 @@ CRACKVOICE.stepTime = (s, text, pace = 1) => {
   return { type, end: type + CRACKVOICE.hold(s) / pace };
 };
 
+// A centre y for something halfH tall (world px), kept inside the view and
+// clear of the black bars, at any zoom: the view and the bars both shrink
+// in the world as the camera zooms in (the finale talks at 1.15).
+CRACKVOICE.betweenBars = (y, halfH, camY, zoom, viewH) => {
+  const half = viewH / 2 / zoom, B = CRACKVOICE.BAR / zoom;
+  return Math.min(Math.max(y, camY - half + B + 8 / zoom + halfH), camY + half - B - 16 / zoom - halfH);
+};
+
 // ---------- sounds ----------
 // Kept here, not in core/sfx.js: a low murmur under the typing, a lighter
 // one under an aside, the laugh's "ha" and a phone's trill.
@@ -271,10 +279,10 @@ CRACKVOICE.note = (from, lift = G.charH(0.5), label = "???") => {
   };
   n.onUpdate(() => {
     n.op += (n.want - n.op) * Math.min(1, dt() * 14);
-    const f = where(), c = camPos(), B = CRACKVOICE.BAR;
+    const f = where(), c = camPos(), sc = camScale().x || 1, hw = G.W / 2 / sc - 12 / sc;
     n.pos = vec2(
-      G.clamp(f.x, c.x - G.W / 2 + n.w / 2 + 12, c.x + G.W / 2 - n.w / 2 - 12),
-      G.clamp(f.y - lift - n.h / 2, c.y - G.H / 2 + B + n.h / 2 + 8, c.y + G.H / 2 - B - n.h / 2 - 16),
+      G.clamp(f.x, c.x - hw + n.w / 2, c.x + hw - n.w / 2),
+      CRACKVOICE.betweenBars(f.y - lift - n.h / 2, n.h / 2, c.y, sc, G.H),
     );
   });
   n.onDraw(() => {

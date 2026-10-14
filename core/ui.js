@@ -392,6 +392,11 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
         root.pos.x = G.clamp(root.pos.x, w / 2 + 10, Math.max(w / 2 + 10, G.mapBounds.x2 - w / 2 - 10));
         root.pos.y = Math.max(root.pos.y, h / 2 + 10);
       }
+      // in a story beat the black bars cover the top and bottom of the view
+      // (core/crackvoice.js): a caged friend's bubble went under them
+      if (G.cutscene && !o.fixed && typeof CRACKVOICE !== "undefined") {
+        root.pos.y = CRACKVOICE.betweenBars(root.pos.y, h / 2, camPos().y, camScale().y || 1, G.H);
+      }
     }
     // A collection screen raises G.paused while it plays, so its own note
     // has to keep running or it never fades up. Field bubbles still freeze

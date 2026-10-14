@@ -50,9 +50,10 @@ const FINALE_SCRIPT = {
   twoThirds: "Let's circle back to you giving up!",
   oneThird: { ring: true, say: "Mike, I'm fighting MYSELF. Can I call you back?" },
 
-  // Busy You down, in the hurt pose
+  // Busy You down, in the hurt pose. The pile does the cutting off, so the
+  // words stay up to be read while it lands.
   fall: [
-    { say: "Go on then. But blink, [name], and it'll be ten years, and you'll never...", cut: true, then: "bury" },
+    { say: "Go on then. But blink, [name], and it'll be ten years, and you'll never...", then: "bury" },
   ],
 
   // the cages open, everyone round you
