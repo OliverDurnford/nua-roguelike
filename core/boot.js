@@ -86,14 +86,16 @@ G.BASE_STATS = {
 // Start a fresh run with the chosen character.
 // Picks which 4 of the other 9 friends appear this run, one per chapter 1-4.
 G.newRun = (charId) => {
-  const others = CHARACTERS.filter((c) => c.id !== charId).map((c) => c.id);
+  const run = { charId };
+  // which run this is on the device, nothing found yet, and whose Busy You
+  // waits at the end (core/bonus.js); the recruits never include that friend
+  const others = BONUS.startRun(run, () => rand(0, 1));
   // shuffle
   for (let i = others.length - 1; i > 0; i--) {
     const j = Math.floor(rand(0, i + 1));
     [others[i], others[j]] = [others[j], others[i]];
   }
-  G.run = {
-    charId,
+  G.run = Object.assign(run, {
     companions: [],                 // ids, in recruitment order
     plan: { 1: others[0], 2: others[1], 3: others[2], 4: others[3] },
     selected: 0,                    // index into companions[]
@@ -106,8 +108,12 @@ G.newRun = (charId) => {
     deaths: 0,
     specialsUsed: 0,
     startTime: Date.now(),
-  };
+  });
 };
+
+// Whose Busy You the finale is: the player's own, or for a bonus player one
+// of the ten picked at the start of the run. An old save has no busyId.
+G.busyId = () => (G.run && G.run.busyId) || (G.run && G.run.charId);
 
 // Current effective stats = base + every recruited companion's passive.
 G.stats = () => {
