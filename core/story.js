@@ -16,7 +16,7 @@
 
 const STORY = { KEY: "tenyears-story" };
 
-STORY.blank = () => ({ v: 1, found: [], finished: [], wins: 0 });
+STORY.blank = () => ({ v: 1, found: [], finished: [], wins: 0, bonus: [], runs: 0 });
 
 STORY.get = () => {
   try {
@@ -24,6 +24,9 @@ STORY.get = () => {
     if (!s || s.v !== 1 || !Array.isArray(s.found) || !Array.isArray(s.finished)) {
       return STORY.blank();
     }
+    // saves from before the bonus characters (14 Oct 2026)
+    if (!Array.isArray(s.bonus)) s.bonus = [];
+    if (typeof s.runs !== "number") s.runs = 0;
     return s;
   } catch (e) { return STORY.blank(); }
 };
@@ -59,6 +62,26 @@ STORY.met = (charId) => {
   if (charId) ids.add(charId);
   return CHARACTERS.filter((c) => ids.has(c.id));
 };
+
+// A new run started from character select: count it, so the bonus
+// characters' allowance knows which run this is (core/bonus.js).
+STORY.nextRun = () => {
+  const s = STORY.get();
+  s.runs += 1;
+  STORY.set(s);
+  return s.runs;
+};
+
+// A bonus character found: theirs for good on this device. True if new.
+STORY.unlockBonus = (id) => {
+  const s = STORY.get();
+  if (s.bonus.includes(id)) return false;
+  s.bonus.push(id);
+  STORY.set(s);
+  return true;
+};
+
+STORY.bonusUnlocked = () => STORY.get().bonus.slice();
 
 STORY.clear = () => {
   try { localStorage.removeItem(STORY.KEY); } catch (e) {}
