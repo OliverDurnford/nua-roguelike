@@ -26,7 +26,9 @@ FINALE.CAGED_H = () => G.charH(0.86);   // a follower's height, so the release i
 
 FINALE.setup = (m, plate) => {
   const caged = CHARACTERS
-    .filter((c) => c.id !== G.run.charId && !G.run.companions.includes(c.id))
+    // not you, not your recruits, and not the friend whose Busy You this is
+    // (one of the ten when you play a bonus character)
+    .filter((c) => c.id !== G.run.charId && c.id !== G.busyId() && !G.run.companions.includes(c.id))
     .slice(0, 5);
   caged.forEach((c, i) => {
     const [gx, gy] = FINALE.CAGES[i];
@@ -177,7 +179,7 @@ FINALE.start = (m, player, ch, areaNum, onFight, opts = {}) => {
 // The cackle: their own two cackle frames once their Busy sheet is built, a
 // wobble until then. A small shake and a "HA!" on every head-back beat.
 FINALE.cackle = (boss) => {
-  const anims = ART.bossAnims(G.run.charId);
+  const anims = ART.bossAnims(G.busyId());
   const real = !!(anims && anims.cackle);
   if (real) boss.play("cackle");
   let last = -1, n = 0, t = 0;
@@ -205,7 +207,7 @@ FINALE.stopCackle = (boss) => {
   if (boss._cackle) { boss._cackle.cancel(); boss._cackle = null; }
   if (!boss.exists()) return;
   boss.angle = 0;
-  if (ART.bossAnims(G.run.charId)) boss.play("idle");
+  if (ART.bossAnims(G.busyId())) boss.play("idle");
 };
 
 // ---------- the ending ----------
@@ -249,7 +251,7 @@ FINALE.win = (player, snap) => {
 // Busy You as they went down: their hurt frame where the boss stood, or the
 // old-age still for a friend whose Busy sheet is not built yet.
 FINALE.standIn = (snap) => {
-  const id = G.run.charId;
+  const id = G.busyId();
   const s = add([...ART.charComps(id, FINALE.BOSS_H(), ART.bossVariant(id)), pos(snap.pos), opacity(1), z(snap.z), "busyStandIn"]);
   s.flipX = snap.flipX;
   const anims = ART.bossAnims(id);

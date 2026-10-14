@@ -507,7 +507,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   // --- boss areas ---
   if (a.boss) {
     const finaleOpts = a.finale
-      ? { finale: true, name: "BUSY " + G.playerChar().name.toUpperCase() }
+      ? { finale: true, name: "BUSY " + G.char(G.busyId()).name.toUpperCase() }
       : {};
     ENEMIES.spawnBoss(ch, m.bossSpawn, finaleOpts);
     // The boss's opening line comes once the room's name has gone (see the

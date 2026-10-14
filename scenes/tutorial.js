@@ -31,7 +31,9 @@ scene("tutorial", () => {
   // than a group standing about. Who plays where is shuffled each run,
   // and everyone is nudged a few pixels off their mark so the side is
   // not pegged out with a ruler.
-  const others = CHARACTERS.filter((c) => c.id !== G.run.charId);
+  // A batter and eight fielders. A bonus player leaves all ten free, so the
+  // friend whose Busy You waits at the end is the one missing from the game.
+  const others = CHARACTERS.filter((c) => c.id !== G.run.charId && c.id !== G.busyId()).slice(0, 9);
   const batterPos = pt(PARK_PLATE.batter);
   const friends = [];
 
