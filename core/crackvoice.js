@@ -244,12 +244,14 @@ CRACKVOICE.seg = (s, name) => {
   };
 };
 
-// The dark note: "???" over the words, a tail down to the crack, kept in
-// view and clear of the bars. A cut-off line keeps its place above
-// whatever barges in under it.
-CRACKVOICE.note = (from) => {
+// The dark note: a name tag ("???" until a reveal) over the words, a tail
+// down to whatever it hangs from (a spot, or a function giving one each
+// frame), kept in view and clear of the bars. A cut-off line keeps its
+// place above whatever barges in under it.
+CRACKVOICE.note = (from, lift = G.charH(0.5), label = "???") => {
+  const where = typeof from === "function" ? from : () => from;
   // op eases in and out; k is a fade laid over it (Mike's line)
-  const n = add([pos(from), z(150), { segs: [], op: 0, want: 0, k: 1, w: 0, h: 0 }]);
+  const n = add([pos(where()), z(150), { segs: [], op: 0, want: 0, k: 1, w: 0, h: 0, label }]);
   const TOP = 8 + 8 + 6, BOT = 11, GAP = 6;
   n.set = (segs) => {
     n.segs = segs;
@@ -262,10 +264,10 @@ CRACKVOICE.note = (from) => {
   };
   n.onUpdate(() => {
     n.op += (n.want - n.op) * Math.min(1, dt() * 14);
-    const c = camPos(), B = CRACKVOICE.BAR;
+    const f = where(), c = camPos(), B = CRACKVOICE.BAR;
     n.pos = vec2(
-      G.clamp(from.x, c.x - G.W / 2 + n.w / 2 + 12, c.x + G.W / 2 - n.w / 2 - 12),
-      G.clamp(from.y - G.charH(0.5) - n.h / 2, c.y - G.H / 2 + B + n.h / 2 + 8, c.y + G.H / 2 - B - n.h / 2 - 16),
+      G.clamp(f.x, c.x - G.W / 2 + n.w / 2 + 12, c.x + G.W / 2 - n.w / 2 - 12),
+      G.clamp(f.y - lift - n.h / 2, c.y - G.H / 2 + B + n.h / 2 + 8, c.y + G.H / 2 - B - n.h / 2 - 16),
     );
   });
   n.onDraw(() => {
@@ -273,10 +275,10 @@ CRACKVOICE.note = (from) => {
     if (op < 0.01 || !n.segs.length) return;
     UI.card(vec2(0, 0), n.w, n.h, { center: true, fill: UI.VOICE_FILL, shade: UI.VOICE_RULE, drop: 3, opacity: op });
     // the tail points at the crack, wherever the note had to sit
-    const tx = G.clamp(from.x - n.pos.x, -n.w / 2 + 16, n.w / 2 - 16), ty = n.h / 2 + 1, d = 6.4;
+    const tx = G.clamp(where().x - n.pos.x, -n.w / 2 + 16, n.w / 2 - 16), ty = n.h / 2 + 1, d = 6.4;
     drawRect({ pos: vec2(tx, ty), width: 9, height: 9, anchor: "center", angle: 45, color: UI.rgb(UI.VOICE_FILL), opacity: op });
     drawLines({ pts: [vec2(tx - d, ty), vec2(tx, ty + d), vec2(tx + d, ty)], width: 2, color: UI.rgb(UI.INK), opacity: op });
-    UI.label("???", -n.w / 2 + 11, -n.h / 2 + 8, { size: 8, color: UI.VOICE_GLOW, shadow: false, opacity: op });
+    UI.label(n.label, -n.w / 2 + 11, -n.h / 2 + 8, { size: 8, color: UI.VOICE_GLOW, shadow: false, opacity: op });
     let y = -n.h / 2 + TOP;
     for (const s of n.segs) {
       drawText({
@@ -294,16 +296,27 @@ CRACKVOICE.note = (from) => {
   return n;
 };
 
-// Run the steps from the crack at `at`, then done().
-CRACKVOICE.play = (steps, at, done) => {
+// Run the steps from `at` (a spot, or a function giving one each frame for
+// something that moves, like the finale's boss), then done(). opts, all
+// optional, are the finale's (scenes/finale.js):
+//   lift    how far above `at` the note's tail ends (a crack: half a person)
+//   label   the note's name tag ("???"), and name, the tag after a reveal
+//   glow    false: no crack glowing underneath
+//   speak   (ids, text) says a `by` line (SPEECH.speak)
+//   look    (ids) as every step starts: who is talking, null for the voice
+//   anim    (name, end) plays an `anim` step and calls end() when done
+//   cue     (name) a step's `then`, `lead` seconds before its last letter
+CRACKVOICE.play = (steps, at, done, opts = {}) => {
+  const where = typeof at === "function" ? at : () => at;
   const name = G.playerChar().name;
-  const note = CRACKVOICE.note(at);
+  const speak = opts.speak || SPEECH.speak;
+  const note = CRACKVOICE.note(where, opts.lift, opts.label);
   // the crack glows the purple of a boss room's way on, brighter as it talks
-  const glow = add([
-    sprite("glow"), anchor("center"), pos(at), scale(G.charH(3.2) / 96, G.charH(1.2) / 96),
+  const glow = opts.glow === false ? { talk: 0, want: 1 } : add([
+    sprite("glow"), anchor("center"), pos(where()), scale(G.charH(3.2) / 96, G.charH(1.2) / 96),
     color(UI.rgb(UI.VOICE_GLOW)), opacity(0), z(1), { talk: 0, k: 0, want: 1 },
   ]);
-  glow.onUpdate(() => {
+  if (glow.onUpdate) glow.onUpdate(() => {
     glow.k += (glow.want - glow.k) * Math.min(1, dt() * 4);
     glow.opacity = glow.k * (0.22 + Math.sin(time() * 3) * 0.08 + glow.talk * 0.3);
     if (glow.want === 0 && glow.k < 0.01) destroy(glow);
@@ -326,16 +339,26 @@ CRACKVOICE.play = (steps, at, done) => {
     const s = steps[run.i];
     if (!s) { finish(); return; }
     const prev = steps[run.i - 1];
+    if (prev && prev.reveal && opts.name) note.label = opts.name;
+    const ids = s.by === undefined ? null : s.by === "you" ? [G.run.charId] : [].concat(s.by);
+    if (opts.look) opts.look(ids);
+    if (s.anim) {   // Busy You laughs at the sky, the note out of the way
+      note.want = 0;
+      run.end = Infinity;
+      if (opts.anim) opts.anim(s.anim, () => { run.t = 0; run.end = 0.3; });
+      else run.end = 0;
+      return;
+    }
     if (s.kiss) {
       note.want = 0;
       run.end = Infinity;
       CRACKVOICE.kiss(() => { run.t = 0; run.end = 0.5; });
       return;
     }
-    if (s.by) {   // you, or friends, in their own white notes
+    if (ids) {   // you, or friends, in their own white notes
       note.want = 0;
       const text = CRACKVOICE.fill(s.say, name);
-      SPEECH.speak(s.by === "you" ? G.run.charId : s.by, text);
+      speak(ids, text);
       run.end = CRACKVOICE.typeTime(text) + CRACKVOICE.hold(s);
       return;
     }
@@ -359,6 +382,11 @@ CRACKVOICE.play = (steps, at, done) => {
         if (seg.text[n - 1] !== " ") SFX.play(seg.s.small ? "voiceSmall" : "voice");
       }
       seg.shown = n;
+      // the finale's fall: the first thing lands on the last word
+      if (seg.s.then && !seg.cued && run.t >= CRACKVOICE.cueAt(seg.type, opts.lead || 0)) {
+        seg.cued = true;
+        if (opts.cue) opts.cue(seg.s.then);
+      }
       glow.talk = n < seg.text.length ? 1 : 0;
       // Mike fades away as he is typed, the note with him: gone just after
       // the last word
@@ -371,7 +399,7 @@ CRACKVOICE.play = (steps, at, done) => {
           glow.talk = 1;
           shake(2);
           SFX.play("ha");
-          UI.floatText(at.add(rand(-70, 70), -rand(0, 40)), "HA!", [255, 255, 255]);
+          UI.floatText(where().add(rand(-70, 70), -rand(0, 40)), "HA!", [255, 255, 255]);
         }
       }
     }
@@ -382,7 +410,7 @@ CRACKVOICE.play = (steps, at, done) => {
   const hurry = () => {
     if (UI.pauseOpen || !run.exists() || run.t < 0.2) return;
     const s = steps[run.i];
-    if (!s || s.kiss || s.ring) return;
+    if (!s || s.kiss || s.ring || s.anim) return;
     if (run.seg && run.t < run.seg.type) run.t = run.seg.type;
     else run.t = run.end;
   };
