@@ -95,6 +95,13 @@ CRACKVOICE.hold = (s) => {
   return 0.9 + (s.say || "").length * 0.024;
 };
 
+// One step's clock: how long its words take to type, and when the next
+// step starts. pace above 1 speeds both up (the finale's scenes are long).
+CRACKVOICE.stepTime = (s, text, pace = 1) => {
+  const type = s.ring ? 0 : CRACKVOICE.typeTime(text, CRACKVOICE.speed(s) * pace);
+  return { type, end: type + CRACKVOICE.hold(s) / pace };
+};
+
 // ---------- sounds ----------
 // Kept here, not in core/sfx.js: a low murmur under the typing, a lighter
 // one under an aside, the laugh's "ha" and a phone's trill.
@@ -306,7 +313,9 @@ CRACKVOICE.note = (from, lift = G.charH(0.5), label = "???") => {
 //   look    (ids) as every step starts: who is talking, null for the voice
 //   anim    (name, end) plays an `anim` step and calls end() when done
 //   cue     (name) a step's `then`, `lead` seconds before its last letter
+//   pace    above 1 types and moves on faster (CRACKVOICE.stepTime)
 CRACKVOICE.play = (steps, at, done, opts = {}) => {
+  const pace = opts.pace || 1;
   const where = typeof at === "function" ? at : () => at;
   const name = G.playerChar().name;
   const speak = opts.speak || SPEECH.speak;
@@ -359,7 +368,7 @@ CRACKVOICE.play = (steps, at, done, opts = {}) => {
       note.want = 0;
       const text = CRACKVOICE.fill(s.say, name);
       speak(ids, text);
-      run.end = CRACKVOICE.typeTime(text) + CRACKVOICE.hold(s);
+      run.end = CRACKVOICE.stepTime(s, text, pace).end;
       return;
     }
     const seg = CRACKVOICE.seg(s, name);
@@ -367,7 +376,10 @@ CRACKVOICE.play = (steps, at, done, opts = {}) => {
     if (!keep) note.op = 0;   // a fresh note fades up
     note.set(keep ? note.segs.concat([seg]) : [seg]);
     run.seg = seg;
-    run.end = seg.type + CRACKVOICE.hold(s);
+    const clock = CRACKVOICE.stepTime(s, seg.text, pace);
+    seg.speed *= pace;
+    seg.type = clock.type;
+    run.end = clock.end;
     if (s.ring) { SFX.play("ring"); wait(0.75, () => SFX.play("ring")); }
   };
   run.onUpdate(() => {
