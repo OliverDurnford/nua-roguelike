@@ -57,3 +57,119 @@ BONUS.startRun = (run, rnd) => {
   run.busyId = isBonus ? ten[Math.floor(rnd() * ten.length) % ten.length] : run.charId;
   return ten.filter((id) => id !== run.charId && id !== run.busyId);
 };
+
+// ---------- in the room (browser only) ----------
+
+BONUS.SEE = () => G.charH(2);      // closer than this and they fade in
+BONUS.FADE = 0.5;                  // seconds to fade in or out
+
+// Put this room's bonus character on their spot, hidden, if anyone is due.
+// Returns true when the room's NPC must stay away: Megan hidden on the
+// cameo's own spot (run 2 on, until found), or you are playing as Megan.
+// Once she is found the cameo comes back as it always was.
+BONUS.place = (a, chapter, areaNum) => {
+  if (!G.run || !a.plate) return false;
+  const w = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
+  const hideNpc = G.run.charId === "megan" || !!(w && w.id === "megan" && w.mode !== "cameo");
+  if (!w || w.mode === "cameo") return hideNpc;
+  const c = BONUS.entry(w.id);
+  const spot = a.plate[c.spot];
+  if (!spot) return hideNpc;
+  const at = vec2(spot[0] * a.plate.unit, spot[1] * a.plate.unit);
+  const h = G.charH(0.95);
+  const b = add([
+    ...ART.charComps(c.id, h), pos(at), area({ scale: 0.9 }), z(44), opacity(0),
+    "bonusPickup", { k: 0, seen: false, said: false, gone: false },
+  ]);
+  b.feet = ART.feetBox(h);
+  DEPTH.track(b);
+  if (ART.hasAnims(c.id)) b.play("idle");
+  b.onUpdate(() => {
+    const pl = G.playerObj;
+    if (!pl || !pl.exists() || b.gone) return;
+    const near = pl.pos.dist(b.pos) < BONUS.SEE();
+    b.k = Math.max(0, Math.min(1, b.k + (near ? 1 : -1) * dt() / BONUS.FADE));
+    b.opacity = b.k;
+    if (near && !b.seen) { b.seen = true; BONUS.sparkle(b.pos.add(0, -h * 0.4)); SFX.play("uitick"); }
+    if (!near) b.said = false;      // the "not this time" line again on the next visit
+  });
+  b.onCollide("player", () => {
+    if (b.gone || b.k < 0.5 || G.paused) return;
+    // the allowance is read again now, not at placing: a run can fill up in between
+    const now = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
+    if (!now || now.mode !== "collect") {
+      if (!b.said) { b.said = true; UI.speech(b, c.lines.notYet, c.colors.top); }
+      return;
+    }
+    b.gone = true;
+    BONUS.unlock(c.id, G.run);
+    SAVE.write("area");
+    SFX.play("recruit");
+    BONUS.sparkle(b.pos.add(0, -h * 0.4));
+    destroy(b);
+    BONUS.card(c);
+  });
+  return hideNpc;
+};
+
+// A few silver specks that rise and fade: the moment someone is noticed.
+BONUS.sparkle = (p) => {
+  for (let i = 0; i < 10; i++) {
+    const s = add([
+      rect(3, 3), pos(p.add(rand(-18, 18), rand(-24, 12))), anchor("center"),
+      color(UI.rgb(i % 2 ? UI.SILVER : UI.STEEL)), opacity(1), z(61),
+      { vy: rand(-60, -25), life: rand(0.5, 0.9) },
+    ]);
+    s.onUpdate(() => {
+      s.pos.y += s.vy * dt();
+      s.life -= dt();
+      s.opacity = Math.max(0, s.life / 0.9);
+      if (s.life <= 0) destroy(s);
+    });
+  }
+};
+
+// The unlock card: small, in the middle, the room paused behind it. Their
+// figure on the left, "<NAME> UNLOCKED" in the title's silver chrome, one
+// line under it. Any key or tap, or four seconds, carries on.
+BONUS.card = (c, onDone) => {
+  const W = 340, H = 120, CX = G.W / 2, CY = G.H / 2;
+  const head = c.name.toUpperCase() + " UNLOCKED";
+  const TX = CX - W / 2 + 104, TW = W - 120;
+  const headSize = UI.measure(head, UI.PX, 16).width <= TW ? 16 : 8;
+  G.paused = true;
+  let t = 0, leaving = -1;
+  const root = add([fixed(), z(220), pos(0, 0)]);
+  const fig = add([...ART.charComps(c.id, 88), pos(CX - W / 2 + 54, CY + 4), fixed(), z(221), opacity(0)]);
+  if (ART.hasAnims(c.id)) fig.play("victory");
+  const finish = () => {
+    root.destroy(); fig.destroy();
+    for (const hd of handlers) hd.cancel();
+    G.paused = false;
+    if (onDone) onDone();
+  };
+  root.onUpdate(() => {
+    t += dt();
+    if (leaving < 0 && t > 4) leaving = t;
+    if (leaving >= 0 && t - leaving > 0.2) finish();
+  });
+  root.onDraw(() => {
+    const inK = UI.ease(Math.min(1, t / 0.25));
+    const op = leaving >= 0 ? Math.max(0, 1 - (t - leaving) / 0.2) : inK;
+    fig.opacity = op;
+    UI.R(0, 0, G.W, G.H, UI.INK, 0.45 * op);
+    const y0 = CY - H / 2 + Math.round((1 - inK) * 16);
+    UI.card(vec2(CX - W / 2, y0), W, H, { drop: 4, opacity: op });
+    UI.chromeText(head, TX, y0 + 30, headSize, op);
+    UI.text(c.lines.unlock, TX, y0 + 60, { font: UI.VT, size: 16, width: TW, color: UI.TEXT, opacity: op });
+  });
+  const dismiss = () => {
+    if (t < 0.4 || leaving >= 0 || UI.pauseOpen) return;
+    leaving = t;
+    SFX.play("uiconfirm");
+  };
+  const handlers = [
+    onKeyPress((key) => { if (key !== "escape" && key !== "p") dismiss(); }),
+    onMousePress(() => { if (!UI.inPauseBtn(mousePos())) dismiss(); }),
+  ];
+};

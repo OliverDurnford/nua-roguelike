@@ -504,6 +504,9 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     }
   }
 
+  // --- a bonus character, hidden (core/bonus.js) ---
+  const bonusHidesNpc = BONUS.place(a, chapter, areaNum);
+
   // --- boss areas ---
   if (a.boss) {
     const finaleOpts = a.finale
@@ -647,7 +650,9 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   };
 
   // --- NPC easter egg (e.g. Megan Whiteside in Propaganda) ---
-  if (a.npc) {
+  // From the second run Megan is a hidden bonus character on this same spot
+  // until she is found, and she never meets herself (core/bonus.js).
+  if (a.npc && !bonusHidesNpc) {
     // Plates can pin the NPC to measured clear floor; ASCII areas keep
     // the old fixed fraction of the room.
     const npcPos = (a.plate && a.plate.npcSpawn)
