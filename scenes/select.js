@@ -1,5 +1,7 @@
 // ============================================================
-// CHARACTER SELECT: all ten, selectable from the start.
+// CHARACTER SELECT: all ten, selectable from the start. Once a bonus
+// character has been found a BONUS tab flips to a second page of seven
+// (core/bonus.js, 14 Oct 2026): the ones found so far, the rest "?".
 // Ten pixel polaroids (the kit's HUD portraits, bigger): a white
 // card, the friend standing in the dark photo, their name written
 // underneath. Cards slide in staggered, hover to lift, the chosen
@@ -15,7 +17,7 @@
 // in a room). The cards never overlap, so it looks the same.
 // ============================================================
 
-scene("select", () => {
+scene("select", (opts = {}) => {
   SPEECH.endArea();   // no room loaded: nothing to test a line against
   G.paused = false;
   SOUNDTRACK.playForKey("select");   // blank slot: the title song carries on
@@ -23,39 +25,69 @@ scene("select", () => {
   add([sprite("bg-night"), pos(0, 0), scale(G.W / 8, G.H / 256), z(0)]);
   add([sprite("vignette"), pos(0, 0), scale(G.W / 480, G.H / 270), opacity(0.5), z(40)]);
 
-  const heading = UI.labelObj("WHO ARE YOU, THEN?", G.W / 2, 40, { size: 16, anchor: "center", z: 5, fixed: false });
+  // which page: the ten, or the bonus seven once anyone has been found (an
+  // admin sees the bonus page from the start, every card open, to test)
+  const unlocked = BONUS.unlocked();
+  const showTab = unlocked.length > 0 || ADMIN.on;
+  const page = showTab && opts.page === "bonus" ? "bonus" : "friends";
+  const BONUS_PAGE = page === "bonus";
+  const LIST = BONUS_PAGE ? BONUS_CHARACTERS : CHARACTERS;
+  const N = LIST.length;
+  const open = (c) => !BONUS_PAGE || ADMIN.on || unlocked.includes(c.id);
+
+  const heading = UI.labelObj(BONUS_PAGE ? "BONUS CHARACTERS" : "WHO ARE YOU, THEN?", G.W / 2, 40, { size: 16, anchor: "center", z: 5, fixed: false });
   UI.slideIn(heading, vec2(G.W / 2, 18), vec2(G.W / 2, 40), 0.5);
   const headRule = add([rect(0, 2), pos(G.W / 2, 60), anchor("center"), color(UI.rgb(UI.STEEL)), z(5), opacity(0.9)]);
   let hr = 0;
   headRule.onUpdate(() => { hr += dt(); headRule.width = 320 * UI.ease(hr / 0.7); });
 
-  let selected = 0;
+  // the bonus page opens on the first person found, not on a question mark
+  let selected = BONUS_PAGE ? Math.max(0, LIST.findIndex(open)) : 0;
   const cards = [];
 
   const CW = 140, CH = 164, GX = 168, GY = 172;
   const PW = 128, PH = 112;                       // the photo
-  const x0 = G.W / 2 - 2 * GX;
   const y0 = 156;
+  // five and five for the ten; four over three for the bonus seven, each
+  // row centred (the friends' rows come out exactly where they always were)
+  const PER_ROW = BONUS_PAGE ? [4, 3] : [5, 5];
+  const cell = (i) => {
+    const row = i < PER_ROW[0] ? 0 : 1, col = row ? i - PER_ROW[0] : i;
+    return vec2(G.W / 2 + (col - (PER_ROW[row] - 1) / 2) * GX, y0 + row * GY);
+  };
   const photoY = -CH / 2 + 6 + PH / 2;            // photo centre, relative to the card
   const feetY = photoY + PH / 2 - 4;              // where the friend stands
 
   // one glow that glides between cards instead of popping
   const glow = add([
-    sprite("glow"), pos(x0, y0), anchor("center"), scale(2.6),
+    sprite("glow"), pos(cell(0)), anchor("center"), scale(2.6),
     color(UI.GOLD[0], UI.GOLD[1], UI.GOLD[2]), opacity(0.35), z(4),
   ]);
 
-  CHARACTERS.forEach((c, i) => {
-    const col = i % 5, row = Math.floor(i / 5);
-    const p = vec2(x0 + col * GX, y0 + row * GY);
+  LIST.forEach((c, i) => {
+    const p = cell(i);
+    const row = i < PER_ROW[0] ? 0 : 1, col = row ? i - PER_ROW[0] : i;
     const delay = 0.05 * (col + row * 2);
+    const locked = !open(c);
 
     // The card itself only holds the place, the hover box and the fade; the
     // layers below draw it. The friend stays a child, above the photo.
     const card = add([
       pos(p), area({ shape: new Rect(vec2(-CW / 2, -CH / 2), CW, CH) }), z(5.3), opacity(1),
-      { idx: i, home: p.clone(), lift: 0, born: time() + delay, name: c.name.toLowerCase() },
+      { idx: i, home: p.clone(), lift: 0, born: time() + delay, name: locked ? "?" : c.name.toLowerCase(), locked },
     ]);
+    // a bonus character not found yet: a dark photo and a question mark
+    if (locked) {
+      UI.slideIn(card, p.add(0, 36), p, 0.45, delay);
+      card.onUpdate(() => {
+        const want = (card.isHovering() || selected === i) ? 1 : 0;
+        card.lift += (want - card.lift) * Math.min(1, dt() * 10);
+        if (time() > card.born + 0.5) card.pos.y = card.home.y - 6 * card.lift;
+      });
+      card.onClick(() => { selected = i; SFX.play("uitick"); });
+      cards.push(card);
+      return;
+    }
     const figure = card.add([...ART.charComps(c.id, 84), pos(0, feetY - 42), opacity(1)]);
     // At rest everyone poses for the photo, in a way that is theirs (Ollie,
     // 8 Oct). A pose sheet of their own, so each breathe starts at its own
@@ -119,18 +151,25 @@ scene("select", () => {
   });
   // each card takes its own window of the one park panorama, so the ten
   // snapshots are the same afternoon in the same place
+  // (the bonus seven take their windows from further along the same
+  // afternoon, and a locked card's photo is barely there)
   layer(5.1, (card, op) => drawSprite({
     sprite: "photo-park",
-    quad: new Quad(card.idx / 10, 0, 1 / 10, 1),
+    quad: BONUS_PAGE ? new Quad(card.idx * 0.14, 0, 0.1, 1) : new Quad(card.idx / 10, 0, 1 / 10, 1),
     pos: vec2(-PW / 2 + 1, photoY - PH / 2 + 1),
-    width: PW - 2, height: PH - 2, opacity: op,
+    width: PW - 2, height: PH - 2, opacity: card.locked ? op * 0.2 : op,
   }));
   // a soft shadow puts the friend on the grass rather than in front of it
-  layer(5.2, (card, op) => drawEllipse({
+  layer(5.2, (card, op) => !card.locked && drawEllipse({
     pos: vec2(0, feetY - 1), radiusX: 20, radiusY: 5,
     color: rgb(30, 48, 24), opacity: op * 0.45,
   }));
   // (the friends are the cards' own children, at 5.3)
+  // a big question mark where a bonus character not found yet would stand
+  if (BONUS_PAGE) layer(5.35, (card, op) => {
+    if (!card.locked) return;
+    UI.label("?", 0, photoY, { font: UI.PX, size: 32, anchor: "center", color: UI.STEEL, opacity: op });
+  });
   // their names written underneath
   layer(5.4, (card, op) => drawText({
     text: card.name, size: 32, font: UI.VT, pos: vec2(0, CH / 2 - 21), anchor: "center",
@@ -159,14 +198,25 @@ scene("select", () => {
   const dInfo = add([text("", { size: 16, font: UI.VT }), pos(80, panelY + 18), anchor("left"), color(UI.rgb(UI.BLUE_DEEP)), z(9)]);
 
   onUpdate(() => {
-    const c = CHARACTERS[selected];
-    dName.text = c.name.toUpperCase();
-    dFlavour.text = c.flavour;
-    dInfo.text = "throws: " + c.weapon.name + "    ·    as a companion: " + c.passive.name + " (" + c.passive.desc + ")";
+    const c = LIST[selected];
+    if (!BONUS_PAGE) {
+      dName.text = c.name.toUpperCase();
+      dFlavour.text = c.flavour;
+      dInfo.text = "throws: " + c.weapon.name + "    ·    as a companion: " + c.passive.name + " (" + c.passive.desc + ")";
+    } else if (open(c)) {
+      dName.text = c.name.toUpperCase();
+      dFlavour.text = c.flavour;
+      dInfo.text = "throws: " + c.weapon.name + "    ·    bonus character";
+    } else {
+      dName.text = "???";
+      dFlavour.text = "Still hiding somewhere. Keep your eyes peeled.";
+      dInfo.text = "";
+    }
   });
 
   const hintTxt = add([
-    text(isTouchscreen() ? "tap once to look, again to pick" : "click once to look, again to pick   ·   arrows + ENTER",
+    text(isTouchscreen() ? "tap once to look, again to pick"
+      : "click once to look, again to pick   ·   arrows + ENTER" + (showTab ? "   ·   TAB: " + (BONUS_PAGE ? "friends" : "bonus") : ""),
       { size: 16, font: UI.VT }),
     pos(G.W / 2, G.H - 12), anchor("center"), color(170, 175, 190), z(9), opacity(0),
   ]);
@@ -174,9 +224,9 @@ scene("select", () => {
 
   let confirming = false;
   const confirm = () => {
-    if (confirming) return;
+    if (confirming || cards[selected].locked) return;
     confirming = true;
-    const c = CHARACTERS[selected];
+    const c = LIST[selected];
     UI.flash([255, 245, 220], 0.3);
     SFX.play("uiconfirm");
     wait(0.18, () => {
@@ -185,12 +235,27 @@ scene("select", () => {
     });
   };
 
-  onKeyPress("left", () => { selected = (selected + 9) % 10; });
-  onKeyPress("right", () => { selected = (selected + 1) % 10; });
-  onKeyPress("up", () => { selected = (selected + 5) % 10; });
-  onKeyPress("down", () => { selected = (selected + 5) % 10; });
+  // up and down swap rows; on the bonus page the short row's ends land on
+  // the nearest card above or below
+  const otherRow = (i) => (BONUS_PAGE
+    ? (i < PER_ROW[0] ? Math.min(PER_ROW[0] + i, N - 1) : i - PER_ROW[0])
+    : (i + 5) % 10);
+  onKeyPress("left", () => { selected = (selected + N - 1) % N; });
+  onKeyPress("right", () => { selected = (selected + 1) % N; });
+  onKeyPress("up", () => { selected = otherRow(selected); });
+  onKeyPress("down", () => { selected = otherRow(selected); });
   onKeyPress("enter", confirm);
   onKeyPress("space", confirm);
+
+  // the tab to the other page, top right, in the title's silver
+  if (showTab) {
+    const flip = () => { SFX.play("uitick"); go("select", { page: BONUS_PAGE ? "friends" : "bonus" }); };
+    const tab = UI.chipObj(BONUS_PAGE ? "< FRIENDS" : "BONUS >", G.W - 90, 40,
+      { font: UI.PX, size: 8, z: 9, fixed: false, area: true, fill: UI.SILVER, padX: 12, padY: 8, opacity: 0 });
+    UI.fadeObj(tab, 1, 0.5, 0.4);
+    tab.onClick(flip);
+    onKeyPress("tab", flip);
+  }
 
   UI.sceneFade();
 });
