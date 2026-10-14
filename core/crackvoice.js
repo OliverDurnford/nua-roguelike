@@ -28,11 +28,55 @@ CRACKVOICE.beat = (chapter, area, said) => {
   return CRACK_VOICE[k];
 };
 
-CRACKVOICE.fill = (str, name) => String(str).split("[name]").join(name);
+// [name] is whoever you are playing; the finale adds [busy] (Busy You's
+// friend's name) and [job] (their line). A missing value fills in blank.
+CRACKVOICE.fill = (str, name, vars = {}) => {
+  let out = String(str).split("[name]").join(name);
+  for (const k in vars) out = out.split("[" + k + "]").join(vars[k] == null ? "" : vars[k]);
+  return out;
+};
 
 // The steps that can play with this party (whoever you are playing included).
 CRACKVOICE.steps = (beat, party) =>
   beat.filter((s) => !s.needs || s.needs.every((id) => party.includes(id)));
+
+// Who a `by` names, always as a list of ids: "you" or another role the
+// scene fills in (the finale's "caged", "friend", "friend2", "all"), a
+// friend's id, or a list of ids. A role with nobody in it is nobody.
+CRACKVOICE.cast = (by, roles = {}) => {
+  if (Array.isArray(by)) return by.slice();
+  if (Object.prototype.hasOwnProperty.call(roles, by)) return [].concat(roles[by] || []).filter(Boolean);
+  return [by];
+};
+
+// A scene's steps made ready to play (data/finale-script.js): those whose
+// `needs` are not all in the party left out, a bonus player's `bonus` line
+// in place of `say`, every [name], [busy] and [job] filled in, each `by`
+// turned into a list of ids, and anything left with nobody to say it or
+// nothing to say dropped. The script itself is never changed.
+CRACKVOICE.prepare = (steps, o = {}) => {
+  const out = [];
+  for (const s0 of CRACKVOICE.steps(steps, o.party || [])) {
+    const s = Object.assign({}, s0);
+    if (o.bonus && s.bonus) s.say = s.bonus;
+    delete s.bonus;
+    if (s.say !== undefined) {
+      s.say = CRACKVOICE.fill(s.say, o.name || "", o.vars).trim();
+      if (!s.say) continue;
+    }
+    if (s.by !== undefined) {
+      s.by = CRACKVOICE.cast(s.by, o.roles);
+      if (!s.by.length) continue;
+    }
+    out.push(s);
+  }
+  return out;
+};
+
+// When a line's cue goes off: `lead` seconds before its last letter is
+// out, so what it sets off (the finale's falling responsibilities) lands
+// on the last word. Never before the line starts.
+CRACKVOICE.cueAt = (typeT, lead = 0) => Math.max(0, typeT - lead);
 
 // ---------- the clock ----------
 // A laugh comes out twice as fast as words.
