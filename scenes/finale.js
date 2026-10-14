@@ -4,11 +4,12 @@
 //
 // Five friends wait in cages along the path at the top of the park,
 // scared and looking round, rattling the bars now and then.
-// The opening: close on you, up the park to Busy You cackling, out
-// over the park as their name flies through, back in to you. The
-// ending: back to Busy You, buried under their responsibilities,
-// across to the cages, "Right. Pub?", and everyone walks off while
-// the pile asks to come too.
+// The opening: close on you, up the park to Busy You laughing at the
+// sky, the scene from data/finale-script.js (the reveal, the favour,
+// the sting), out over the park as their name flies through, back in
+// to you. The ending: back to Busy You for their last line, buried
+// under their responsibilities, across to the cages, the pub, and
+// everyone walks off while the pile asks to come too.
 // ============================================================
 
 const FINALE = {};
@@ -23,6 +24,34 @@ FINALE.BOSS_H = () => G.charH(2.3);   // the finale boss's height (ENEMIES.spawn
 // finale has no way out drawn there any more).
 FINALE.CAGES = [[9.7, 3.2], [12.5, 3.1], [16.0, 2.8], [19.3, 3.2], [23.0, 3.3]];
 FINALE.CAGED_H = () => G.charH(0.86);   // a follower's height, so the release is seamless
+
+FINALE.LAUGH_T = 2.2;                           // seconds Busy You laughs at the sky
+FINALE.HEAD = () => FINALE.BOSS_H() * 0.55;     // the boss's head, above its middle
+FINALE.bossName = () => "BUSY " + G.char(G.busyId()).name.toUpperCase();
+
+// Which mid-fight line is due with this much of the boss's health left,
+// or null. said is this attempt's record of what has been said. A big hit
+// past both marks says only the one-third line and spends the other.
+FINALE.due = (frac, said) => {
+  if (frac <= 0) return null;
+  if (frac <= 1 / 3 && !said.oneThird) { said.oneThird = said.twoThirds = true; return "oneThird"; }
+  if (frac <= 2 / 3 && !said.twoThirds) { said.twoThirds = true; return "twoThirds"; }
+  return null;
+};
+
+// The laugh: the sky laugh once a friend's frames are in, their forward
+// cackle until then, or null (a wobble) with no Busy sheet at all.
+FINALE.laughAnim = (anims) => (anims && anims.skylaugh ? "skylaugh" : anims && anims.cackle ? "cackle" : null);
+
+// Who speaks for the script's roles: you, one caged friend, two different
+// friends from your group (never you), and everyone together.
+FINALE.pickRoles = (you, caged, group, rnd = Math.random) => {
+  const pick = (list) => (list.length ? list[Math.floor(rnd() * list.length) % list.length] : null);
+  const friends = group.filter((id) => id !== you);
+  const friend = pick(friends);
+  const friend2 = pick(friends.filter((id) => id !== friend));
+  return { you, caged: pick(caged), friend, friend2, all: [you].concat(friends) };
+};
 
 FINALE.setup = (m, plate) => {
   const caged = CHARACTERS
@@ -58,6 +87,7 @@ FINALE.cage = (id, at) => {
     : ART.charComps(id, h);
   const home = vec2(at.x, feetY - h * 0.5);
   const f = add([...comps, pos(home), z(zf - 0.01), "cagedFriend", { charId: id, feet: ART.feetBox(h), home, cage: [back, front] }]);
+  f.speechLift = h * 0.9;   // a bubble clears the cage roof
   // until their scared frames are drawn, their hurt flinch stands in
   if (!reg && ART.hasAnims(id)) f.play("hurt");
 
@@ -130,6 +160,87 @@ FINALE.cagesFlinch = () => {
   for (const f of get("cagedFriend")) if (f.flinch) f.flinch(false);
 };
 
+// ---------- the talking ----------
+
+// Where somebody stands, for the camera: you, a follower, or a friend
+// still in a cage.
+FINALE.ent = (id) => COMPANIONS.fieldSprite(id) || get("cagedFriend").find((f) => f.charId === id) || null;
+
+// A `by` line: a caged friend's bubble over their cage, in their colour as
+// COMPANIONS.say does; anyone else through the speech system.
+FINALE.say = (ids, text) => {
+  for (const id of ids) {
+    const caged = get("cagedFriend").find((f) => f.charId === id);
+    if (caged) UI.speech(caged, text, G.char(id).colors.top);
+    else SPEECH.speak(id, text);
+  }
+};
+
+// The point a talking scene's camera shot flies to (its `to`): it eases
+// after whoever is speaking, so a change of speaker is a glide, not a cut.
+FINALE.cam = (start) => {
+  const c = add([{ at: start.clone(), target: null }]);
+  c.onUpdate(() => {
+    const t = c.target && c.target();
+    if (t) c.at = c.at.lerp(t, 1 - Math.exp(-dt() * 4));
+  });
+  return c;
+};
+
+// One of the script's scenes (data/finale-script.js) through the crack
+// voice's engine, Busy You's note hanging off o.anchor (or nothing, when
+// only friends talk), then done(). o.cam: the camera glides to each speaker.
+FINALE.scene = (key, o, done) => {
+  const busy = G.char(G.busyId());
+  const steps = CRACKVOICE.prepare(FINALE_SCRIPT[key], {
+    name: G.playerChar().name,
+    roles: o.roles || { you: G.run.charId },
+    vars: { busy: busy.name, job: FINALE_SCRIPT.JOBS[busy.id] },
+    bonus: G.run.charId !== G.busyId(),
+  });
+  const a = o.anchor;
+  let last = (a || G.playerObj).pos.clone();
+  const at = () => (a && a.exists() ? (last = a.pos.clone()) : last);
+  CRACKVOICE.play(steps, at, done, {
+    lift: o.lift || 0,
+    label: o.label || "???",
+    name: FINALE.bossName(),
+    glow: false,
+    speak: FINALE.say,
+    look: (ids) => {
+      if (!o.cam) return;
+      const who = ids ? (ids.length === 1 ? FINALE.ent(ids[0]) : null) : a;
+      if (who) o.cam.target = () => (who.exists() ? who.pos : o.cam.at);
+    },
+    anim: (name, end) => FINALE.laugh(get("boss")[0], end),
+    cue: o.cue,
+    lead: o.lead,
+  });
+};
+
+// Busy You laughs (FINALE.cackle picks the sky laugh or the cackle) for
+// FINALE.LAUGH_T, then stands, then done().
+FINALE.laugh = (boss, done) => {
+  if (!boss) { done(); return; }
+  FINALE.cackle(boss);
+  wait(FINALE.LAUGH_T, () => { FINALE.stopCackle(boss); done(); });
+};
+
+// The two mid-fight lines, once each an attempt, as the boss's health
+// passes two thirds and one third. Play never stops for them.
+FINALE.watch = (boss) => {
+  const said = {};
+  boss.onUpdate(() => {
+    if (G.paused || G.cutscene) return;
+    const k = FINALE.due(boss.hp / boss.maxHp, said);
+    if (!k) return;
+    const line = typeof FINALE_SCRIPT[k] === "string" ? { say: FINALE_SCRIPT[k] } : FINALE_SCRIPT[k];
+    const say = () => { if (boss.exists() && !G.cutscene) SPEECH.speak("boss:oldage", line.say); };
+    if (line.ring) { SFX.play("ring"); wait(0.75, () => SFX.play("ring")); wait(1.0, say); }
+    else say();
+  });
+};
+
 // ---------- the opening ----------
 
 // The camera for the whole finale, in place of the usual room reveal. It
@@ -149,18 +260,31 @@ FINALE.start = (m, player, ch, areaNum, onFight, opts = {}) => {
     G.paused = false;
     G.cutscene = false;
     onFight();
+    FINALE.watch(boss);
+    wait(1.0, () => { if (boss.exists()) SPEECH.speak("boss:oldage", FINALE_SCRIPT.retry); });
     return dir;
   }
   G.paused = true;
   G.cutscene = true;
   onSceneLeave(() => { G.cutscene = false; });   // quitting mid-cutscene must not leave it on
   dir.cut(player.pos, 1);
+  // the camera rides FINALE.cam through the scene, gliding to each speaker
+  const cam = FINALE.cam(boss.pos);
+  cam.target = () => boss.pos;
   dir.run([
     { to: "follow", zoom: 1, move: 0, hold: 0.8 },
-    { to: boss.pos.clone(), zoom: 1.15, move: 1.4, hold: 3.0, arrive: () => FINALE.cackle(boss) },
+    {
+      to: () => cam.at, zoom: 1.15, move: 1.4, hold: Infinity,
+      arrive: () => {
+        const bars = CRACKVOICE.bars();
+        FINALE.scene("opening", {
+          anchor: boss, lift: FINALE.HEAD(), cam,
+          roles: FINALE.pickRoles(G.run.charId, get("cagedFriend").map((f) => f.charId), []),
+        }, () => { bars.out(); dir.release(); });
+      },
+    },
     {
       to: vec2(m.w / 2, m.h / 2), zoom: FINALE.wide, move: 1.0, hold: 2.0,
-      start: () => FINALE.stopCackle(boss),
       arrive: () => UI.bigTitle({
         num: String(areaNum).padStart(2, "0"),
         name: boss.bname,
@@ -169,24 +293,27 @@ FINALE.start = (m, player, ch, areaNum, onFight, opts = {}) => {
     },
     { to: "follow", zoom: 1, move: 0.8, hold: 0 },
   ], () => {
+    destroy(cam);
     G.paused = false;
     G.cutscene = false;
     onFight();
+    FINALE.watch(boss);
   });
   return dir;
 };
 
-// The cackle: their own two cackle frames once their Busy sheet is built, a
-// wobble until then. A small shake and a "HA!" on every head-back beat.
+// The laugh: the sky laugh once their frames are drawn (FINALE.laughAnim),
+// the forward cackle until then, a wobble with no Busy sheet. A HA!, a small
+// shake and the cages flinching on every head-back beat.
 FINALE.cackle = (boss) => {
   const anims = ART.bossAnims(G.busyId());
-  const real = !!(anims && anims.cackle);
-  if (real) boss.play("cackle");
+  const name = FINALE.laughAnim(anims);
+  if (name) boss.play(name);
   let last = -1, n = 0, t = 0;
   boss._cackle = boss.onUpdate(() => {
     t += dt();
-    if (real) {
-      if (boss.frame === anims.cackle.from && last !== boss.frame) FINALE.ha(boss, n++);
+    if (name) {
+      if (boss.frame === anims[name].from && last !== boss.frame) FINALE.ha(boss, n++);
       last = boss.frame;
     } else {
       boss.angle = Math.sin(t * 16) * 5;
@@ -194,11 +321,11 @@ FINALE.cackle = (boss) => {
       if (beat !== last) { last = beat; FINALE.ha(boss, n++); }
     }
   });
-  wait(0.6, () => SPEECH.fire("bossStart", { cutscene: true }));
 };
 
 FINALE.ha = (boss, n) => {
   shake(3);
+  SFX.play("ha");   // the crack voice's laugh (core/crackvoice.js)
   FINALE.cagesFlinch();
   UI.floatText(boss.pos.add((n % 2 ? 1 : -1) * rand(40, 70), -FINALE.BOSS_H() * 0.45), "HA!", [255, 255, 255]);
 };
