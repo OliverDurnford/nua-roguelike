@@ -352,14 +352,31 @@ FINALE.win = (player, snap) => {
     ? cages.reduce((s, f) => s.add(f.pos), vec2(0, 0)).scale(1 / cages.length)
     : player.pos.clone();
   dir.run([
-    { to: snap.pos.clone(), zoom: 1.15, move: 1.0, hold: 3.0, arrive: () => FINALE.bury(stand) },
-    { to: cageMid, zoom: 1, move: 1.0, hold: 2.4, arrive: () => FINALE.openCages(player) },
-    { to: "follow", zoom: 1, move: 0.6, hold: 3.4, arrive: () => SPEECH.fire("pubInvite", { cutscene: true }) },
     {
-      // the pile near the top with room for its bubble, the group walking
-      // out of the bottom; held long enough to outlast the fade, so the
-      // camera never hands back
-      to: () => vec2(snap.pos.x, FINALE.pileTop(snap) - 90 + G.H / 2 / 0.8), zoom: 0.8, move: 3.5, hold: 8,
+      // the last line, cut off by the first thing landing on them; the
+      // camera stays until the line is done AND the pile is down
+      to: snap.pos.clone(), zoom: 1.15, move: 1.0, hold: Infinity,
+      arrive: () => {
+        let left = 2;
+        const one = () => { if (--left === 0) wait(0.6, () => dir.release()); };
+        FINALE.scene("fall", {
+          anchor: stand, lift: FINALE.HEAD(), label: FINALE.bossName(),
+          cue: (k) => { if (k === "bury") FINALE.bury(stand, one); },
+          lead: FINALE.landIn(),
+        }, one);
+      },
+    },
+    { to: cageMid, zoom: 1, move: 1.0, hold: 2.4, arrive: () => FINALE.openCages(player) },
+    {
+      to: "follow", zoom: 1, move: 0.6, hold: Infinity,
+      arrive: () => FINALE.scene("pub", {
+        roles: FINALE.pickRoles(G.run.charId, [], [G.run.charId].concat((G.followers || []).map((f) => f.charId))),
+      }, () => wait(0.4, () => dir.release())),
+    },
+    {
+      // the pile near the top with room for its note, the group walking
+      // out of the bottom; held until the fade takes over
+      to: () => vec2(snap.pos.x, FINALE.pileTop(snap) - 90 + G.H / 2 / 0.8), zoom: 0.8, move: 3.5, hold: Infinity,
       // the whole group walks out of the bottom of the park, through the
       // hedge (ghost), and off the frame while the camera pulls out
       start: () => {
@@ -368,8 +385,10 @@ FINALE.win = (player, snap) => {
         for (const f of G.followers || []) { f.ghost = true; f.spot = null; }   // back into line
       },
       arrive: () => {
-        SPEECH.fire("fromPile", { cutscene: true });
-        wait(2.8, FINALE.fadeOut);
+        const pile = get("bossPile")[0];
+        if (!pile) { wait(1.2, FINALE.fadeOut); return; }
+        FINALE.scene("pile", { anchor: pile, lift: pile.drawH + 6, label: FINALE.bossName() },
+          () => wait(1.2, FINALE.fadeOut));
       },
     },
   ]);
@@ -417,13 +436,17 @@ FINALE.fall = (comps, at, zz, onLand) => {
   return o;
 };
 
+// Seconds from FINALE.bury starting to its first item landing: the short
+// wait, then a drop of one screen height at FINALE.fall's 2600 px/s/s.
+FINALE.landIn = () => 0.15 + Math.sqrt(2 * G.H / 2600);
+
 // Where each falling item lands, in item sizes from the boss's feet: the
 // first two at the bottom of the legs, one either side, then each one after
 // on top of those, so it builds up as a heap (Ollie, 13 Oct 2026: not "a
 // diagonal line across them").
 FINALE.STACK = [[-0.55, 0], [0.55, 0], [0, -0.7], [-0.35, -1.35], [0.3, -1.95]];
 
-FINALE.bury = (stand) => {
+FINALE.bury = (stand, onDown) => {
   const feet = stand.pos.add(0, FINALE.BOSS_H() * 0.45);
   const zf = DEPTH.z(feet.y);
   const size = G.charH(0.6);
@@ -441,6 +464,7 @@ FINALE.bury = (stand) => {
       UI.pop(feet.add(0, -pile.h * 0.4), [200, 190, 170], 50);
       destroyAll("duty");
       if (stand.exists()) destroy(stand);
+      if (onDown) onDown();
     });
     FINALE.pile = p;
   });
