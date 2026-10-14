@@ -8,7 +8,8 @@
 //           function returning a position, asked every frame
 //   zoom    camScale for the shot, 1 = normal
 //   move    seconds to get there, eased; 0 = a cut
-//   hold    seconds to stay once there
+//   hold    seconds to stay once there (Infinity: until the scene calls
+//           release())
 //   start   optional, called as the shot begins
 //   arrive  optional, called once, the moment it gets there
 // The view is kept inside the map at every zoom, so a shot near an
@@ -37,6 +38,7 @@ CAMSHOTS.director = (bounds, viewW, viewH) => {
   const begin = () => {
     d.t = 0;
     d.arrived = false;
+    d.released = false;
     d.fromPos = d.pos ? d.pos.clone() : null;
     d.fromZoom = d.zoom;
     const s = d.shots[d.i];
@@ -45,6 +47,9 @@ CAMSHOTS.director = (bounds, viewW, viewH) => {
 
   d.busy = () => d.i >= 0;
   d.cut = (p, zoom = 1) => { d.pos = p.clone(); d.zoom = zoom; };
+  // ends the shot holding now; a talking scene holds for Infinity and
+  // calls this when its last line is done
+  d.release = () => { if (d.i >= 0) d.released = true; };
   d.run = (shots, onDone) => {
     d.shots = shots;
     d.i = 0;
@@ -77,7 +82,7 @@ CAMSHOTS.director = (bounds, viewW, viewH) => {
       if (s.arrive) s.arrive();
     }
     d.t += dt();
-    if (d.t > s.move + s.hold + 1e-9) {
+    if (d.t > s.move + s.hold + 1e-9 || (d.released && d.arrived)) {
       d.i++;
       if (d.i >= d.shots.length) {
         d.i = -1;
