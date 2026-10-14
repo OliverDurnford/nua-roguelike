@@ -26,6 +26,15 @@ window.dev = {
   special: (id) => { if (G.run && !G.paused) CUTIN.play(CUTIN.forSpecial(G.char(id || G.run.charId))); },
   god: () => { G.godMode = !G.godMode; },
   wipe: () => { SAVE.clear(); STORY.clear(); location.reload(); },
+  // the bonus characters (core/bonus.js): dev.bonus() unlocks all seven,
+  // dev.bonus("reset") forgets them and the run count
+  bonus: (what) => {
+    const s = STORY.get();
+    if (what === "reset") { s.bonus = []; s.runs = 0; BONUS.session.length = 0; }
+    else s.bonus = BONUS_CHARACTERS.map((c) => c.id);
+    STORY.set(s);
+    return s.bonus;
+  },
 };
 
 go("title");
