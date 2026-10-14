@@ -1141,6 +1141,7 @@ UI.pause = () => {
   const open = () => {
     if (UI.pauseOpen) return;
     UI.pauseOpen = true;
+    UI.pauseToggledAt = time();   // that press must not also hurry a line (CRACKVOICE.canHurry)
     wasPaused = G.paused;
     G.paused = true;
     debug.paused = true;
@@ -1150,6 +1151,7 @@ UI.pause = () => {
   const close = () => {
     if (!UI.pauseOpen) return;
     UI.pauseOpen = false;
+    UI.pauseToggledAt = time();
     G.paused = wasPaused;
     debug.paused = false;
     SFX.play("uiconfirm");

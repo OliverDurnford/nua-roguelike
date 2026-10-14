@@ -110,6 +110,15 @@ CRACKVOICE.betweenBars = (y, halfH, camY, zoom, viewH) => {
   return Math.min(Math.max(y, camY - half + B + 8 / zoom + halfH), camY + half - B - 16 / zoom - halfH);
 };
 
+// May a press or a tap hurry the words along? Never one that opens or
+// closes the pause menu (Ollie, 14 Oct 2026: closing it skipped a line):
+// not the pause keys, not a tap on the PAUSE chip, not anything within a
+// moment of the menu opening or closing (UI.pauseToggledAt), and not while
+// it is up. t is how long the line has been on screen.
+CRACKVOICE.canHurry = ({ t, now, toggledAt, key, pauseOpen, onPauseBtn }) =>
+  !pauseOpen && !onPauseBtn && key !== "escape" && key !== "p" && t >= 0.2 &&
+  !(toggledAt !== undefined && now - toggledAt < 0.25);
+
 // ---------- sounds ----------
 // Kept here, not in core/sfx.js: a low murmur under the typing, a lighter
 // one under an aside, the laugh's "ha" and a phone's trill.
@@ -427,15 +436,17 @@ CRACKVOICE.play = (steps, at, done, opts = {}) => {
   });
 
   // a press or a tap: the words all out at once, or on to the next
-  const hurry = () => {
-    if (UI.pauseOpen || !run.exists() || run.t < 0.2) return;
+  const hurry = (key, onPauseBtn) => {
+    if (!run.exists() || !CRACKVOICE.canHurry({
+      t: run.t, now: time(), toggledAt: UI.pauseToggledAt, key, pauseOpen: UI.pauseOpen, onPauseBtn,
+    })) return;
     const s = steps[run.i];
     if (!s || s.kiss || s.ring || s.anim) return;
     if (run.seg && run.t < run.seg.type) run.t = run.seg.type;
     else run.t = run.end;
   };
-  const hurryKey = onKeyPress(hurry);
-  const hurryTap = onMousePress(hurry);
+  const hurryKey = onKeyPress((key) => hurry(key, false));
+  const hurryTap = onMousePress(() => hurry(null, UI.inPauseBtn(mousePos())));
   next();
 };
 
