@@ -121,7 +121,11 @@ G.stats = () => {
   return s;
 };
 
-G.char = (id) => CHARACTERS.find((c) => c.id === id);
+// The ten and the seven bonus characters (data/bonus.js) are found the same
+// way; only the select screen, the bonus pickup and the finale care which.
+G.char = (id) => CHARACTERS.find((c) => c.id === id)
+  || (typeof BONUS_CHARACTERS !== "undefined" ? BONUS_CHARACTERS.find((c) => c.id === id) : undefined);
+G.isBonus = (id) => { const c = G.char(id); return !!(c && c.bonus); };
 G.playerChar = () => G.char(G.run.charId);
 
 // Move to the next area / chapter. Called by area.js when the player exits.

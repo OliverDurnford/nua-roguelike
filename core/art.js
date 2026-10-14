@@ -529,7 +529,9 @@ ART.init = () => {
     loadFont("vt", REAL_FONTS.vt, { size: 16, filter: "nearest" });
   }
 
-  for (const c of CHARACTERS) {
+  // the ten and the seven bonus characters (data/bonus.js) load the same way
+  const everyone = typeof BONUS_CHARACTERS !== "undefined" ? CHARACTERS.concat(BONUS_CHARACTERS) : CHARACTERS;
+  for (const c of everyone) {
     if (typeof REAL_ANIMS !== "undefined" && REAL_ANIMS[c.id]) {
       // animated sheet (core/sprites-anim.js): idle, walk, attack, hurt, ko, victory
       const ra = REAL_ANIMS[c.id];
