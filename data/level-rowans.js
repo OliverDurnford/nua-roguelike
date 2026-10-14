@@ -134,6 +134,7 @@ const ROWANS_PLATE = {
   ],
 
   playerSpawn: [1.32, 19.8],
+  bonusSpawn: [5.6, 6.8],
 
   enemySpawns: [
   ],

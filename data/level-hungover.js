@@ -59,6 +59,7 @@ const HUNGOVER_PLATE = {
 
   // On the pavement, just in from the left edge.
   playerSpawn: [1.3, 12.4],
+  bonusSpawn: [29.6, 3.2],
 
   // The friend, being sick on the pavement (the orange puddle).
   companionSpawn: [21.6, 11.3],

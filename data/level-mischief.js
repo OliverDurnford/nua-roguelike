@@ -162,6 +162,7 @@ const MISCHIEF_PLATE = {
   ],
 
   playerSpawn: [21.4, 30.3],
+  bonusSpawn: [20.6, 7.4],
 
   enemySpawns: [
   ],

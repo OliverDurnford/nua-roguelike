@@ -103,6 +103,7 @@ const MERCY_PLATE = {
   // On the rubber entrance mat, just in from the street door,
   // with the lower pier for cover immediately to the right.
   playerSpawn: [12.0, 16.2],
+  bonusSpawn: [3.6, 9.1],
 
   // Three ways in. Four each at the two archways from the main room,
   // where the noise is coming from, and two behind you at the street
