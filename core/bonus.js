@@ -91,19 +91,19 @@ BONUS.place = (a, chapter, areaNum) => {
     b.k = Math.max(0, Math.min(1, b.k + (near ? 1 : -1) * dt() / BONUS.FADE));
     b.opacity = b.k;
     if (near && !b.seen) { b.seen = true; BONUS.sparkle(b.pos.add(0, -h * 0.4)); SFX.play("uitick"); }
-    if (!near) b.said = false;      // the "not this time" line again on the next visit
   });
   b.onCollide("player", () => {
     if (b.gone || b.k < 0.5 || G.paused) return;
     // the allowance is read again now, not at placing: a run can fill up in between
     const now = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
     if (!now || now.mode !== "collect") {
+      // once per visit to the room (the spec), however often you walk back
       if (!b.said) { b.said = true; UI.speech(b, c.lines.notYet, c.colors.top); }
       return;
     }
     b.gone = true;
     BONUS.unlock(c.id, G.run);
-    SAVE.write("area");
+    SAVE.patch({ bonusGot: G.run.bonusGot });   // the count only: the door checkpoint stays the door's
     SFX.play("recruit");
     BONUS.sparkle(b.pos.add(0, -h * 0.4));
     destroy(b);
@@ -133,10 +133,11 @@ BONUS.sparkle = (p) => {
 // figure on the left, "<NAME> UNLOCKED" in the title's silver chrome, one
 // line under it. Any key or tap, or four seconds, carries on.
 BONUS.card = (c, onDone) => {
-  const W = 340, H = 120, CX = G.W / 2, CY = G.H / 2;
+  const W = 400, H = 120, CX = G.W / 2, CY = G.H / 2;   // "OLLIE W UNLOCKED" fits at 16
   const head = c.name.toUpperCase() + " UNLOCKED";
   const TX = CX - W / 2 + 104, TW = W - 120;
   const headSize = UI.measure(head, UI.PX, 16).width <= TW ? 16 : 8;
+  const wasPaused = G.paused;
   G.paused = true;
   let t = 0, leaving = -1;
   const root = add([fixed(), z(220), pos(0, 0)]);
@@ -145,7 +146,9 @@ BONUS.card = (c, onDone) => {
   const finish = () => {
     root.destroy(); fig.destroy();
     for (const hd of handlers) hd.cancel();
-    G.paused = false;
+    // a cutscene that began under the card (a crack voice when a stray throw
+    // clears the room) keeps the room paused; otherwise back as it was
+    if (!G.cutscene) G.paused = wasPaused;
     if (onDone) onDone();
   };
   root.onUpdate(() => {

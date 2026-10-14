@@ -250,8 +250,11 @@ scene("select", (opts = {}) => {
   // the tab to the other page, top right, in the title's silver
   if (showTab) {
     const flip = () => { SFX.play("uitick"); go("select", { page: BONUS_PAGE ? "friends" : "bonus" }); };
-    const tab = UI.chipObj(BONUS_PAGE ? "< FRIENDS" : "BONUS >", G.W - 90, 40,
-      { font: UI.PX, size: 8, z: 9, fixed: false, area: true, fill: UI.SILVER, padX: 12, padY: 8, opacity: 0 });
+    // phone-sized on a touchscreen, like the pause chip: the only way in there
+    const touch = isTouchscreen();
+    const tab = UI.chipObj(BONUS_PAGE ? "< FRIENDS" : "BONUS >", G.W - (touch ? 110 : 90), 40,
+      { font: UI.PX, size: touch ? 16 : 8, z: 9, fixed: false, area: true, fill: UI.SILVER,
+        padX: touch ? 16 : 12, padY: touch ? 12 : 8, opacity: 0 });
     UI.fadeObj(tab, 1, 0.5, 0.4);
     tab.onClick(flip);
     onKeyPress("tab", flip);

@@ -59,6 +59,21 @@ SAVE.resume = (s) => {
   else go("area", { chapter: s.run.chapter, area: s.run.area });
 };
 
+// Change a few fields of the run in the saved checkpoint and nothing else.
+// A bonus character found mid-fight (core/bonus.js) must not move the room's
+// door checkpoint to the fight as it stands: quit and carry on, and the room
+// restarts as you entered it, only now knowing the count went up.
+SAVE.patch = (fields) => {
+  try {
+    const raw = localStorage.getItem(SAVE.KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s || !s.run) return;
+    Object.assign(s.run, fields);
+    localStorage.setItem(SAVE.KEY, JSON.stringify(s));
+  } catch (e) {}
+};
+
 SAVE.clear = () => {
   try { localStorage.removeItem(SAVE.KEY); } catch (e) {}
 };
