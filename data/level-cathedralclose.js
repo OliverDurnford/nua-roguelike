@@ -82,6 +82,7 @@ const CATHEDRALCLOSE_PLATE = {
   // On the paving inside the gate arch, where you arrive from the
   // street. Dead centre of the passage.
   playerSpawn: [16.05, 17.05],
+  capSpawn: [25.45, 6.25],
 
   // The friend waiting here (quiet area): sat on the grass at the
   // left hand end of the left bench, a third of the way up the lawn.
