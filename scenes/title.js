@@ -241,11 +241,16 @@ scene("title", () => {
   // the same gesture is also the only way the two are guaranteed to be locked.
   const promptY = G.H - 26;
   const touch = isTouchscreen();
-  const prompt = UI.chipObj(touch ? "tap to start" : "press any key", G.W / 2, promptY, { opacity: 0, z: 20, fixed: false });
+  // Until the video is in memory (TITLEVIDEO.preload) it says so, and a tap
+  // does nothing: off WiFi the song used to start over a still room.
+  const startWord = touch ? "tap to start" : "press any key";
+  const prompt = UI.chipObj(TITLEVIDEO.ready ? startWord : "loading...", G.W / 2, promptY, { opacity: 0, z: 20, fixed: false });
   if (!replay) {
+    let said = TITLEVIDEO.ready;
     prompt.onUpdate(() => {
       if (phase !== "armed") return;
-      prompt.opacity = 0.7 + Math.sin(time() * 3.2) * 0.3;
+      if (!said && TITLEVIDEO.ready) { said = true; prompt.set(startWord); }
+      prompt.opacity = said ? 0.7 + Math.sin(time() * 3.2) * 0.3 : 0.45;
     });
   }
 
@@ -423,8 +428,10 @@ scene("title", () => {
   // finger lifting. The scene's own press() leaves "armed" alone.
   const GESTURES = ["keydown", "mousedown", "touchend"];
   const armedPress = () => {
-    // a tap on the loading screen (core/loader.js) is not a tap on the title
+    // a tap on the loading screen (core/loader.js) is not a tap on the title,
+    // and nor is one before the video is in memory
     if (window.LOADER && !LOADER.done) return;
+    if (!TITLEVIDEO.ready) return;
     unhook();
     if (phase === "armed") begin();
   };

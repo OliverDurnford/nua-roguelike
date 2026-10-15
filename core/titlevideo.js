@@ -39,6 +39,40 @@ TITLEVIDEO.END_STILL = "video/title-end.jpg";
 TITLEVIDEO.seen = false;   // true once the sequence has run, so coming back to
                            // the title from a game does not replay it
 
+// The whole video comes down into memory while the game loads, and the title
+// only offers "tap to start" once it is in. An iPhone on mobile data never
+// fetches a video ahead of time, whatever `preload` asks, so off WiFi the
+// tap started the song while the room sat on its still with nothing coming
+// (Ollie, 15 Oct 2026). A blob plays the moment it is asked to, so the song
+// and the picture start together again. From file://, where fetch is
+// refused, or if the download fails or takes over WAIT seconds, the element
+// streams the file as it used to and the title goes ahead.
+TITLEVIDEO.ready = false;
+TITLEVIDEO._url = null;
+TITLEVIDEO.WAIT = 25;
+TITLEVIDEO._fallback = () => {
+  if (TITLEVIDEO.ready) return;
+  TITLEVIDEO.ready = true;
+  if (TITLEVIDEO._el && !TITLEVIDEO._el.getAttribute("src")) TITLEVIDEO._el.src = TITLEVIDEO.SRC;
+};
+TITLEVIDEO.preload = () => {
+  if (location.protocol === "file:" || typeof fetch !== "function" || !window.URL || !URL.createObjectURL) {
+    TITLEVIDEO._fallback();
+    return;
+  }
+  const giveUp = setTimeout(TITLEVIDEO._fallback, TITLEVIDEO.WAIT * 1000);
+  fetch(TITLEVIDEO.SRC)
+    .then((r) => (r.ok ? r.blob() : Promise.reject(new Error("HTTP " + r.status))))
+    .then((b) => {
+      clearTimeout(giveUp);
+      if (TITLEVIDEO.ready) return;   // already streaming instead; keep that
+      TITLEVIDEO._url = URL.createObjectURL(b);
+      TITLEVIDEO.ready = true;
+      if (TITLEVIDEO._el) TITLEVIDEO._el.src = TITLEVIDEO._url;
+    })
+    .catch(() => { clearTimeout(giveUp); TITLEVIDEO._fallback(); });
+};
+
 TITLEVIDEO._el = null;
 TITLEVIDEO._still = null;
 TITLEVIDEO._stillToken = 0;   // bumps whenever a still is put up, so a late
@@ -59,7 +93,9 @@ TITLEVIDEO.hideStill = () => {
 TITLEVIDEO.el = () => {
   if (!TITLEVIDEO._el) {
     const v = document.createElement("video");
-    v.src = TITLEVIDEO.SRC;
+    // the file in memory once it is (TITLEVIDEO.preload sets it on arrival)
+    if (TITLEVIDEO._url) v.src = TITLEVIDEO._url;
+    else if (TITLEVIDEO.ready) v.src = TITLEVIDEO.SRC;
     v.muted = true;              // the soundtrack carries the audio
     v.playsInline = true;        // iOS refuses to inline an unflagged video
     v.preload = "auto";
@@ -175,3 +211,6 @@ TITLEVIDEO.toEnd = (t) => {
   if (v.readyState >= 1) land();
   else v.addEventListener("loadedmetadata", land, { once: true });
 };
+
+// start the download as soon as this file runs, under the loading screen
+TITLEVIDEO.preload();

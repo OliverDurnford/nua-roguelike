@@ -124,7 +124,11 @@ BONUS.hide = (a, id) => {
     b.opacity = b.k;
     if (near && !b.seen) { b.seen = true; BONUS.sparkle(b.pos.add(0, -h * 0.4)); SFX.play("uitick"); }
   });
-  b.onCollide("player", () => {
+  // Every frame you touch them, not only the first: a first touch that came
+  // while they were still fading in, or with the room held for a moment,
+  // used to be the only one, and you walked straight through (Ollie, 15
+  // Oct 2026, Jack on the towpath)
+  b.onCollideUpdate("player", () => {
     if (b.gone || b.k < 0.5 || G.paused) return;
     // read again now, not at placing: the run's own state decides
     const now = BONUS.status(c.id, G.run, BONUS.unlocked());
@@ -148,7 +152,7 @@ BONUS.hide = (a, id) => {
 // and card as a hidden find, and they stay where they are.
 BONUS.meet = (npc, id, chapter, areaNum) => {
   const c = BONUS.entry(id);
-  npc.onCollide("player", () => {
+  npc.onCollideUpdate("player", () => {   // every frame of touching, as BONUS.hide
     if (G.paused) return;
     const now = BONUS.status(id, G.run, BONUS.unlocked());
     if (!now || now.mode !== "collect") return;
