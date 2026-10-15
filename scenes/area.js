@@ -516,6 +516,8 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
 
   // --- a bonus character, hidden (core/bonus.js) ---
   const bonusHidesNpc = BONUS.place(a, chapter, areaNum);
+  // --- this chapter's MilpooL cap, if it hides in this room (core/caps.js) ---
+  CAPS.place(a, chapter, areaNum);
 
   // --- boss areas ---
   if (a.boss) {

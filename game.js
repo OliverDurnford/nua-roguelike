@@ -35,6 +35,13 @@ window.dev = {
     STORY.set(s);
     return s.bonus;
   },
+  // the MilpooL caps (core/caps.js): dev.caps() lists the ones found,
+  // dev.caps("reset") forgets them
+  caps: (what) => {
+    const s = STORY.get();
+    if (what === "reset") { s.caps = []; CAPS.session.length = 0; STORY.set(s); }
+    return s.caps;
+  },
 };
 
 go("title");

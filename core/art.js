@@ -592,6 +592,8 @@ ART.init = () => {
       loadSprite("wp-" + c.id, REAL_WEAPONS[c.id].src);
     }
   }
+  // the MilpooL cap collectable (core/caps-real.js, core/caps.js)
+  if (typeof REAL_CAP !== "undefined") loadSprite("milpool-cap", REAL_CAP.src);
   // two friends in one drawing (core/sprites-pair.js): Sam and Josh's kiss
   if (typeof REAL_PAIRS !== "undefined") {
     for (const id in REAL_PAIRS) {

@@ -16,7 +16,7 @@
 
 const STORY = { KEY: "tenyears-story" };
 
-STORY.blank = () => ({ v: 1, found: [], finished: [], wins: 0, bonus: [], runs: 0 });
+STORY.blank = () => ({ v: 1, found: [], finished: [], wins: 0, bonus: [], runs: 0, caps: [] });
 
 STORY.get = () => {
   try {
@@ -27,6 +27,8 @@ STORY.get = () => {
     // saves from before the bonus characters (14 Oct 2026)
     if (!Array.isArray(s.bonus)) s.bonus = [];
     if (typeof s.runs !== "number") s.runs = 0;
+    // and from before the MilpooL caps (15 Oct 2026)
+    if (!Array.isArray(s.caps)) s.caps = [];
     return s;
   } catch (e) { return STORY.blank(); }
 };
@@ -82,6 +84,18 @@ STORY.unlockBonus = (id) => {
 };
 
 STORY.bonusUnlocked = () => STORY.get().bonus.slice();
+
+// A MilpooL cap found (core/caps.js), by its room ("3-4"): kept for good
+// on this device. True if new.
+STORY.findCap = (key) => {
+  const s = STORY.get();
+  if (s.caps.includes(key)) return false;
+  s.caps.push(key);
+  STORY.set(s);
+  return true;
+};
+
+STORY.capsFound = () => STORY.get().caps.slice();
 
 STORY.clear = () => {
   try { localStorage.removeItem(STORY.KEY); } catch (e) {}
