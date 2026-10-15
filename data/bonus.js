@@ -24,7 +24,7 @@ const BONUS_NO_PASSIVE = { name: "", desc: "", apply: null };
 const BONUS_CHARACTERS = [
   {
     id: "olliew", name: "Ollie W", bonus: true, real: true, height: 40,
-    colors: { hair: [178, 130, 46], skin: [245, 189, 154], top: [180, 170, 215], bottom: [60, 62, 74] },
+    colors: { hair: [157, 114, 40], skin: [245, 189, 154], top: [180, 170, 215], bottom: [60, 62, 74] },
     weapon: { name: "DVD case", color: [30, 30, 36] },
     flavour: "PLACEHOLDER: a line about Ollie W.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("josh"), recruitLine: "",
