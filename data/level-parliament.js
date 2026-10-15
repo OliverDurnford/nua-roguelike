@@ -82,7 +82,7 @@ const PARLIAMENT_PLATE = {
   // the porch so Covid can still reach the threshold: it cannot follow
   // you into the doorway, but it can get close enough to make standing
   // there a bad habit.
-  playerSpawn: [16.0, 15.55],
+  playerSpawn: [5.5, 4.65],
 
   // On the lawn, centred across it (the grass runs 8.06 to 23.90) and
   // up towards the Palace end, so the whole square is between you and
