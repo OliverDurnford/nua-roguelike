@@ -145,11 +145,18 @@ PLAYER.magnet = (dir, speed) => ({
 PLAYER.fire = (p, dir, s) => {
   const c = G.playerChar();
   SFX.play("shoot");
-  // camera up, flash (Ollie), or the throw pair for everyone else.
+  // The throw pair, at the attack's pace. Everyone's sheet has the two the
+  // same, bar Ollie's, whose "attack" is still his old camera-up-and-flash
+  // pair: he throws his camera like everyone else now (Ollie, 15 Oct 2026).
   // Never stomps a longer pose still playing (hurt flinch, victory).
   if (ART.hasAnims(c.id)) {
     if (Math.abs(dir.x) > 0.05) { p.flipX = dir.x < 0; p.faceAimT = 0.5; }
-    if (p.actionT <= 0.25 && ART.hasAnim(c.id, "attack")) { p.play("attack"); p.actionT = 0.22; }
+    const an = G.SPR["ch-" + c.id].anims;
+    const throwAnim = an.throw ? "throw" : an.attack ? "attack" : null;
+    if (p.actionT <= 0.25 && throwAnim) {
+      p.play(throwAnim, { speed: (an.attack || an.throw).speed });
+      p.actionT = 0.22;
+    }
   }
   // The real item sprite when the character has one (core/weapons-real.js),
   // sized so its larger side is about a third of a person; else the old
