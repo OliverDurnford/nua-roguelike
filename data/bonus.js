@@ -60,7 +60,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "max", name: "Max", bonus: true, real: true, height: 43,
-    colors: { hair: [164, 132, 92], skin: [238, 174, 130], top: [44, 44, 52], bottom: [20, 20, 28] },
+    colors: { hair: [188, 132, 76], skin: [250, 194, 154], top: [170, 150, 100], bottom: [30, 30, 36] },
     weapon: { name: "Gun", color: [30, 30, 30] },
     flavour: "PLACEHOLDER: a line about Max.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("lucy"), recruitLine: "",
@@ -69,7 +69,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "dion", name: "Dion", bonus: true, real: true, height: 43,
-    colors: { hair: [30, 24, 20], skin: [150, 100, 70], top: [20, 20, 24], bottom: [20, 20, 24] },
+    colors: { hair: [28, 20, 28], skin: [210, 134, 90], top: [44, 44, 50], bottom: [30, 30, 36] },
     weapon: { name: "Espresso martini", color: [70, 40, 25] },
     flavour: "PLACEHOLDER: a line about Dion.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("ana"), recruitLine: "",
