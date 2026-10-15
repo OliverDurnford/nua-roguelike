@@ -228,6 +228,65 @@ ENEMIES.clearAll = () => {
   }));
 };
 
+// ---------- a boss that gets stuck ----------
+// A boss walks straight at you, so a table between you stops it dead, and
+// you could stand on the far side and shoot it for as long as it took
+// (Ollie, 15 Oct 2026). After STUCK.after seconds of trying to walk and
+// getting less than STUCK.slow of the way, it dashes out to open floor
+// (up to STUCK.reach person-heights), then keeps going that way until the
+// floor between it and you is open for a body length (or STUCK.around
+// seconds pass), and only then comes straight at you again. Turning back
+// at once, it slid along the same edge into the same spot.
+ENEMIES.STUCK = { after: 1.0, slow: 0.3, reach: 2.4, around: 2.5, clear: 1 };
+
+// Is the way to you open again, for STUCK.clear person-heights?
+ENEMIES.wayOpen = (b, toward, clear) => {
+  const l = Math.hypot(toward.x, toward.y) || 1;
+  return COLLIDE.travel(b, { x: toward.x / l, y: toward.y / l }, clear) >= 0.8 * clear;
+};
+ENEMIES.DASH = 420;   // px a second, the charge's speed too
+
+// Once a frame, with how far the boss tried to walk and how far it got.
+// True when it is time to dash. Walking freely again forgives a stall at
+// twice the rate it built up.
+ENEMIES.stuckClock = (b, wanted, moved, dt) => {
+  if (!(wanted > 0)) { b.stuckT = 0; return false; }
+  if (moved < wanted * ENEMIES.STUCK.slow) b.stuckT = (b.stuckT || 0) + dt;
+  else b.stuckT = Math.max(0, (b.stuckT || 0) - dt * 2);
+  if (b.stuckT >= ENEMIES.STUCK.after - 1e-6) { b.stuckT = 0; return true; }
+  return false;
+};
+
+// The way out: of sixteen directions, never more than a little away from
+// you, the one with the most open floor, leaning towards you. Null when
+// every way is shut (a third of `reach` or less).
+ENEMIES.unstickDir = (b, toward, reach) => {
+  const tl = Math.hypot(toward.x, toward.y) || 1, tx = toward.x / tl, ty = toward.y / tl;
+  let best = null;
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2, dir = { x: Math.cos(a), y: Math.sin(a) };
+    const cos = dir.x * tx + dir.y * ty;
+    if (cos < -0.2) continue;
+    const travel = COLLIDE.travel(b, dir, reach);
+    if (travel < 0.35 * reach) continue;
+    const score = travel * (1 + 0.6 * cos);
+    if (!best || score > best.score) best = { dir, travel, score };
+  }
+  return best;
+};
+
+ENEMIES.unstick = (b, toP) => {
+  const way = ENEMIES.unstickDir(b, toP, G.charH(ENEMIES.STUCK.reach));
+  if (!way) return false;
+  const dir = vec2(way.dir.x, way.dir.y);
+  b.charging = { dir, t: way.travel / ENEMIES.DASH };
+  b.around = { dir, t: ENEMIES.STUCK.around };
+  const f = COLLIDE.feetOf(b);
+  UI.pop(vec2((f.x1 + f.x2) / 2, f.y2), [210, 196, 170], 22);   // a puff of dust at its feet
+  SFX.play("whoosh");
+  return true;
+};
+
 // ---------- BOSSES ----------
 // A generic pattern machine; each boss picks from:
 //   radial - ring of bullets | aimed - spread at the player
@@ -255,7 +314,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
       bossId: def.id,   // what a "boss:<id>" line on the speech board names
       stun: 0, flashT: 0,
       patI: 0, patT: 2,
-      charging: null, spiral: null, spiralT: 0,
+      charging: null, spiral: null, spiralT: 0, stuckT: 0, around: null,
       real: opts.finale ? ENEMIES.busyReal(G.busyId()) : (def.real || null), animT: 0, baseScale: 1, hurtT: 0,
     },
   ]);
@@ -282,7 +341,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
 
     // charging dash
     if (b.charging) {
-      COLLIDE.moveBy(b, b.charging.dir.scale(420 * dt()));
+      COLLIDE.moveBy(b, b.charging.dir.scale(ENEMIES.DASH * dt()));
       b.charging.t -= dt();
       ENEMIES.animate(b, true, b.charging.dir);
       if (b.charging.t <= 0) b.charging = null;
@@ -303,11 +362,20 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
       return;
     }
 
-    // idle drift toward the player
+    // idle drift toward the player, or round whatever it was stuck on
     const toP = pl.pos.sub(b.pos);
     const drifting = toP.len() > 140;
-    if (drifting) COLLIDE.moveBy(b, toP.unit().scale(def.speed * dt()));
-    ENEMIES.animate(b, drifting, drifting ? toP : null);
+    let way = toP;
+    if (b.around) {
+      b.around.t -= dt();
+      if (b.around.t <= 0 || ENEMIES.wayOpen(b, toP, G.charH(ENEMIES.STUCK.clear))) b.around = null;
+      else way = b.around.dir;
+    }
+    const step = drifting ? def.speed * dt() : 0;
+    const was = b.pos.clone();
+    if (drifting) COLLIDE.moveBy(b, way.unit().scale(step));
+    ENEMIES.animate(b, drifting, drifting ? way : null);
+    if (ENEMIES.stuckClock(b, step, b.pos.dist(was), dt()) && ENEMIES.unstick(b, toP)) return;
 
     // next pattern
     b.patT -= dt();

@@ -72,6 +72,16 @@ COLLIDE.resolve = (obj, axis, dir, step = 0) => {
   }
 };
 
+// How far obj would get along unit vector `dir` (up to `dist`) before the
+// walls stop it, sliding included but only progress along `dir` counted.
+// Nothing moves: a stand-in with the same feet takes the walk.
+COLLIDE.travel = (obj, dir, dist) => {
+  COLLIDE.feetOf(obj);   // works the feet out once, if they never were
+  const probe = { pos: { x: obj.pos.x, y: obj.pos.y }, feet: obj.feet };
+  COLLIDE.moveBy(probe, { x: dir.x * dist, y: dir.y * dist });
+  return (probe.pos.x - obj.pos.x) * dir.x + (probe.pos.y - obj.pos.y) * dir.y;
+};
+
 // Does a box of half-size r centred on (x, y) overlap a wall? Thrown things
 // test their shadow on the floor with this (PLAYER.fire, ENEMIES.shootAt),
 // the way people's feet are stopped: an item flies at hand height, so the
