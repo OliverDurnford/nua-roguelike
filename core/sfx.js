@@ -15,10 +15,22 @@ SFX._master = null;
 SFX.muted = false;
 try { SFX.muted = localStorage.getItem("tenyears-sfx") === "off"; } catch (e) {}
 
+SFX.VOLUME = 0.22;   // the master volume
+
 SFX.toggle = () => {
   SFX.muted = !SFX.muted;
   try { localStorage.setItem("tenyears-sfx", SFX.muted ? "off" : "on"); } catch (e) {}
+  SFX.syncMaster();
   return !SFX.muted;
+};
+
+// Sound off silences what is already sounding too, not only what comes next.
+SFX.syncMaster = () => {
+  const g = SFX._master;
+  if (!g) return;
+  const v = SFX.muted ? 0 : SFX.VOLUME, t = g.context.currentTime;
+  try { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(v, t); } catch (e) {}
+  g.gain.value = v;
 };
 
 // Browsers only allow audio after the player has interacted with the
@@ -29,7 +41,7 @@ SFX.ctx = () => {
     try {
       SFX._ctx = new (window.AudioContext || window.webkitAudioContext)();
       SFX._master = SFX._ctx.createGain();
-      SFX._master.gain.value = 0.22;   // master volume
+      SFX._master.gain.value = SFX.muted ? 0 : SFX.VOLUME;
       SFX._master.connect(SFX._ctx.destination);
     } catch (e) { return null; }
   }

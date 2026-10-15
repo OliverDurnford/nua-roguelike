@@ -210,6 +210,10 @@ COMPANIONS.trySpecial = () => {
   G.run.meter = 0;
   G.run.specialsUsed++;
   G.specialSafe = Infinity;   // untouchable until the attack lands (PLAYER.hurt)
+  // a pointed special goes the way you were aiming when you pressed it,
+  // not wherever the mouse has wandered by the end of the cut-in
+  const pl = get("player")[0];
+  G.specialAim = pl ? PLAYER.specialDir(pl) : null;
   SFX.play("riser");
 
   // The special screen: four parallax layers of this friend doing their
@@ -248,12 +252,12 @@ COMPANIONS.applyEffect = (c) => {
     hitList = targets.filter((t) => t.pos.dist(pl.pos) < 250);
     UI.ring(pl.pos, 250);
   } else if (sp.shape === "directional") {
-    const aim = PLAYER.aimDir(pl, targets) || vec2(1, 0);
+    const aim = G.specialAim || PLAYER.specialDir(pl);
     hitList = targets.filter((t) => {
       const d = t.pos.sub(pl.pos);
       return d.len() > 1 && aim.dot(d.unit()) > 0.7;   // ~45 degree cone
     });
-    UI.ring(pl.pos.add(((PLAYER.aimDir(pl, targets) || vec2(1, 0))).scale(160)), 140);
+    UI.ring(pl.pos.add(aim.scale(160)), 140);
   }
 
   for (const t of hitList) {

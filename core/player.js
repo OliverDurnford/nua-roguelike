@@ -108,6 +108,17 @@ PLAYER.aimDir = (p, targets) => {
   return d.len() < 4 ? vec2(1, 0) : d.unit();
 };
 
+// Which way a pointed special goes (Ana's wave, Jess's stampede): where you
+// are aiming right now (the mouse, or the aim stick while it is held), else
+// the way you last threw, else the way you face. On a phone the aim stick
+// is let go to tap SP, so it always went right (Ollie, 15 Oct 2026).
+PLAYER.specialDir = (p) => {
+  const now = PLAYER.aimDir(p, []);
+  if (now) return now;
+  if (p.lastAim) return p.lastAim;
+  return vec2(p.flipX ? -1 : 1, 0);
+};
+
 // Phones only: a very slight pull of your shots towards enemies (Ollie, 13
 // Oct 2026). A thumb on a stick is never as exact as a mouse, so a shot
 // that would just miss bends in at the end; one aimed clear of everybody
@@ -144,6 +155,7 @@ PLAYER.magnet = (dir, speed) => ({
 // for now that's a coloured shape in their weapon colour.
 PLAYER.fire = (p, dir, s) => {
   const c = G.playerChar();
+  p.lastAim = dir.unit();   // for a pointed special (PLAYER.specialDir)
   SFX.play("shoot");
   // The throw pair, at the attack's pace. Everyone's sheet has the two the
   // same, bar Ollie's, whose "attack" is still his old camera-up-and-flash

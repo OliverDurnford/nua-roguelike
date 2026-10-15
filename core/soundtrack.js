@@ -69,6 +69,7 @@ SOUNDTRACK.full = (track) => Math.min(1, SOUNDTRACK.volume * ((track && track.ga
 SOUNDTRACK._el = null;
 SOUNDTRACK._fade = null;
 SOUNDTRACK._gain = null;          // the Web Audio gain, on iPhones only
+SOUNDTRACK._mute = null;          // and the sound-off switch after it
 SOUNDTRACK._v = 0;                // the volume last asked for, 0 to 1
 
 // True on a browser that ignores an audio element's volume: every iPhone
@@ -106,11 +107,16 @@ SOUNDTRACK._audio = () => {
       const ctx = typeof SFX !== "undefined" && SFX.ctx();
       if (ctx) {
         try {
-          const g = ctx.createGain();
+          const g = ctx.createGain(), m = ctx.createGain();
           g.gain.value = 0;
           ctx.createMediaElementSource(a).connect(g);
-          g.connect(ctx.destination);
+          g.connect(m);
+          m.connect(ctx.destination);
           SOUNDTRACK._gain = g;
+          // An iPhone ignores the element's `muted` once its sound goes
+          // through Web Audio, so "sound off" left the room's song playing
+          // (Ollie, 15 Oct 2026). This gain is the switch instead.
+          SOUNDTRACK._mute = m;
           a.volume = 1;   // the gain does the work now
         } catch (e) {}
       }
@@ -144,7 +150,15 @@ SOUNDTRACK.syncMute = () => {
   const muted = typeof SFX !== "undefined" && SFX.muted;
   const a = SOUNDTRACK._el;
   if (a) a.muted = muted;
-  if (SOUNDTRACK._src) SOUNDTRACK._src.mute.gain.value = muted ? 0 : 1;
+  for (const m of [SOUNDTRACK._mute, SOUNDTRACK._src && SOUNDTRACK._src.mute]) if (m) SOUNDTRACK._switch(m, muted);
+};
+
+// A gain set to 0 or 1 at once: any glide still scheduled on it would
+// otherwise win over a plain .value.
+SOUNDTRACK._switch = (g, off) => {
+  const v = off ? 0 : 1, t = g.context.currentTime;
+  try { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(v, t); } catch (e) {}
+  g.gain.value = v;
 };
 
 // ---------- iPhones: the title song played from memory ----------
