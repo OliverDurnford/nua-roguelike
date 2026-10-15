@@ -96,6 +96,7 @@ const THAMES_PLATE = {
   // Left edge, on the walkway, clear of the bike rack above it (also clear
   // for the wider brute body, which reach.py checks from this same spot).
   playerSpawn: [1.44, 10.0],
+  capSpawn: [39.95, 5.7],
 
   // Spread along the walkway, all clear of the furniture and all more
   // than 6 units from the start.
