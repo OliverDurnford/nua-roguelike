@@ -114,5 +114,5 @@ const BEEHIVE_PLATE = {
   enemySpawns: [
   ],
 
-  exit: [22.46, 22.75, 24.26, 23.95],
+  exit: [22.46, 23.05, 25.05, 23.85],
 };
