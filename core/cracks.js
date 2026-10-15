@@ -378,9 +378,13 @@ const CRACKS = (() => {
   // smaller ones are tried. Returns { pos, variant, flip }, or null
   // when nothing fits (a tight room just gets fewer cracks).
   // `mult` grows the crack past its own size (the boss rooms' way on); a
-  // placed crack is taken to share it.
-  const spot = ([x1, y1, x2, y2], { variant = 0, placed = [], plate = null, mult = 1 } = {}) => {
-    const k = PX * G.areaScale * mult;
+  // placed crack keeps its own (q.mult) or is taken to share it.
+  // `shrink`: smaller sizes to try, in order, once even the smallest shape
+  // will not fit at `mult`. The Market's floor is alleys narrower than any
+  // crack, so most views of it got none at all (Ollie, 15 Oct 2026: "the
+  // cracks didn't appear"). A shrunk spot comes back with its own .mult.
+  const spot = ([x1, y1, x2, y2], { variant = 0, placed = [], plate = null, mult = 1, shrink = [] } = {}) => {
+    let k = PX * G.areaScale * mult;
     const blocks = COLLIDE.solids.filter((r) => !(r.open && r.open())).slice();
     if (plate && plate.things) {
       for (const t of plate.things) {
@@ -400,7 +404,8 @@ const CRACKS = (() => {
         for (const q of placed) {
           ensure(q.variant);
           const qo = OCC[q.variant];
-          let lx = Math.round((wx - q.pos.x) / k), ly = Math.round((wy - q.pos.y) / k);
+          const kq = q.mult ? PX * G.areaScale * q.mult : k;
+          let lx = Math.round((wx - q.pos.x) / kq), ly = Math.round((wy - q.pos.y) / kq);
           if (q.flip) lx = -lx;
           lx += qo.hw; ly += qo.hh;
           if (lx >= 0 && ly >= 0 && lx < qo.W && ly < qo.H && qo.near[ly * qo.W + lx]) return true;
@@ -412,6 +417,14 @@ const CRACKS = (() => {
     for (let v = variant % VARIANTS.length; v < VARIANTS.length; v++) {
       for (let i = 0; i < 70; i++) {
         const c = { pos: vec2(rand(x1, x2), rand(y1, y2)), variant: v, flip: Math.random() < 0.5 };
+        if (!clashes(c)) return c;
+      }
+    }
+    // the smallest shape, smaller and smaller
+    for (const m of shrink) {
+      k = PX * G.areaScale * m;
+      for (let i = 0; i < 140; i++) {
+        const c = { pos: vec2(rand(x1, x2), rand(y1, y2)), variant: VARIANTS.length - 1, flip: Math.random() < 0.5, mult: m };
         if (!clashes(c)) return c;
       }
     }
@@ -462,5 +475,8 @@ const CRACKS = (() => {
     };
   };
 
-  return { STAGES, VARIANTS, bake, load, ensure, comps, spot, fx };
+  // sizes a won room's crack may shrink to when nothing fits in view (spot)
+  const SHRINK = [0.75, 0.55, 0.4];
+
+  return { STAGES, VARIANTS, SHRINK, bake, load, ensure, comps, spot, fx };
 })();

@@ -30,6 +30,9 @@
   const hold = () => {
     if (typeof debug === "undefined") return;
     if (upright.matches) {
+      // in a room, the pause menu: turned back, you find the game paused
+      // (Ollie, 15 Oct 2026), not already running
+      if (typeof UI !== "undefined" && UI.pauseNow) UI.pauseNow();
       if (!debug.paused) { debug.paused = true; pausedByUs = true; }
     } else if (pausedByUs) {
       pausedByUs = false;

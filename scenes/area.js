@@ -207,6 +207,15 @@ MAPS.buildPlate = (plate, { sealed = false } = {}) => {
   const H = plate.rows * U;
   G.worldH = H;
   COLLIDE.reset();
+  // The picture's own edges are walls too, whatever the level file traced:
+  // a gap in a painted wall (Propaganda's right side, Cathedral Close's
+  // bottom) let you walk off the picture and never back (Ollie, 15 Oct
+  // 2026). The finale's walk-off is a ghost and goes through them.
+  const OUT = 4000;
+  COLLIDE.add(-OUT, -OUT, W + OUT, 0);
+  COLLIDE.add(-OUT, H, W + OUT, H + OUT);
+  COLLIDE.add(-OUT, 0, 0, H);
+  COLLIDE.add(W, 0, W + OUT, H);
 
   // The painting. Long plates come as two tiles side by side, because
   // Kaboom refuses a texture wider than 2048 px; `x` is in grid units.
@@ -294,6 +303,7 @@ MAPS.buildPlate = (plate, { sealed = false } = {}) => {
 // calling it "area" would shadow Kaboom's area() component function.
 scene("area", ({ chapter, area: areaNum, retry = false }) => {
   G.paused = false;
+  G.specialSafe = 0;   // a special cut short by leaving the last room
   G.where = "area";   // for the admin arrows (core/admin.js)
   const ch = CHAPTERS[chapter - 1];
   const a = ch.areas[areaNum - 1];
@@ -458,10 +468,10 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     SFX.play("rumble");
     for (let i = 0; i < count; i++) {
       wait(0.25 + i * 0.4, () => {
-        const at = CRACKS.spot(box, { variant: Math.min(smallest, size + (i % 2)), placed, plate: a.plate });
+        const at = CRACKS.spot(box, { variant: Math.min(smallest, size + (i % 2)), placed, plate: a.plate, shrink: CRACKS.SHRINK });
         if (!at) return;
         placed.push(at);
-        add([...CRACKS.comps(at.variant, { flip: at.flip, dur: 1.4 }), pos(at.pos), opacity(0.8), z(2)]);
+        add([...CRACKS.comps(at.variant, { flip: at.flip, dur: 1.4, mult: at.mult }), pos(at.pos), opacity(0.8), z(2)]);
       });
     }
     return { placed, settle: 0.25 + (count - 1) * 0.4 };
@@ -650,22 +660,37 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   };
 
   // --- NPC easter egg (e.g. Megan Whiteside in Propaganda) ---
-  // From the second run Megan is a hidden bonus character on this same spot
-  // until she is found, and she never meets herself (core/bonus.js).
+  // Megan is always here, drawn as herself once her sprite is in, and from
+  // the second run walking into her unlocks her (core/bonus.js); she stays
+  // either way. The only time she is missing is when you are her.
   if (a.npc && !bonusHidesNpc) {
     // Plates can pin the NPC to measured clear floor; ASCII areas keep
     // the old fixed fraction of the room.
     const npcPos = (a.plate && a.plate.npcSpawn)
       ? vec2(a.plate.npcSpawn[0] * a.plate.unit, a.plate.npcSpawn[1] * a.plate.unit)
       : vec2(m.w * 0.5, m.h * 0.3);
-    const npc = add([
-      sprite(a.npc.spr), anchor("center"), pos(npcPos), z(44), opacity(1),
-      "npc", { t: rand(0, 5), said: false, npcId: a.npc.name.split(" ")[0] },
-    ]);
-    DEPTH.track(npc, npc.height / 2);
+    const realId = a.npc.bonusId && G.SPR["ch-" + a.npc.bonusId] ? a.npc.bonusId : null;
+    const h = G.charH(0.95);
+    const npc = realId
+      ? add([
+        ...ART.charComps(realId, h), pos(npcPos), area({ scale: 0.9 }), z(44), opacity(1),
+        "npc", { said: false, npcId: a.npc.name.split(" ")[0], charId: realId, standing: true, feet: ART.feetBox(h) },
+      ])
+      : add([
+        sprite(a.npc.spr), anchor("center"), pos(npcPos), z(44), opacity(1),
+        "npc", { t: rand(0, 5), said: false, npcId: a.npc.name.split(" ")[0] },
+      ]);
+    if (realId) {
+      DEPTH.track(npc);
+      BONUS.meet(npc, realId, chapter, areaNum);
+    } else DEPTH.track(npc, npc.height / 2);
     npc.onUpdate(() => {
-      npc.t += dt();
-      npc.pos.y = npcPos.y + Math.sin(npc.t * 2.2) * 4;
+      if (realId) {
+        if (ART.hasAnims(realId)) FIDGET.idle(npc, realId);   // she breathes and blinks
+      } else {
+        npc.t += dt();
+        npc.pos.y = npcPos.y + Math.sin(npc.t * 2.2) * 4;
+      }
       const pl = get("player")[0];
       if (!npc.said && pl && pl.pos.dist(npc.pos) < 100) {
         npc.said = true;
@@ -673,11 +698,12 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
         SFX.play("uitick");
       }
     });
+    const above = realId ? h * 0.5 + 10 : 42;
     const tag = add([
       text(a.npc.name, { size: 16, font: UI.VT }), anchor("center"),
-      pos(npcPos.add(0, -42)), color(200, 205, 220), opacity(0.8), z(44),
+      pos(npcPos.add(0, -above)), color(200, 205, 220), opacity(0.8), z(44),
     ]);
-    tag.onUpdate(() => { tag.pos.y = npc.pos.y - 44; tag.z = npc.z + 0.5; });
+    tag.onUpdate(() => { tag.pos.y = npc.pos.y - above - 2; tag.z = npc.z + 0.5; });
   }
 
   // --- quiet-area extras ---

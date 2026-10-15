@@ -119,7 +119,7 @@ ENEMIES.spawn = (def, p) => {
       e.shootT -= dt();
       if (e.shootT <= 0) {
         e.shootT = base.interval;
-        ENEMIES.shootAt(e.pos, pl.pos, base.bulletSpeed, def);
+        ENEMIES.shootAt(e.pos, pl.pos, base.bulletSpeed, def, ENEMIES.liftOf(e));
       }
     } else {
       vel = toP.unit().scale(e.speed);
@@ -145,7 +145,10 @@ ENEMIES.spawnIn = (def, p) => {
 // `who` is the shooter's def (an enemy or a boss); when its id has real
 // bullet art (core/ebullets-real.js) that item flies instead of the circle.
 // Boss bullets reuse the plain Dean's art for his graduation form.
-ENEMIES.shootAt = (from, to, speed, who) => {
+// `lift`: how far the shot flies above the floor (the shooter's feet below
+// its middle, ENEMIES.liftOf); walls stop its shadow (PLAYER.flyLow).
+ENEMIES.liftOf = (o) => { const f = COLLIDE.feetOf(o); return (f.y1 + f.y2) / 2 - o.pos.y; };
+ENEMIES.shootAt = (from, to, speed, who, lift = 0) => {
   const dir = to.sub(from).unit();
   SFX.play("eshoot");
   let id = who && who.id;
@@ -172,7 +175,7 @@ ENEMIES.shootAt = (from, to, speed, who) => {
     z(40),
     "ebullet",
   ]);
-  DEPTH.track(b, 0);
+  PLAYER.flyLow(b, lift);
   if (eb) b.onUpdate(() => { b.angle += dt() * 240; });   // the item tumbles as it flies
 };
 
@@ -294,7 +297,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
         b.spiralT = 0.09;
         b.spiral.a += 0.55;
         const dir = vec2(Math.cos(b.spiral.a), Math.sin(b.spiral.a));
-        ENEMIES.shootAt(b.pos, b.pos.add(dir.scale(100)), 160, chapter.boss);
+        ENEMIES.shootAt(b.pos, b.pos.add(dir.scale(100)), 160, chapter.boss, ENEMIES.liftOf(b));
       }
       if (b.spiral.t <= 0) b.spiral = null;
       return;
@@ -330,12 +333,12 @@ ENEMIES.runPattern = (pat, b, pl, chapter) => {
     const n = 12;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2;
-      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(a) * 100, Math.sin(a) * 100), 150, chapter.boss);
+      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(a) * 100, Math.sin(a) * 100), 150, chapter.boss, ENEMIES.liftOf(b));
     }
   } else if (pat === "aimed") {
     for (const off of [-0.28, 0, 0.28]) {
       const base = Math.atan2(pl.pos.y - b.pos.y, pl.pos.x - b.pos.x) + off;
-      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(base) * 100, Math.sin(base) * 100), 200, chapter.boss);
+      ENEMIES.shootAt(b.pos, b.pos.add(Math.cos(base) * 100, Math.sin(base) * 100), 200, chapter.boss, ENEMIES.liftOf(b));
     }
   } else if (pat === "charge") {
     b.charging = { dir: pl.pos.sub(b.pos).unit(), t: 0.65 };

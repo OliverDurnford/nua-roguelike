@@ -1106,6 +1106,7 @@ UI.wireControls = () => {
 // keys underneath (space for the special) do nothing. Installed once per
 // gameplay scene; its objects die with the scene.
 UI.pauseOpen = false;
+UI.pauseNow = () => {};   // replaced by each gameplay scene's UI.pause()
 // On a phone the chip is bigger and a tap counts well outside it: at phone
 // size the old 60 x 20 chip was a 43 x 14 point target (Ollie, 13 Oct 2026).
 UI.PAUSE_BTN = isTouchscreen()
@@ -1177,9 +1178,15 @@ UI.pause = () => {
   const toggle = () => (UI.pauseOpen ? close() : open());
 
   const menu = add([fixed(), z(230), pos(0, 0)]);
+  // Leaving the game (another app, the home screen, another window) or
+  // turning the phone upright opens this menu, so you come back to it
+  // paused rather than straight into the fight (Ollie, 15 Oct 2026).
+  // core/idle.js and core/turn.js call it; it dies with the scene.
+  UI.pauseNow = () => { if (menu.exists()) open(); };
   menu.onDraw(() => {
-    // a collection screen owns the whole frame while it plays
-    if (typeof CUTIN !== "undefined" && CUTIN.active) return;
+    // a collection screen owns the whole frame while it plays, unless it
+    // was paused part way through
+    if (typeof CUTIN !== "undefined" && CUTIN.active && !UI.pauseOpen) return;
     const b = UI.PAUSE_BTN;
     if (!UI.pauseOpen) {
       if (G.cutscene) return;

@@ -68,7 +68,7 @@ const CHAPTERS = [
         name: "Propaganda", feel: "big, empty, sparse", enemyBudget: 7,
         // Megan Whiteside NPC easter egg (LEVEL_DESIGN.md). Line is PLACEHOLDER.
         npc: {
-          name: "Megan Whiteside", line: "oh my GOD, hiii!",
+          name: "Megan Whiteside", line: "oh my GOD, hiii!", bonusId: "megan",
           height: 38,
           colors: { hair: [225, 195, 120], skin: [240, 205, 175], top: [165, 80, 165], bottom: [50, 50, 65] },
         },

@@ -209,6 +209,7 @@ COMPANIONS.trySpecial = () => {
 
   G.run.meter = 0;
   G.run.specialsUsed++;
+  G.specialSafe = Infinity;   // untouchable until the attack lands (PLAYER.hurt)
   SFX.play("riser");
 
   // The special screen: four parallax layers of this friend doing their
@@ -218,6 +219,7 @@ COMPANIONS.trySpecial = () => {
 };
 
 COMPANIONS.applyEffect = (c) => {
+  G.specialSafe = PLAYER.SPECIAL_SAFE;   // and a moment after, to get clear
   const pl = get("player")[0];
   if (!pl) return;
   const sp = c.special;

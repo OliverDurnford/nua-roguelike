@@ -10,8 +10,9 @@
 
 const FIDGET = {};
 
-FIDGET.STILL_BEFORE = 4;   // s the player stands still before the first fidget
-FIDGET.GAP = 8;            // s from one fidget ending to the next starting
+// Ollie, 15 Oct 2026: quicker, so you see them without waiting (were 4 and 8)
+FIDGET.STILL_BEFORE = 1.5; // s the player stands still before the first fidget
+FIDGET.GAP = 3;            // s from one fidget ending to the next starting
 FIDGET.BREATHE = 0.8;      // s on each of the two breathe frames
 FIDGET.BLINK = [2.5, 6];   // s between blinks, random in this range
 FIDGET.BLINK_LEN = 0.11;   // s the eyes stay shut
@@ -254,6 +255,25 @@ FIDGET.kiss = (kisser, shy, onDone, opt = {}) => {
     b.opacity = shy.opacity;
   });
   return end;
+};
+
+// A crowd that is not following you: the tutorial's fielders (Ollie, 15
+// Oct 2026). They take turns as the party does, but your walking about
+// does not stop them; only the room turning (calm() false) does. people()
+// gives everyone who may fidget, each with .charId and .standing.
+FIDGET.beginCrowd = (people, calm) => {
+  const turns = FIDGET.turns(() => rand(0, 1));
+  let now = null, cancel = null;
+  onUpdate(() => {
+    if (G.paused) return;
+    const ok = calm() && !G.cutscene;
+    if (now && FIDGET.shouldCancel({ moving: false, calm: ok, standing: now.exists() && now.standing })) cancel();
+    const crowd = people().filter((o) => o.exists() && o.standing && FIDGETS[o.charId] && FIDGET.sheet(o.charId));
+    const pick = turns.update(dt(), { calm: ok, moving: false, ready: crowd.map((o) => o.charId) });
+    if (!pick) return;
+    now = crowd.find((o) => o.charId === pick);
+    cancel = FIDGET.play(now, pick, () => { now = null; cancel = null; turns.done(); });
+  });
 };
 
 // Stop whatever fidget is playing, at once (a cutscene taking over).

@@ -59,8 +59,10 @@
     if (!looking) return;
     looking = false;
 
-    // Never fight the player's own pause menu: if they paused it, it
-    // stays paused when they come back.
+    // In a room, the game's own pause menu goes up, so they come back to
+    // it rather than straight into the fight (Ollie, 15 Oct 2026). Never
+    // fight that menu: if it is up, it stays up when they come back.
+    if (typeof UI !== "undefined" && UI.pauseNow) UI.pauseNow();
     if (typeof debug !== "undefined" && !debug.paused) {
       debug.paused = true;
       pausedByUs = true;

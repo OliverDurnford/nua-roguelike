@@ -22,7 +22,9 @@
 
 const TITLEVIDEO = {};
 
-TITLEVIDEO.SRC = "video/title-move.mp4";
+// ?v=2: relabelled BT.601 on 15 Oct 2026 so it matches its stills; the
+// query makes a phone that kept the old file fetch the new one
+TITLEVIDEO.SRC = "video/title-move.mp4?v=2";
 // Its first and last frames as stills, in an <img> laid exactly over the
 // video. An iPhone shows nothing of a video that has not played yet (the room
 // was black behind "tap to start"), shows a gap between a poster and the

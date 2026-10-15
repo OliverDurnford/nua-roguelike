@@ -70,6 +70,7 @@ PLAYER.make = (spawnPos) => {
 
     // --- timers ---
     p.iframes = Math.max(0, p.iframes - dt());
+    G.specialSafe = Math.max(0, (G.specialSafe || 0) - dt());
     G.run.shield = Math.max(0, G.run.shield - dt());
     p.opacity = p.iframes > 0 ? 0.5 + Math.sin(time() * 30) * 0.3 : 1;
 
@@ -172,7 +173,14 @@ PLAYER.fire = (p, dir, s) => {
     "pbullet",
     { dmg: s.damage, crit: s.crit },
   ]);
-  DEPTH.track(b, 0);
+  // It flies at hand height, `lift` above its shadow on the floor. Walls
+  // stop the shadow and it takes its depth from it, as people do from their
+  // feet. Tested and sorted by the picture of it instead, anything thrown
+  // along a gap between stalls was already over the row behind: it hit
+  // their bases or went under their roofs (Ollie, 15 Oct 2026: Josh's
+  // chicken down the alleys of Norwich Market).
+  const lift = p.feet ? p.feet.dy + p.feet.h / 2 : 0;
+  PLAYER.flyLow(b, lift);
   // It leaves the hand in FRONT of the thrower. Sorted by its own height
   // alone, anything thrown sideways or upwards sits higher up the screen
   // than his feet and so came out from behind his head (Ollie, 7 Oct
@@ -184,10 +192,23 @@ PLAYER.fire = (p, dir, s) => {
   b.onUpdate(inFront);
 };
 
-// Wire up all combat collisions. Called once per gameplay scene.
+// A thrown thing's shadow, `lift` below the picture of it: its depth, and
+// what walls it hits (a box SHADOW person-heights either side, so the item's
+// own size never decides which gaps it fits down). ENEMIES.shootAt too.
+PLAYER.SHADOW = 0.06;
+PLAYER.flyLow = (b, lift) => {
+  DEPTH.track(b, lift);
+  const r = G.charH(PLAYER.SHADOW);
+  const hit = () => COLLIDE.hits(b.pos.x, b.pos.y + lift, r);
+  b.onUpdate(() => { if (hit()) destroy(b); });
+};
+
+// Wire up all combat collisions. Called once per gameplay scene. The room's
+// walls are PLAYER.flyLow's; this is only the other solid things (the cage
+// bars in the finale).
 PLAYER.wireCombat = (onDeath) => {
-  onCollide("pbullet", "solid", (b) => destroy(b));
-  onCollide("ebullet", "solid", (b) => destroy(b));
+  onCollide("pbullet", "solid", (b, s) => { if (!s.is("plateSolid")) destroy(b); });
+  onCollide("ebullet", "solid", (b, s) => { if (!s.is("plateSolid")) destroy(b); });
   onCollide("pbullet", "enemy", (b, e) => { ENEMIES.hit(e, b.dmg, b.crit); destroy(b); });
   onCollide("pbullet", "boss", (b, e) => { ENEMIES.hit(e, b.dmg, b.crit); destroy(b); });
   onCollide("player", "enemy", (p, e) => PLAYER.hurt(p, 1, onDeath));
@@ -202,8 +223,14 @@ PLAYER.wireCombat = (onDeath) => {
   });
 };
 
+// Nothing touches you while your special plays, nor for SPECIAL_SAFE
+// seconds after it lands: what was already flying, or stood on you, when
+// you pressed it must not kill you the moment the screen comes back
+// (Ollie, 15 Oct 2026). COMPANIONS.trySpecial and applyEffect set it.
+PLAYER.SPECIAL_SAFE = 1.5;
+
 PLAYER.hurt = (p, dmg, onDeath) => {
-  if (G.paused || G.godMode) return;
+  if (G.paused || G.godMode || G.specialSafe > 0) return;
   if (p.iframes > 0 || G.run.shield > 0) return;
   const s = G.stats();
   if (rand(0, 1) < s.dodge) { UI.floatText(p.pos, "dodged!", [140, 220, 140]); SFX.play("tick"); return; }

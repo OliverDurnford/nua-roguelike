@@ -43,14 +43,19 @@ scene("tutorial", () => {
     const p = i === 0
       ? batterPos
       : spots[(i - 1) % spots.length].add(rand(-7, 7), rand(-7, 7));
-    const f = add([...ART.charComps(c.id, G.charH(0.95)), pos(p), z(44), opacity(1), "friend", { charId: c.id, feet: ART.feetBox(G.charH(0.95)) }]);
+    const f = add([...ART.charComps(c.id, G.charH(0.95)), pos(p), z(44), opacity(1), "friend", { charId: c.id, feet: ART.feetBox(G.charH(0.95)), standing: true }]);
     DEPTH.track(f);
+    // they breathe and blink while they wait for the pitch (core/fidget.js)
+    if (ART.hasAnims(c.id)) f.onUpdate(() => { if (f.standing) FIDGET.idle(f, c.id); });
     // Everyone watches the plate. The sprites are drawn facing right,
     // so anyone stood to the right of home plate gets flipped; the
     // catcher and centre field are dead in line and stay as they are.
     if (i > 0 && Math.abs(p.x - batterPos.x) > 24) f.flipX = p.x > batterPos.x;
     friends.push(f);
   });
+
+  // and take turns at their own fidgets, until the ground goes (Ollie, 15 Oct 2026)
+  FIDGET.beginCrowd(() => friends, () => st < 3);
 
   // The bloke's car is painted into the plate, so this is just an
   // invisible marker sitting on the middle one: the ball flies to it and
@@ -154,6 +159,7 @@ scene("tutorial", () => {
     st = 4;
     friends.forEach((f, i) => {
       wait(i * 0.42, () => {
+        f.standing = false;
         let target = cracks[0];
         for (const cp of cracks) if (cp.dist(f.pos) < target.dist(f.pos)) target = cp;
         f.onUpdate(() => {

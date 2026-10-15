@@ -64,14 +64,15 @@ BONUS.SEE = () => G.charH(2);      // closer than this and they fade in
 BONUS.FADE = 0.5;                  // seconds to fade in or out
 
 // Put this room's bonus character on their spot, hidden, if anyone is due.
-// Returns true when the room's NPC must stay away: Megan hidden on the
-// cameo's own spot (run 2 on, until found), or you are playing as Megan.
-// Once she is found the cameo comes back as it always was.
+// Megan is never hidden: she is always in Propaganda as the room's NPC,
+// before, while and after she can be collected (Ollie, 15 Oct 2026), and
+// BONUS.meet makes her collectable where she stands. Returns true when
+// that NPC must stay away, which is only when you are playing as Megan.
 BONUS.place = (a, chapter, areaNum) => {
   if (!G.run || !a.plate) return false;
   const w = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
-  const hideNpc = G.run.charId === "megan" || !!(w && w.id === "megan" && w.mode !== "cameo");
-  if (!w || w.mode === "cameo") return hideNpc;
+  const hideNpc = G.run.charId === "megan";
+  if (!w || w.mode === "cameo" || w.id === "megan") return hideNpc;
   const c = BONUS.entry(w.id);
   const spot = a.plate[c.spot];
   if (!spot) return hideNpc;
@@ -110,6 +111,23 @@ BONUS.place = (a, chapter, areaNum) => {
     BONUS.card(c);
   });
   return hideNpc;
+};
+
+// A bonus character standing in a room as its NPC (Megan in Propaganda).
+// Walking into them unlocks them when they are due, with the same sparkle
+// and card as a hidden find, and they stay where they are.
+BONUS.meet = (npc, id, chapter, areaNum) => {
+  const c = BONUS.entry(id);
+  npc.onCollide("player", () => {
+    if (G.paused) return;
+    const now = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
+    if (!now || now.id !== id || now.mode !== "collect") return;
+    BONUS.unlock(id, G.run);
+    SAVE.patch({ bonusGot: G.run.bonusGot });
+    SFX.play("recruit");
+    BONUS.sparkle(npc.pos.add(0, -npc.height * npc.scale.y * 0.4));
+    BONUS.card(c);
+  });
 };
 
 // A few silver specks that rise and fade: the moment someone is noticed.
@@ -169,6 +187,7 @@ BONUS.card = (c, onDone) => {
   const dismiss = () => {
     if (t < 0.4 || leaving >= 0 || UI.pauseOpen) return;
     leaving = t;
+    UI.pauseToggledAt = time();   // the press that closes it must not also hurry a line (CRACKVOICE.canHurry)
     SFX.play("uiconfirm");
   };
   const handlers = [
