@@ -119,6 +119,15 @@ CRACKVOICE.canHurry = ({ t, now, toggledAt, key, pauseOpen, onPauseBtn }) =>
   !pauseOpen && !onPauseBtn && key !== "escape" && key !== "p" && t >= 0.2 &&
   !(toggledAt !== undefined && now - toggledAt < 0.25);
 
+// Asides are in italics (Ollie, 15 Oct 2026: "The baby's asleep.", "March
+// is fully booked anyway."); a phone going off is not an aside. The pixel
+// fonts have no italic, so the letters are slanted: CRACKVOICE.slant is a
+// transform (Kaboom's Mat4 layout) for a note at (x, y) that leans each
+// letter's top k px right per px up, about the line's middle at pivotY.
+CRACKVOICE.SLANT = 0.22;
+CRACKVOICE.italic = (s) => !!s.small && !s.ring;
+CRACKVOICE.slant = (x, y, k, pivotY) => [1, 0, 0, 0, -k, 1, 0, 0, 0, 0, 1, 0, x + k * pivotY, y, 0, 1];
+
 // ---------- sounds ----------
 // Kept here, not in core/sfx.js: a low murmur under the typing, a lighter
 // one under an aside, the laugh's "ha" and a phone's trill.
@@ -261,7 +270,7 @@ CRACKVOICE.seg = (s, name) => {
   const speed = CRACKVOICE.speed(s);
   return {
     s, text, font, size, wrap, w: Math.ceil(f.width), h: Math.ceil(f.height),
-    shown: s.ring ? text.length : 0, blip: 0, op: 1,
+    shown: s.ring ? text.length : 0, blip: 0, op: 1, italic: CRACKVOICE.italic(s),
     shake: s.laugh ? 2 : s.ring ? 1 : 0,
     color: s.ring ? UI.VOICE_GLOW : UI.VOICE_TEXT,
     speed, type: s.ring ? 0 : CRACKVOICE.typeTime(text, speed),
@@ -305,6 +314,10 @@ CRACKVOICE.note = (from, lift = G.charH(0.5), label = "???") => {
     UI.label(n.label, -n.w / 2 + 11, -n.h / 2 + 8, { size: 8, color: UI.VOICE_GLOW, shadow: false, opacity: op });
     let y = -n.h / 2 + TOP;
     for (const s of n.segs) {
+      if (s.italic) {
+        pushTransform();
+        pushMatrix(new Mat4(CRACKVOICE.slant(n.pos.x, n.pos.y, CRACKVOICE.SLANT, y + s.h / 2)));
+      }
       drawText({
         text: s.text, font: s.font, size: s.size, width: s.wrap, align: "center",
         pos: vec2(0, y), anchor: "top", color: UI.rgb(s.color), opacity: op * s.op,
@@ -314,6 +327,7 @@ CRACKVOICE.note = (from, lift = G.charH(0.5), label = "???") => {
           pos: s.shake ? vec2(rand(-s.shake, s.shake), rand(-s.shake, s.shake)) : null,
         }),
       });
+      if (s.italic) popTransform();
       y += s.h + GAP;
     }
   });

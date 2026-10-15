@@ -26,7 +26,7 @@ FINALE.CAGES = [[9.7, 3.2], [12.5, 3.1], [16.0, 2.8], [19.3, 3.2], [23.0, 3.3]];
 FINALE.CAGED_H = () => G.charH(0.86);   // a follower's height, so the release is seamless
 
 FINALE.LAUGH_T = 2.2;                           // seconds Busy You laughs at the sky
-FINALE.PACE = 1.1;   // the scenes type and move on this much faster than a crack's (45 s of talk at 1; 1.3 read too fast, Ollie 15 Oct)
+FINALE.PACE = 0.9;   // the scenes type and move on at this times a crack's speed (Ollie, 15 Oct: 1.3, then 1.1, still read too fast)
 FINALE.HEAD = () => FINALE.BOSS_H() * 0.55;     // the boss's head, above its middle
 FINALE.bossName = () => "BUSY " + G.char(G.busyId()).name.toUpperCase();
 
