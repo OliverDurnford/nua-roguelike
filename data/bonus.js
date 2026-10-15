@@ -13,7 +13,8 @@
 // reads a character expects them.
 // lines.unlock is the unlock card's line, lines.notYet the bubble when
 // this run's allowance is used up. Both PLACEHOLDER for Ollie, as are
-// the flavour lines. colors stand in until the sprites are sampled.
+// the flavour lines. colors are sampled from each approved sprite (hair,
+// skin, then a clothes colour for top, which tints their speech bubble).
 // ============================================================
 
 const BONUS_NOT_YET = "Maybe I can join you next playthrough. Just not this one.";   // PLACEHOLDER
@@ -32,7 +33,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "megan", name: "Megan", bonus: true, real: true, height: 38,
-    colors: { hair: [170, 90, 50], skin: [240, 205, 185], top: [60, 110, 70], bottom: [150, 130, 100] },
+    colors: { hair: [196, 140, 116], skin: [242, 194, 174], top: [62, 112, 78], bottom: [196, 168, 124] },
     weapon: { name: "Mickey Mouse ears", color: [20, 20, 24] },
     flavour: "PLACEHOLDER: a line about Megan.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("annie"), recruitLine: "",
@@ -41,7 +42,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "joep", name: "Joe P", bonus: true, real: true, height: 41,
-    colors: { hair: [40, 28, 22], skin: [170, 120, 90], top: [40, 45, 80], bottom: [30, 30, 36] },
+    colors: { hair: [68, 60, 60], skin: [218, 146, 98], top: [68, 100, 148], bottom: [20, 20, 20] },
     weapon: { name: "Writer's quill", color: [240, 240, 235] },
     flavour: "PLACEHOLDER: a line about Joe P.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("cal"), recruitLine: "",
@@ -50,7 +51,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "joec", name: "Joe C", bonus: true, real: true, height: 42,
-    colors: { hair: [60, 45, 35], skin: [215, 170, 135], top: [70, 85, 60], bottom: [30, 30, 34] },
+    colors: { hair: [156, 140, 124], skin: [238, 198, 162], top: [100, 116, 68], bottom: [20, 20, 20] },
     weapon: { name: "Toy car", color: [200, 40, 40] },
     flavour: "PLACEHOLDER: a line about Joe C.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("adam"), recruitLine: "",
@@ -59,7 +60,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "max", name: "Max", bonus: true, real: true, height: 43,
-    colors: { hair: [170, 120, 70], skin: [235, 195, 170], top: [30, 34, 50], bottom: [30, 32, 40] },
+    colors: { hair: [164, 132, 92], skin: [238, 174, 130], top: [44, 44, 52], bottom: [20, 20, 28] },
     weapon: { name: "Gun", color: [30, 30, 30] },
     flavour: "PLACEHOLDER: a line about Max.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("lucy"), recruitLine: "",
@@ -77,7 +78,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "jack", name: "Jack", bonus: true, real: true, height: 41,
-    colors: { hair: [30, 24, 20], skin: [225, 180, 150], top: [40, 110, 110], bottom: [35, 35, 40] },
+    colors: { hair: [60, 52, 60], skin: [242, 170, 126], top: [74, 122, 190], bottom: [30, 30, 36] },
     weapon: { name: "Newspaper", color: [220, 215, 200] },
     flavour: "PLACEHOLDER: a line about Jack.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("ethan"), recruitLine: "",
