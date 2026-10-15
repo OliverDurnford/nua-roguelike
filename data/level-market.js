@@ -123,5 +123,5 @@ const MARKET_PLATE = {
   ],
 
   // Way out, up the steps at the top of the market.
-  exit: [12.7, 2.1, 14.95, 2.55],
+  exit: [12.65, 0.05, 14.9, 0.5],
 };
