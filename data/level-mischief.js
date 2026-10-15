@@ -167,5 +167,5 @@ const MISCHIEF_PLATE = {
   enemySpawns: [
   ],
 
-  exit: [9.65, 0.05, 10.95, 0.5],
+  exit: [17.55, 31.05, 19.55, 31.45],
 };
