@@ -161,7 +161,7 @@ const MISCHIEF_PLATE = {
     { name: "round table front lower pedestal", foot: [20.6, 29.95, 21.6, 30.45], over: [[20.6, 29.95], [21.6, 29.95], [21.6, 30.45], [20.6, 30.45]] },
   ],
 
-  playerSpawn: [21.4, 30.3],
+  playerSpawn: [7.95, 14.1],
   capSpawn: [1.6, 21.2],
   bonusSpawn2: [10.35, 3],
   bonusSpawn: [20.6, 7.4],
