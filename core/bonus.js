@@ -24,17 +24,31 @@ BONUS.unlocked = () => {
   return ids;
 };
 
-// Who is hidden in this room for this run, or null. `unlocked` is
+// How one bonus character stands this run, or null if they are not about
+// (already found, or the person you are playing as). `unlocked` is
 // BONUS.unlocked(). Megan is the Propaganda cameo on run 1 ("cameo") and
-// collectable from run 2; everyone else is collectable while the run's
-// allowance lasts, then only says they will come next time ("notYet").
-BONUS.who = (chapter, area, run, unlocked) => {
-  const c = BONUS_CHARACTERS.find((b) => b.room[0] === chapter && b.room[1] === area);
-  if (!c || unlocked.includes(c.id) || run.charId === c.id) return null;
+// collectable from run 2. Everyone else is collectable only if this run
+// picked them (run.bonusOpen, at random: Ollie, 15 Oct 2026, "it shouldn't
+// be the first ones you get to"), and otherwise says they will come next
+// time ("notYet"). A run saved before the pick keeps the old rule, first
+// come while the allowance lasts.
+BONUS.status = (id, run, unlocked) => {
+  if (unlocked.includes(id) || run.charId === id) return null;
   const runNo = run.runNo || 1;
-  if (c.id === "megan") return { id: c.id, mode: runNo <= 1 ? "cameo" : "collect" };
-  return { id: c.id, mode: (run.bonusGot || 0) < BONUS.allowance(runNo) ? "collect" : "notYet" };
+  if (id === "megan") return { id, mode: runNo <= 1 ? "cameo" : "collect" };
+  if (Array.isArray(run.bonusOpen)) return { id, mode: run.bonusOpen.includes(id) ? "collect" : "notYet" };
+  return { id, mode: (run.bonusGot || 0) < BONUS.allowance(runNo) ? "collect" : "notYet" };
 };
+
+// Everyone hidden in this room this run, in data order (a room can hide two:
+// Joe P and Ella share the Mischief).
+BONUS.inRoom = (chapter, area, run, unlocked) => BONUS_CHARACTERS
+  .filter((b) => b.room[0] === chapter && b.room[1] === area)
+  .map((b) => BONUS.status(b.id, run, unlocked))
+  .filter(Boolean);
+
+// The first of them, or null (Megan's cameo and the older callers).
+BONUS.who = (chapter, area, run, unlocked) => BONUS.inRoom(chapter, area, run, unlocked)[0] || null;
 
 // Saved to the story at once (dying straight after keeps it), then
 // counted against this run unless it is Megan. True if they are new.
@@ -52,6 +66,16 @@ BONUS.unlock = (id, run) => {
 BONUS.startRun = (run, rnd) => {
   run.runNo = STORY.nextRun();
   run.bonusGot = 0;
+  // who can be collected this run: as many as the allowance, picked at random
+  // from those not found yet (never Megan, never the person you play as)
+  const unlocked = BONUS.unlocked();
+  const pool = BONUS_CHARACTERS.map((c) => c.id)
+    .filter((id) => id !== "megan" && id !== run.charId && !unlocked.includes(id));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1)) % (i + 1);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  run.bonusOpen = pool.slice(0, BONUS.allowance(run.runNo));
   const ten = CHARACTERS.map((c) => c.id);
   const isBonus = BONUS_CHARACTERS.some((c) => c.id === run.charId);
   run.busyId = isBonus ? ten[Math.floor(rnd() * ten.length) % ten.length] : run.charId;
@@ -70,12 +94,19 @@ BONUS.FADE = 0.5;                  // seconds to fade in or out
 // that NPC must stay away, which is only when you are playing as Megan.
 BONUS.place = (a, chapter, areaNum) => {
   if (!G.run || !a.plate) return false;
-  const w = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
   const hideNpc = G.run.charId === "megan";
-  if (!w || w.mode === "cameo" || w.id === "megan") return hideNpc;
-  const c = BONUS.entry(w.id);
+  // everyone hidden here (the Mischief hides two), Megan aside: she stands as the NPC
+  for (const w of BONUS.inRoom(chapter, areaNum, G.run, BONUS.unlocked())) {
+    if (w.mode !== "cameo" && w.id !== "megan") BONUS.hide(a, w.id);
+  }
+  return hideNpc;
+};
+
+// One bonus character on their spot, hidden until you are close.
+BONUS.hide = (a, id) => {
+  const c = BONUS.entry(id);
   const spot = a.plate[c.spot];
-  if (!spot) return hideNpc;
+  if (!spot) return;
   const at = vec2(spot[0] * a.plate.unit, spot[1] * a.plate.unit);
   const h = G.charH(0.95);
   const b = add([
@@ -95,8 +126,8 @@ BONUS.place = (a, chapter, areaNum) => {
   });
   b.onCollide("player", () => {
     if (b.gone || b.k < 0.5 || G.paused) return;
-    // the allowance is read again now, not at placing: a run can fill up in between
-    const now = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
+    // read again now, not at placing: the run's own state decides
+    const now = BONUS.status(c.id, G.run, BONUS.unlocked());
     if (!now || now.mode !== "collect") {
       // once per visit to the room (the spec), however often you walk back
       if (!b.said) { b.said = true; UI.speech(b, c.lines.notYet, c.colors.top); }
@@ -110,7 +141,6 @@ BONUS.place = (a, chapter, areaNum) => {
     destroy(b);
     BONUS.card(c);
   });
-  return hideNpc;
 };
 
 // A bonus character standing in a room as its NPC (Megan in Propaganda).
@@ -120,8 +150,8 @@ BONUS.meet = (npc, id, chapter, areaNum) => {
   const c = BONUS.entry(id);
   npc.onCollide("player", () => {
     if (G.paused) return;
-    const now = BONUS.who(chapter, areaNum, G.run, BONUS.unlocked());
-    if (!now || now.id !== id || now.mode !== "collect") return;
+    const now = BONUS.status(id, G.run, BONUS.unlocked());
+    if (!now || now.mode !== "collect") return;
     BONUS.unlock(id, G.run);
     SAVE.patch({ bonusGot: G.run.bonusGot });
     SFX.play("recruit");

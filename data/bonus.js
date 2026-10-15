@@ -85,4 +85,14 @@ const BONUS_CHARACTERS = [
     room: [5, 4], spot: "bonusSpawn",
     lines: { unlock: "Pick Jack on the BONUS page.", notYet: BONUS_NOT_YET },
   },
+  {
+    id: "ella", name: "Ella", bonus: true, real: true, height: 38,
+    colors: { hair: [230, 200, 130], skin: [240, 200, 175], top: [30, 30, 34], bottom: [24, 24, 28] },
+    weapon: { name: "Tooth", color: [245, 245, 240] },
+    flavour: "PLACEHOLDER: a line about Ella.",
+    passive: BONUS_NO_PASSIVE, special: bonusSpecial("jess"), recruitLine: "",
+    // the Mischief's bathroom; Joe P has the room's first spot (Ollie, 15 Oct 2026)
+    room: [2, 3], spot: "bonusSpawn2",
+    lines: { unlock: "Pick Ella on the BONUS page.", notYet: BONUS_NOT_YET },
+  },
 ];
