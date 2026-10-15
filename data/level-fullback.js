@@ -120,14 +120,8 @@ const FULLBACK_PLATE = {
   // all in ~8x5 units), so its spawn is the closest to the start; every
   // other spawn clears 5 units.
   enemySpawns: [
-    [7.0, 6.0],    // deck A, the gap between the table and the heater
-    [15.0, 5.8],   // deck B
-    [23.0, 3.3],   // deck C, by the back table
-    [22.3, 6.5],   // deck C, open floor by the B-C gangway
-    [5.5, 15.6],   // deck D
-    [15.5, 15.3],  // deck E
-    [25.2, 15.6],  // deck F
-    [30.7, 13.7],  // deck F, by the gate
+    [5.7, 5.85], [15.25, 5.25], [23.1, 4.85], [26.15, 5.65],
+    [7.35, 13.6], [15.5, 15.3], [25.3, 15.1], [30.7, 13.7],
   ],
 
   // Thin rectangle in the gate, right wall, off the bottom right deck.
