@@ -79,7 +79,7 @@ const OLDSTREET_PLATE = {
   // left bench, on the front edge of the seat, so the sprite reads as
   // sitting rather than standing behind it. The benches are hard against
   // the back wall, so this end is the only side you can reach them from.
-  companionSpawn: [11.7, 12.9],
+  companionSpawn: [16.1, 8],
 
   // Never used: this area spawns nothing. Kept so the file matches the
   // schema every other area uses. All four are out on the open platform.
