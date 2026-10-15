@@ -165,5 +165,5 @@ const LIBRARY_PLATE = {
   // Way out, at the right wall in the strip the staircase's foot opens
   // onto, between the bottom of the ironwork and the display table.
   // Locked until the room is clear.
-  exit: [31.15, 9.98, 31.6, 10.55],
+  exit: [31.05, 7.68, 31.5, 9.3],
 };
