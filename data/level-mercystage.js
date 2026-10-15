@@ -108,6 +108,7 @@ const MERCYSTAGE_PLATE = {
   // Centre of the bar-end floor, facing the stage across the whole
   // room. Directly opposite the boss, which is the point.
   playerSpawn: [13.0, 18.9],
+  capSpawn: [24.2, 11.4],
 
   // In the bowl, square in front of his own decks. Deliberately NOT on
   // the stage slab, so he is not born inside the collision. If the boss
