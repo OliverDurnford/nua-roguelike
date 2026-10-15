@@ -142,7 +142,7 @@ BONUS.card = (c, onDone) => {
   let t = 0, leaving = -1;
   const root = add([fixed(), z(220), pos(0, 0)]);
   const fig = add([...ART.charComps(c.id, 88), pos(CX - W / 2 + 54, CY + 4), fixed(), z(221), opacity(0)]);
-  if (ART.hasAnims(c.id)) fig.play("victory");
+  if (ART.hasAnim(c.id, "victory")) fig.play("victory");
   const finish = () => {
     root.destroy(); fig.destroy();
     for (const hd of handlers) hd.cancel();

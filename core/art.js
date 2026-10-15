@@ -746,6 +746,10 @@ ART.bossAnims = (id) => {
 
 // True if this character has a real animation sheet loaded.
 ART.hasAnims = (id) => !!(G.SPR["ch-" + id] && G.SPR["ch-" + id].anims);
+// One named anim on a friend's sheet. A bonus character's sheet can lack the
+// knock-out or the victory if Gemini's cap cut it short (15 Oct 2026), and
+// Kaboom throws on play() of an anim the sheet does not have.
+ART.hasAnim = (id, name) => ART.hasAnims(id) && G.SPR["ch-" + id].anims[name] !== undefined;
 
 // The select screen's pose, sized and anchored like charComps. Not started:
 // the caller plays "pose" when it wants that card's breathe to begin.

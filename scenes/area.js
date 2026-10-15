@@ -547,7 +547,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     G.onBossDeath = (snap) => {
       G.onBossDeath = null;
       if (dead) return;   // a last bullet in flight can land after you've dropped
-      if (ART.hasAnims(G.run.charId)) { player.play("victory"); player.actionT = 1.6; }
+      if (ART.hasAnim(G.run.charId, "victory")) { player.play("victory"); player.actionT = 1.6; }
       SPEECH.fire("bossDown");
       if (a.finale) {
         FINALE.win(player, snap);
@@ -840,7 +840,8 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     G.paused = true;
     G.run.deaths++;
     // stagger, then flat on his back while the screen dims
-    if (ART.hasAnims(G.run.charId)) player.play("ko");
+    if (ART.hasAnim(G.run.charId, "ko")) player.play("ko");
+    else if (ART.hasAnim(G.run.charId, "hurt")) player.play("hurt");
 
     // hold the screen for a beat first, so the KO stagger-and-flop lands
     // in full light before the dim and the big red text move in

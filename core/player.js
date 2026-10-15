@@ -148,7 +148,7 @@ PLAYER.fire = (p, dir, s) => {
   // Never stomps a longer pose still playing (hurt flinch, victory).
   if (ART.hasAnims(c.id)) {
     if (Math.abs(dir.x) > 0.05) { p.flipX = dir.x < 0; p.faceAimT = 0.5; }
-    if (p.actionT <= 0.25) { p.play("attack"); p.actionT = 0.22; }
+    if (p.actionT <= 0.25 && ART.hasAnim(c.id, "attack")) { p.play("attack"); p.actionT = 0.22; }
   }
   // The real item sprite when the character has one (core/weapons-real.js),
   // sized so its larger side is about a third of a person; else the old
@@ -211,7 +211,7 @@ PLAYER.hurt = (p, dmg, onDeath) => {
 
   G.run.hp -= dmg;
   p.iframes = 1.0;
-  if (ART.hasAnims(G.run.charId)) { p.play("hurt"); p.actionT = 0.4; }
+  if (ART.hasAnim(G.run.charId, "hurt")) { p.play("hurt"); p.actionT = 0.4; }
   shake(8);
   UI.flash([220, 50, 50], 0.12);
   SFX.play("hurt");

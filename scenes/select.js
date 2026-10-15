@@ -100,7 +100,7 @@ scene("select", (opts = {}) => {
 
     // The chosen one strikes the first frame of their throw, item up and
     // ready to go (Ollie, 7 Oct); everyone else holds their pose.
-    const throwFrame = ART.hasAnims(c.id) ? G.SPR["ch-" + c.id].anims.throw.from : null;
+    const throwFrame = ART.hasAnim(c.id, "throw") ? G.SPR["ch-" + c.id].anims.throw.from : null;
     let posed = false;
 
     // staggered entrance
