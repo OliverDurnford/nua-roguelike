@@ -107,6 +107,7 @@ const FULLBACK_PLATE = {
     { name: "white pot, deck F", foot: [28.9, 11.15, 29.5, 11.5] },
     { name: "urn, deck F", foot: [23.5, 15.15, 23.9, 15.5] },
     { name: "red pot, deck F", foot: [22.5, 15.15, 23.2, 15.5] },
+    { name: "thing 71", over: [[11.05, 4.6], [11.3, 4.6], [11.3, 6.05], [11.05, 6.05]] },
   ],
 
   // Top left deck, just inside the door and clear of the barrel above it.
