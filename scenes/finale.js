@@ -26,7 +26,7 @@ FINALE.CAGES = [[9.7, 3.2], [12.5, 3.1], [16.0, 2.8], [19.3, 3.2], [23.0, 3.3]];
 FINALE.CAGED_H = () => G.charH(0.86);   // a follower's height, so the release is seamless
 
 FINALE.LAUGH_T = 2.2;                           // seconds Busy You laughs at the sky
-FINALE.PACE = 1.3;   // the scenes type and move on this much faster than a crack's (the opening ran 45 s at 1)
+FINALE.PACE = 1.1;   // the scenes type and move on this much faster than a crack's (45 s of talk at 1; 1.3 read too fast, Ollie 15 Oct)
 FINALE.HEAD = () => FINALE.BOSS_H() * 0.55;     // the boss's head, above its middle
 FINALE.bossName = () => "BUSY " + G.char(G.busyId()).name.toUpperCase();
 
@@ -50,6 +50,17 @@ FINALE.inView = (p, cam, zoom, viewW, viewH, top, side, bottom) => {
   const hw = viewW / 2 / zoom, hh = viewH / 2 / zoom;
   return p.x >= cam.x - hw + side / zoom && p.x <= cam.x + hw - side / zoom &&
     p.y >= cam.y - hh + top / zoom && p.y <= cam.y + hh - bottom / zoom;
+};
+
+// A camera shot that frames every rect [x1, y1, x2, y2] (world px) with
+// `margin` round them, between the black bars (`bar` screen px top and
+// bottom), never closer than maxZoom: { at, zoom }. The opening frames Busy
+// You and all five cages this way (Ollie, 15 Oct 2026: no cage cut off).
+FINALE.groupShot = (rects, viewW, viewH, bar, margin, maxZoom) => {
+  const x1 = Math.min(...rects.map((r) => r[0])) - margin, y1 = Math.min(...rects.map((r) => r[1])) - margin;
+  const x2 = Math.max(...rects.map((r) => r[2])) + margin, y2 = Math.max(...rects.map((r) => r[3])) + margin;
+  const zoom = Math.min(maxZoom, viewW / (x2 - x1), (viewH - 2 * bar) / (y2 - y1));
+  return { at: { x: (x1 + x2) / 2, y: (y1 + y2) / 2 }, zoom };
 };
 
 // Who speaks for the script's roles: you, one caged friend, two different
@@ -185,6 +196,17 @@ FINALE.say = (ids, text) => {
   }
 };
 
+// The world rect [x1, y1, x2, y2] a sprite covers on screen: the boss is
+// hung from its middle, a cage from its bottom edge.
+FINALE.rect = (o) => {
+  if (o.is("boss")) {
+    const h = FINALE.BOSS_H();
+    return [o.pos.x - h * 0.35, o.pos.y - h / 2, o.pos.x + h * 0.35, o.pos.y + h / 2];
+  }
+  const w = o.width * o.scale.x, h = o.height * o.scale.y;
+  return [o.pos.x - w / 2, o.pos.y - h, o.pos.x + w / 2, o.pos.y];
+};
+
 // The point a talking scene's camera shot flies to (its `to`): it eases
 // after whoever is speaking, so a change of speaker is a glide, not a cut.
 FINALE.cam = (start) => {
@@ -216,10 +238,13 @@ FINALE.scene = (key, o, done) => {
     name: FINALE.bossName(),
     glow: false,
     speak: FINALE.say,
+    // Busy You and a caged friend share one framing, o.home (the boss and
+    // every cage in view); anyone else, the camera glides to
     look: (ids) => {
       if (!o.cam) return;
-      const who = ids ? (ids.length === 1 ? FINALE.ent(ids[0]) : null) : a;
-      if (who) o.cam.target = () => (who.exists() ? who.pos : o.cam.at);
+      const who = ids && ids.length === 1 ? FINALE.ent(ids[0]) : null;
+      if (!ids || (who && who.is("cagedFriend"))) o.cam.target = o.home || (() => a.pos);
+      else if (who) o.cam.target = () => (who.exists() ? who.pos : o.cam.at);
     },
     anim: (name, end) => FINALE.laugh(get("boss")[0], end),
     cue: o.cue,
@@ -299,17 +324,23 @@ FINALE.start = (m, player, ch, areaNum, onFight, opts = {}) => {
   G.paused = true;
   G.cutscene = true;
   dir.cut(player.pos, 1);
-  // the camera rides FINALE.cam through the scene, gliding to each speaker
-  const cam = FINALE.cam(boss.pos);
-  cam.target = () => boss.pos;
+  // The camera rides FINALE.cam through the scene, gliding to each speaker.
+  // Busy You's framing takes in every cage too, none cut off by the frame or
+  // the bars (Ollie, 15 Oct 2026); slack lets the view tuck the strip the
+  // top bar hides past the map's edge, where the cages stand.
+  const shot = FINALE.groupShot([FINALE.rect(boss)].concat(get("cageBars").filter((c) => c.is("solid")).map(FINALE.rect)),
+    G.W, G.H, CRACKVOICE.BAR, 16, 1.15);
+  const home = vec2(shot.at.x, shot.at.y);
+  const cam = FINALE.cam(home);
+  cam.target = () => home;
   dir.run([
     { to: "follow", zoom: 1, move: 0, hold: 0.8 },
     {
-      to: () => cam.at, zoom: 1.15, move: 1.4, hold: Infinity,
+      to: () => cam.at, zoom: shot.zoom, move: 1.4, hold: Infinity, slack: CRACKVOICE.BAR,
       arrive: () => {
         const bars = CRACKVOICE.bars();
         FINALE.scene("opening", {
-          anchor: boss, lift: FINALE.HEAD(), cam,
+          anchor: boss, lift: FINALE.HEAD(), cam, home: () => home,
           roles: FINALE.pickRoles(G.run.charId, get("cagedFriend").map((f) => f.charId), []),
         }, () => { bars.out(); dir.release(); });
       },

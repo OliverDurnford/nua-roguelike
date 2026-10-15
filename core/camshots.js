@@ -12,6 +12,8 @@
 //           release())
 //   start   optional, called as the shot begins
 //   arrive  optional, called once, the moment it gets there
+//   slack   optional, screen px the view may hang past the map's top and
+//           bottom under black bars (CAMSHOTS.clamp)
 // The view is kept inside the map at every zoom, so a shot near an
 // edge never shows the void past the painting.
 // ============================================================
@@ -25,10 +27,14 @@ CAMSHOTS.ease = (k) => {
 
 // A camera centre for a viewW x viewH view at this zoom that stays inside
 // bounds {x1, y1, x2, y2}. A map smaller than the view is centred instead.
-CAMSHOTS.clamp = (p, zoom, viewW, viewH, b) => {
-  const hw = viewW / 2 / zoom, hh = viewH / 2 / zoom;
+// slack: screen px of the view that may hang past the top and bottom edges,
+// for a shot under black bars that hide that strip (the finale's opening:
+// the cages stand at the very top of the park).
+CAMSHOTS.clamp = (p, zoom, viewW, viewH, b, slack = 0) => {
+  const hw = viewW / 2 / zoom, hh = viewH / 2 / zoom, s = slack / zoom;
+  const y1 = b.y1 - s, y2 = b.y2 + s;
   const cx = b.x2 - b.x1 <= hw * 2 ? (b.x1 + b.x2) / 2 : Math.min(b.x2 - hw, Math.max(b.x1 + hw, p.x));
-  const cy = b.y2 - b.y1 <= hh * 2 ? (b.y1 + b.y2) / 2 : Math.min(b.y2 - hh, Math.max(b.y1 + hh, p.y));
+  const cy = y2 - y1 <= hh * 2 ? (y1 + y2) / 2 : Math.min(y2 - hh, Math.max(y1 + hh, p.y));
   return vec2(cx, cy);
 };
 
@@ -68,7 +74,7 @@ CAMSHOTS.director = (bounds, viewW, viewH) => {
     }
     const s = d.shots[d.i];
     const want = typeof s.to === "function" ? s.to() : s.to === "follow" ? follow : s.to;
-    const to = CAMSHOTS.clamp(want, s.zoom, viewW, viewH, bounds);
+    const to = CAMSHOTS.clamp(want, s.zoom, viewW, viewH, bounds, s.slack || 0);
     const from = d.fromPos || to;
     // the 1e-6 stops float drift in the summed frame times leaving a shot
     // one frame short of arriving
