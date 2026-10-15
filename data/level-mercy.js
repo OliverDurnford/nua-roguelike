@@ -51,8 +51,8 @@ const MERCY_PLATE = {
   // foot); `base` overrides it for overhangs.
   things: [
     { name: "whole bar corner, shelves to rail posts", foot: [0, 0, 9.75, 8.6] },
-    { name: "wall run: exit sign, framed board, cigarette machine", foot: [9.75, 0, 14.65, 4] },
-    { name: "the two archway thresholds, next room's floor beyond", foot: [14.65, 0, 18.45, 2.7] },
+    { name: "wall run: exit sign, framed board, cigarette machine", foot: [9.75, 0, 11.25, 4] },
+    { name: "the two archway thresholds, next room's floor beyond", foot: [14.65, 0, 18.45, 3.9] },
     { name: "archway frame, walk under", over: [[14.51, 0.42], [18.56, 0.42], [18.56, 3.93], [18.42, 3.93], [18.42, 0.5], [14.64, 0.5], [14.64, 3.93], [14.51, 3.93]], base: 3.95 },
     { name: "archway lintel face, left of the pier, walk under", over: [[14.64, 0.5], [15.99, 0.5], [15.99, 2.6], [14.64, 2.6]], base: 3.95 },
     { name: "archway lintel face, right of the pier, walk under", over: [[17.19, 0.5], [18.42, 0.5], [18.42, 2.6], [17.19, 2.6]], base: 3.95 },
@@ -98,6 +98,7 @@ const MERCY_PLATE = {
     { name: "lower pier, 3", foot: [15.9, 15.5, 17.45, 16.6], over: [[15.83, 15.5], [17.49, 15.5], [17.49, 16.6], [15.83, 16.6]] },
     { name: "lower pier, 4", foot: [15.9, 16.6, 17.45, 17.45], over: [[15.83, 16.6], [17.49, 16.6], [17.49, 17.45], [15.83, 17.45]] },
     { name: "bottom edge of the picture", foot: [0, 17.4, 32, 18] },
+    { name: "thing 49", foot: [11.25, 0, 14.5, 3.25] },
   ],
 
   // On the rubber entrance mat, just in from the street door,
@@ -123,5 +124,5 @@ const MERCY_PLATE = {
   // sits over the middle of it, so only the two openings and the
   // threshold strip in front actually trigger. Locked until the room
   // is clear.
-  exit: [14.75, 2.75, 15.75, 3.85],
+  exit: [11.4, 3.35, 14.45, 3.9],
 };
