@@ -78,5 +78,5 @@ const PROPAGANDA_PLATE = {
   ],
 
   // Way out, bottom left of the dancefloor.
-  exit: [10.6, 16.85, 12.3, 17.79],
+  exit: [31.65, 12, 31.95, 13.65],
 };
