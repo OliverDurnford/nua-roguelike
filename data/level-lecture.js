@@ -126,5 +126,5 @@ const LECTURE_PLATE = {
   // Way out: back through the doors you came in by. Sits on the
   // threshold, half on the wall, half on the floor. Locked until the
   // Dean is down.
-  exit: [14.30, 1.90, 17.20, 2.30],
+  exit: [14.65, 1.9, 17.55, 2.3],
 };
