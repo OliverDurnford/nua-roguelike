@@ -211,7 +211,7 @@ BONUS.card = (c, onDone) => {
     UI.R(0, 0, G.W, G.H, UI.INK, 0.45 * op);
     const y0 = CY - H / 2 + Math.round((1 - inK) * 16);
     UI.card(vec2(CX - W / 2, y0), W, H, { drop: 4, opacity: op });
-    UI.chromeText(head, TX, y0 + 30, headSize, op);
+    UI.chromeText(head, TX, y0 + 30, headSize, op, UI.CHROME, 1);   // ringed in ink to read on paper (Ollie, 15 Oct)
     UI.text(c.lines.unlock, TX, y0 + 60, { font: UI.VT, size: 16, width: TW, color: UI.TEXT, opacity: op });
   });
   const dismiss = () => {

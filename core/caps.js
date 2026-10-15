@@ -123,7 +123,8 @@ CAPS.card = (n, onDone) => {
     const bob = Math.round(Math.sin(Math.min(1, t / 0.5) * Math.PI) * -6);
     drawSprite({ sprite: "milpool-cap", pos: vec2(X0 + 78, y0 + H / 2 + 4 + bob), anchor: "center",
       scale: vec2(big, big), opacity: op });
-    UI.chromeText(CAPS.HEAD, TX, y0 + 20, 16, op);
+    // a 1px ink ring, or silver chrome vanishes into the paper (Ollie, 15 Oct)
+    UI.chromeText(CAPS.HEAD, TX, y0 + 20, 16, op, UI.CHROME, 1);
     UI.text(CAPS.line(n), TX, y0 + 46, { font: UI.VT, size: 16, width: TW, color: UI.TEXT, opacity: op });
     // the tally: one little cap per cap there is, the found ones in colour
     for (let i = 0; i < CAPS.TOTAL; i++) {

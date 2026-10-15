@@ -146,8 +146,12 @@ UI.label = (str, x, y, o = {}) => {
 // The room's name in chrome: the kit's five-stop gradient, as horizontal
 // bands shown through the letters (a stencil mask), over a 2px ink shadow.
 // `bands` swaps the palette (the special screens pass UI.SPECIAL_CHROME).
-UI.chromeText = (str, x, y, size, op = 1, bands = UI.CHROME) => {
+UI.chromeText = (str, x, y, size, op = 1, bands = UI.CHROME, ring = 0) => {
   const tw = Math.ceil(UI.measure(str, UI.PX, size).width);
+  // `ring` px of ink all round the letters, for chrome on pale paper (the cards)
+  if (ring) for (const [ox, oy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) {
+    UI.text(str, x + ox * ring, y + oy * ring, { font: UI.PX, size, color: UI.INK, opacity: op });
+  }
   UI.text(str, x + 2, y + 2, { font: UI.PX, size, color: UI.INK, opacity: op });
   const stops = [0, 5, 7, 8, 10, 13, 16];
   drawMasked(() => {
