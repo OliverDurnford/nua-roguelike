@@ -78,7 +78,7 @@ const CANAL_PLATE = {
 
   // Left edge, on the towpath.
   playerSpawn: [1.44, 8.28],
-  bonusSpawn: [43.6, 9.25],
+  bonusSpawn: [24.7, 7],
 
   // Spread along the towpath, clear of every solid above. Not used:
   // enemyBudget is 0 for a quiet area, kept so the schema stays uniform.
