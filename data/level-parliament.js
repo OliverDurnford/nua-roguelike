@@ -105,5 +105,5 @@ const PARLIAMENT_PLATE = {
   // doorway so it reads as a threshold. Boss arenas never unlock it in
   // play; it is here so the schema stays uniform, and the finale
   // chapter starts on the other side of it.
-  exit: [4.9, 3.75, 6.1, 4.2],
+  exit: [0.4, 3.75, 0.95, 4.9],
 };
