@@ -55,7 +55,7 @@ const FULLBACK_PLATE = {
     { name: "planting, D-E gap north", foot: [8.85, 8.95, 10.55, 11.95] },
     { name: "planting, D-E gap south", foot: [8.7, 13.7, 10.6, 16.8], over: [[10.35, 13.3], [10.6, 13.3], [10.6, 13.95], [10.35, 13.95]] },
     { name: "planting, E-F gap north", foot: [20.1, 9.3, 21.95, 12.3] },
-    { name: "planting, E-F gap south", foot: [20.1, 14, 21.95, 16.9] },
+    { name: "planting, E-F gap south", foot: [20.1, 14.35, 21.95, 16.9], over: [[20.15, 13.8], [20.45, 13.8], [20.45, 14.35], [20.15, 14.35]] },
     { name: "barrel planter, deck A by the door", foot: [1.15, 2.05, 2.15, 3.5] },
     { name: "barrel planter, deck A by the A-B gap", foot: [8.1, 1.55, 9.65, 3.45] },
     { name: "barrel planter, deck B west", foot: [11.05, 1.7, 12.75, 3.45] },
