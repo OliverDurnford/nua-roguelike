@@ -116,6 +116,7 @@ const FLAT_PLATE = {
   ],
 
   playerSpawn: [28.77, 15.84],
+  capSpawn: [20.35, 5.6],
   bonusSpawn: [39.5, 3.9],
 
   enemySpawns: [
