@@ -47,7 +47,7 @@ const FULLBACK_PLATE = {
     { name: "planting, A-B gap north", foot: [9.4, 1.8, 11.25, 3.7], over: [[9.4, 4.6], [9.65, 4.6], [9.65, 5.5], [9.35, 5.5], [9.35, 4.6]] },
     { name: "planting, A-B gap south", foot: [9.4, 5.5, 11, 7] },
     { name: "planting, B-C gap north", foot: [20, 1.8, 21.5, 3.8] },
-    { name: "planting, B-C gap south", foot: [19.7, 5.7, 21.65, 7] },
+    { name: "planting, B-C gap south", foot: [19.7, 5.7, 21.65, 7], over: [[19.7, 4.85], [20, 4.85], [20, 5.8], [19.7, 5.8]] },
     { name: "hillside, west of the A-D stairs", foot: [1, 6.7, 4.05, 10.2] },
     { name: "hillside, under A and B", foot: [6.35, 6.85, 21.55, 10.05] },
     { name: "hillside under C, west of the C-F stairs", foot: [21.3, 8.45, 25.2, 10.15] },
