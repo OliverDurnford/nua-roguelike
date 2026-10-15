@@ -34,9 +34,9 @@ const ROWANS_PLATE = {
     { name: "right machine top", foot: [6.6, 3.3, 7.45, 4.45], over: [[6.6, 3.3], [7.45, 3.3], [7.45, 4.45], [6.6, 4.45]] },
     { name: "right machine bottom", foot: [6.6, 4.45, 7.45, 5.65], over: [[6.6, 4.45], [7.45, 4.45], [7.45, 5.65], [6.6, 5.65]] },
     { name: "air hockey table", foot: [2.9, 4.4, 4.95, 5.15], over: [[2.85, 3.75], [5, 3.75], [5, 5], [4.85, 5.15], [3, 5.15], [2.85, 5]] },
-    { name: "red racing machine top", foot: [2.85, 5.5, 3.7, 6.7], over: [[2.85, 5.5], [3.7, 5.5], [3.7, 6.7], [2.85, 6.7]] },
+    { name: "red racing machine top", over: [[2.85, 5.5], [3.7, 5.5], [3.7, 6.7], [2.85, 6.7]] },
     { name: "red racing machine seat", foot: [2.85, 6.7, 3.7, 7.95], over: [[2.85, 6.7], [3.7, 6.7], [3.7, 7.95], [2.85, 7.95]] },
-    { name: "blue racing machine top", foot: [3.95, 5.55, 4.85, 6.75], over: [[3.95, 5.55], [4.85, 5.55], [4.85, 6.75], [3.95, 6.75]] },
+    { name: "blue racing machine top", over: [[3.95, 5.55], [4.85, 5.55], [4.85, 6.75], [3.95, 6.75]] },
     { name: "blue racing machine seat", foot: [3.95, 6.75, 4.85, 7.95], over: [[3.95, 6.75], [4.85, 6.75], [4.85, 7.95], [3.95, 7.95]] },
     { name: "stairs rail left 1", foot: [7.55, 0.4, 7.95, 1.6], over: [[7.55, 0.4], [7.95, 0.4], [7.95, 1.6], [7.55, 1.6]], see: true },
     { name: "stairs rail left 2", foot: [7.55, 1.6, 7.95, 2.8], over: [[7.55, 1.6], [7.95, 1.6], [7.95, 2.8], [7.55, 2.8]], see: true },
@@ -134,7 +134,7 @@ const ROWANS_PLATE = {
   ],
 
   playerSpawn: [1.32, 19.8],
-  bonusSpawn: [8.8, 1.15],
+  bonusSpawn: [1.95, 3.6],
 
   enemySpawns: [
   ],
