@@ -237,7 +237,8 @@ ENEMIES.clearAll = () => {
 // floor between it and you is open for a body length (or STUCK.around
 // seconds pass), and only then comes straight at you again. Turning back
 // at once, it slid along the same edge into the same spot.
-ENEMIES.STUCK = { after: 1.0, slow: 0.3, reach: 2.4, around: 2.5, clear: 1 };
+// after: 10 s (Ollie, 15 Oct 2026; a second at first dashed too eagerly)
+ENEMIES.STUCK = { after: 10, slow: 0.3, reach: 2.4, around: 2.5, clear: 1 };
 
 // Is the way to you open again, for STUCK.clear person-heights?
 ENEMIES.wayOpen = (b, toward, clear) => {
