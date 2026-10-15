@@ -87,7 +87,7 @@ const BONUS_CHARACTERS = [
   },
   {
     id: "ella", name: "Ella", bonus: true, real: true, height: 38,
-    colors: { hair: [230, 200, 130], skin: [240, 200, 175], top: [30, 30, 34], bottom: [24, 24, 28] },
+    colors: { hair: [204, 156, 84], skin: [242, 174, 130], top: [30, 30, 34], bottom: [24, 24, 28] },
     weapon: { name: "Tooth", color: [245, 245, 240] },
     flavour: "PLACEHOLDER: a line about Ella.",
     passive: BONUS_NO_PASSIVE, special: bonusSpecial("jess"), recruitLine: "",
