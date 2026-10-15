@@ -1,6 +1,6 @@
 // ============================================================
 // CHARACTER SELECT: all ten, selectable from the start. Once a bonus
-// character has been found a BONUS tab flips to a second page of seven
+// character has been found a BONUS tab flips to a second page of them
 // (core/bonus.js, 14 Oct 2026): the ones found so far, the rest "?".
 // Ten pixel polaroids (the kit's HUD portraits, bigger): a white
 // card, the friend standing in the dark photo, their name written
@@ -25,7 +25,7 @@ scene("select", (opts = {}) => {
   add([sprite("bg-night"), pos(0, 0), scale(G.W / 8, G.H / 256), z(0)]);
   add([sprite("vignette"), pos(0, 0), scale(G.W / 480, G.H / 270), opacity(0.5), z(40)]);
 
-  // which page: the ten, or the bonus seven once anyone has been found (an
+  // which page: the ten, or the bonus page once anyone has been found (an
   // admin sees the bonus page from the start, every card open, to test)
   const unlocked = BONUS.unlocked();
   const showTab = unlocked.length > 0 || ADMIN.on;
@@ -48,9 +48,11 @@ scene("select", (opts = {}) => {
   const CW = 140, CH = 164, GX = 168, GY = 172;
   const PW = 128, PH = 112;                       // the photo
   const y0 = 156;
-  // five and five for the ten; four over three for the bonus seven, each
-  // row centred (the friends' rows come out exactly where they always were)
-  const PER_ROW = BONUS_PAGE ? [4, 3] : [5, 5];
+  // five and five for the ten; the bonus page splits however many there
+  // are, the longer row on top (four over three for seven, four and four
+  // since Ella made eight), each row centred (the friends' rows come out
+  // exactly where they always were)
+  const PER_ROW = BONUS_PAGE ? [Math.ceil(LIST.length / 2), Math.floor(LIST.length / 2)] : [5, 5];
   const cell = (i) => {
     const row = i < PER_ROW[0] ? 0 : 1, col = row ? i - PER_ROW[0] : i;
     return vec2(G.W / 2 + (col - (PER_ROW[row] - 1) / 2) * GX, y0 + row * GY);
@@ -151,11 +153,15 @@ scene("select", (opts = {}) => {
   });
   // each card takes its own window of the one park panorama, so the ten
   // snapshots are the same afternoon in the same place
-  // (the bonus seven take their windows from further along the same
-  // afternoon, and a locked card's photo is barely there)
+  // (the bonus ones take their windows from further along the same
+  // afternoon, spaced so the last still ends inside the picture: past its
+  // edge the window shows whatever image sits next to it in memory, which
+  // is what Ella's photo did as the eighth; a locked card's photo is
+  // barely there)
+  const BONUS_STEP = Math.min(0.14, 0.9 / Math.max(1, LIST.length - 1));
   layer(5.1, (card, op) => drawSprite({
     sprite: "photo-park",
-    quad: BONUS_PAGE ? new Quad(card.idx * 0.14, 0, 0.1, 1) : new Quad(card.idx / 10, 0, 1 / 10, 1),
+    quad: BONUS_PAGE ? new Quad(card.idx * BONUS_STEP, 0, 0.1, 1) : new Quad(card.idx / 10, 0, 1 / 10, 1),
     pos: vec2(-PW / 2 + 1, photoY - PH / 2 + 1),
     width: PW - 2, height: PH - 2, opacity: card.locked ? op * 0.2 : op,
   }));
