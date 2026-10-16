@@ -117,7 +117,7 @@ const SPEECH_DATA = {
     {"id":"cal-06","who":"cal","text":"I think I won that","on":"wave","freq":"sometimes","max":{"n":2,"per":"run"},"when":{"notPlaying":["cal"]}},
     {"id":"sam-03","who":"sam","text":"My hair's never recovered, Josh.","on":"wander","freq":"run","when":{"with":["josh"]},"reply":[{"who":"josh","text":"It was ONE haircut!"}]},
     {"id":"cal-07","who":"cal","text":"Has someone got smelly chips?","on":"wander","freq":"run","reply":[{"who":["ollie","sam","josh"],"text":"It's a good job your friends would never call you smelly chips for the rest of your life"}]},
-    {"id":"ollie-09","who":"ollie","text":"When I'm having a bad day and I close my eyes, sometimes I can see Fatima's arsehole.","on":"wander","freq":"run"},
+    {"id":"ollie-09","who":"ollie","text":"When I'm having a bad day and I close my eyes, sometimes I can see Fatima's arsehole.","on":"wander","freq":"run","reply":[{"who":"annie","text":"I pushed her down the stairs once"}]},
     {"id":"ana-04","who":"ana","text":"I hope someone's feeding Shelley","on":"wander","freq":"run"},
     {"id":"adam-03","who":"adam","text":"Watch this.","on":"specialStart","freq":"often"},
     {"id":"josh-08","who":"josh","text":"Mademoiselle","on":"join","freq":"run","chance":0.5,"when":{"about":["lucy","annie","ana","jess"]}},
@@ -141,7 +141,8 @@ const SPEECH_DATA = {
     {"id":"washing","who":["ollie","josh","sam","adam"],"text":"Well, at least the washing machines are living longer","on":"wander","freq":"run","mode":"one","when":{"with":["ollie","josh","sam","adam"],"without":["cal"]},"reply":[{"who":"@other","text":"Yeah, where is the lanky cunt?"}]},
     {"id":"cal-09","who":"cal","text":"Double coke and rum","on":"spot","freq":"run","when":{"spot":["stairwell and back bar","bar counter","bar counter return","bar back shelf of bottles","bar fridges, counter and taps","bar rounded end, top corner","bar rounded end 3","bar rounded end 4","bar rounded end 5","bar rounded end 6","bar top","bar inside and back","bar right side 1","bar right side 2","bar right side 3","bar right side 4","bar right side 5","bar front","back bar counter 1","back bar counter 2","back bar counter 3","back bar counter 4","back bar counter 5","back bar counter 6","back bar counter 7","bar counter 1","bar counter 2","bar counter 3","bar counter 4","bar counter 5","bar counter 6","bar counter 7","bar counter 8","bar counter 9","bar counter 10","bar top arm","bar left arm 1","bar left arm 2","bar left arm 3","bar left arm 4","bar left arm 5","bar left arm 6","bar left corner 1","bar left corner 2","bar right corner 2","bar right corner 1","bar right arm","back bar 1","back bar 2","back bar 3","back bar 4","bar counter top left","bar counter top","bar counter top right","bar counter left 1","bar counter left 2","bar counter left 3","bar counter left 4","bar counter front left","bar counter right 1","bar counter right 2","bar counter right 3","bar counter right 4","bar counter front right","back bar shelves"]}},
     {"id":"cal-10","who":"cal","text":"It's got to beeeeee Millieeeeeee","on":"wander","freq":"run"},
-    {"id":"cal-11","who":"cal","text":"CaxiTab.","on":"wander","freq":"run"}
+    {"id":"cal-11","who":"cal","text":"CaxiTab.","on":"wander","freq":"run"},
+    {"id":"jess-05","who":"jess","text":"Do you remember when that lady offered me a blanket because I was so drunk and lying on the floor?","on":"wander","freq":"run","when":{"room":["streets"]}}
   ],
 
   // Talk spots: places for "near a spot" lines that only speech knows
