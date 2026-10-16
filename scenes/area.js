@@ -433,6 +433,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
   const nextWave = () => {
     if (waveBusy || spawned || wave < 0 || get("enemy").length) return;
     waveBusy = true;
+    SPEECH.fire("wave");   // a wave beaten, more to come; the last one is "cleared"
     wait(BREATHER, sendWave);
   };
 
@@ -699,6 +700,8 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
         npc.said = true;
         UI.speech(npc, a.npc.line, a.npc.colors.top);
         SFX.play("uitick");
+        // and whoever is with you answers her (the speech board's "meeting someone")
+        wait(1.5, () => SPEECH.fire("meet", { npc: npc.npcId }));
       }
     });
     const above = realId ? h * 0.5 + 10 : 42;

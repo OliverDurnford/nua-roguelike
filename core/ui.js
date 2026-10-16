@@ -339,7 +339,11 @@ UI._bubbles = [];
 // clamp, for a note inside a collection screen; { z } overrides the layer;
 // { dur } overrides how long it stays up; { tag } tags it for teardown;
 // { whilePaused } keeps its clock running while G.paused is true;
-// { dark } is the voice in the cracks' note (Busy You speaks in it).
+// { dark } is the voice in the cracks' note (Busy You speaks in it);
+// { quiet } is said to oneself: grey letters leaning like italics on a
+// fainter note (Josh about Kinga, 16 Oct 2026).
+UI.QUIET_TEXT = [104, 104, 112];
+UI.QUIET_LEAN = 9;   // degrees each letter leans; the pixel fonts have no italic
 UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   if (!ent || !ent.exists()) return;
   // one bubble per character - a new line replaces the old one
@@ -383,8 +387,9 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   });
   const txt = root.add([
     text(str, { size: 16, font: UI.VT, width: wrapW, align: "center" }),
-    pos(0, 1), anchor("center"), color(UI.rgb(o.dark ? UI.VOICE_TEXT : UI.TEXT)), opacity(0),
+    pos(0, 1), anchor("center"), color(UI.rgb(o.dark ? UI.VOICE_TEXT : o.quiet ? UI.QUIET_TEXT : UI.TEXT)), opacity(0),
   ]);
+  if (o.quiet) txt.textTransform = () => ({ angle: UI.QUIET_LEAN });
 
   root.onUpdate(() => {
     const gone = !ent.exists();
@@ -414,7 +419,7 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
     else if (root.t > dur - 0.3) op = Math.max(0, (dur - root.t) / 0.3);  // fade out
     else op = 1;
 
-    note.opacity = op;
+    note.opacity = o.quiet ? op * 0.8 : op;
     txt.opacity = op;
     if (root.t >= dur) destroy(root);
   });

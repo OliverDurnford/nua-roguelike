@@ -29,13 +29,14 @@ SPEECH.SPOT_CD    = 45;    // s: walking past the bar again does not retrigger
 SPEECH.TICK       = 3;     // s: how often the ambient roll happens
 SPEECH.AMBIENT    = 0.28;  // base chance per tick, scaled by the party's talkativeness
 SPEECH.REPLY_GAP  = 1.5;   // s between a line and its reply
+SPEECH.COPY_GAP   = 0.8;   // s between one copier and the next ("Ffffffffft")
 SPEECH.IDLE_AFTER = 6;     // s of standing still before the idle moment
 SPEECH.SPOT_RANGE = 1.6;   // grid units from a thing's footprint
 
 // Scripted beats ignore the global gag and always get through. The finale's
 // two cutscene beats are among them (docs/superpowers/specs/2026-10-12-
 // busy-boss-design.md).
-SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "pubInvite", "fromPile"];
+SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "meet", "pubInvite", "fromPile"];
 
 SPEECH.WEIGHT = { often: 3, sometimes: 1.5, rare: 0.5, run: 1.5, ever: 1.5 };
 
@@ -75,7 +76,31 @@ SPEECH.retiredEver = () => {
   return Array.isArray(s.said) ? s.said : [];
 };
 
+// "At most N times", a run or the whole game (line.max = { n, per }).
+// Counted per line id: in the run for "run", in the story for "game".
+SPEECH.counts = (per) => {
+  if (per === "game") {
+    const s = STORY.get();
+    return (s.saidCount && typeof s.saidCount === "object") ? s.saidCount : {};
+  }
+  if (!G.run) return {};
+  if (!G.run.saidCount) G.run.saidCount = {};
+  return G.run.saidCount;
+};
+SPEECH.used = (line) => (line.max ? SPEECH.counts(line.max.per)[line.id] || 0 : 0);
+
 SPEECH.retire = (line) => {
+  if (line.max) {
+    if (line.max.per === "game") {
+      const s = STORY.get();
+      if (!s.saidCount || typeof s.saidCount !== "object") s.saidCount = {};
+      s.saidCount[line.id] = (s.saidCount[line.id] || 0) + 1;
+      STORY.set(s);
+    } else {
+      const c = SPEECH.counts("run");
+      c[line.id] = (c[line.id] || 0) + 1;
+    }
+  }
   if (line.freq === "run") {
     const r = SPEECH.retiredRun();
     if (!r.includes(line.id)) r.push(line.id);
@@ -104,6 +129,22 @@ SPEECH.present = (who) => {
   // friends freed in the finale walk with you without ever joining the party
   return G.run.charId === who || G.run.companions.includes(who) ||
     (G.followers || []).some((f) => f.charId === who && f.exists());
+};
+
+// Who out of a line's speakers is here to say it. A plain speaker or a
+// pair ("Silly boys!", both or nothing) is all or nothing; a GROUP line
+// (line.mode) is spoken by whoever of its people turned up:
+//   one   any one of them says it, once between them
+//   copy  one starts and every other one there copies, in turn; needs two
+//   all   every one of them who is here, at once
+// Returns the speakers, or null when the line cannot be said.
+SPEECH.voices = (line) => {
+  const who = line.who;
+  if (!Array.isArray(who)) return SPEECH.present(who) ? [who] : null;
+  if (!line.mode) return SPEECH.present(who) ? who.slice() : null;
+  const here = who.filter((w) => SPEECH.present(w));
+  const need = line.mode === "copy" ? 2 : 1;
+  return here.length >= need ? here : null;
 };
 
 SPEECH.npcSprite = (name) => {
@@ -138,6 +179,9 @@ SPEECH.matches = (line, extra) => {
   if (some(w.room) && !w.room.includes(c.roomId)) return false;
   if (some(w.chapter) && !w.chapter.includes(c.chapter)) return false;
   if (some(w.tag) && !w.tag.some((t) => (c.tags || []).includes(t))) return false;
+  // on a join: only when one of these is the friend who just joined, so
+  // somebody already here can greet them ("*sniff* alright")
+  if (some(w.joining) && !(extra && extra.by && w.joining.includes(extra.by))) return false;
   // a spot clause only means anything on a spot moment, and then it has
   // to be the thing actually being stood next to
   if (some(w.spot)) {
@@ -159,12 +203,16 @@ SPEECH.eligible = (moment, extra) => {
     if (l.on !== moment) return false;
     // Some moments have a subject: the friend whose special just fired,
     // the friend who just joined. Only they get to speak on it.
-    if (extra && extra.by && l.who !== extra.by) return false;
+    // A line with a `joining` clause is the exception: it is somebody
+    // else answering the friend who just turned up.
+    const answering = l.when && Array.isArray(l.when.joining) && l.when.joining.length;
+    if (extra && extra.by && l.who !== extra.by && !answering) return false;
     if (l.freq === "run" && ranRun.includes(l.id)) return false;
     if (l.freq === "ever" && ranEver.includes(l.id)) return false;
+    if (l.max && SPEECH.used(l) >= l.max.n) return false;
     if (now - (SPEECH.lastLine[l.id] || -999) < SPEECH.LINE_CD) return false;
     if (!scripted && now - (SPEECH.lastBy[SPEECH.key(l.who)] || -999) < SPEECH.CHAR_CD) return false;
-    if (!SPEECH.present(l.who)) return false;
+    if (!SPEECH.voices(l)) return false;
     return SPEECH.matches(l, extra);
   });
 };
@@ -174,6 +222,10 @@ SPEECH.eligible = (moment, extra) => {
 // line repeats. Without this, weighting alone lets Josh say the same
 // non sequitur three times in a row and it stops being funny.
 SPEECH.pick = (cands) => {
+  // A line marked `last` speaks only when nobody else has anything for
+  // this moment ("Thank God she's gone" waits for the rest to have none).
+  const first = cands.filter((l) => !l.last);
+  if (first.length) cands = first;
   if (cands.length === 0) return null;
   const key = SPEECH.key(cands[0].who) + "|" + cands[0].on;
   let bag = SPEECH.bags[key] || [];
@@ -193,8 +245,8 @@ SPEECH.pick = (cands) => {
 };
 
 // ---------- saying it ----------
-SPEECH.speak = (who, str) => {
-  if (Array.isArray(who)) { for (const w of who) SPEECH.speak(w, str); return; }
+SPEECH.speak = (who, str, quiet = false) => {
+  if (Array.isArray(who)) { for (const w of who) SPEECH.speak(w, str, quiet); return; }
   const now = time();
   SPEECH.lastAny = now;
   SPEECH.lastBy[who] = now;
@@ -202,24 +254,67 @@ SPEECH.speak = (who, str) => {
     const ent = SPEECH.sprite(who);
     // Busy You talks in the dark note the voice in the cracks used all
     // game (core/crackvoice.js): that is how you find out it was them
-    if (ent && ent.exists()) UI.speech(ent, str, undefined, { dark: SPEECH.VOICE.includes(who) });
+    if (ent && ent.exists()) UI.speech(ent, str, undefined, { dark: SPEECH.VOICE.includes(who), quiet });
     return;
   }
+  // said to themselves: the quiet note, on their own sprite if they are here
+  const ent = quiet && COMPANIONS.fieldSprite(who);
+  if (ent && ent.exists()) { UI.speech(ent, str, undefined, { quiet: true }); return; }
   COMPANIONS.say(who, str);
 };
 
 SPEECH.play = (line, cutscene = false) => {
   SPEECH.lastLine[line.id] = time();
+  SPEECH.lastBy[SPEECH.key(line.who)] = time();
   SPEECH.retire(line);
-  SPEECH.speak(line.who, line.text);
-  // Replies follow a beat and a half apart. A reply whose speaker is
-  // not here is simply skipped: the opening line still stands, so a
-  // two hander never breaks when the wrong four friends turned up.
+  const here = SPEECH.voices(line) || [];
+  let first = Array.isArray(line.who) ? here[0] : line.who;   // who opened, for "@first" replies
+  if (line.mode === "one") {
+    // whoever of them has not just spoken, if anyone
+    const fresh = here.filter((w) => time() - (SPEECH.lastBy[w] || -999) >= SPEECH.CHAR_CD);
+    const from = fresh.length ? fresh : here;
+    first = from[Math.floor(rand(0, from.length)) % from.length];
+    SPEECH.speak(first, line.text, !!line.quiet);
+  } else if (line.mode === "copy") {
+    // one starts, the rest copy one after another, in a shuffled order
+    const order = here.slice();
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(rand(0, i + 1)) % (i + 1);
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    first = order[0];
+    SPEECH.speak(order[0], line.text, !!line.quiet);
+    order.slice(1).forEach((w, i) => {
+      wait(SPEECH.COPY_GAP * (i + 1), () => {
+        if (G.paused && !cutscene) return;
+        if (SPEECH.present(w)) SPEECH.speak(w, line.text, !!line.quiet);
+      });
+    });
+  } else if (line.mode === "all") {
+    SPEECH.speak(here, line.text, !!line.quiet);
+  } else {
+    SPEECH.speak(line.who, line.text, !!line.quiet);
+  }
+  // Replies follow a beat and a half apart. A reply can name a person, or
+  // "@first" (whoever opened) or "@other" (another of the line's group,
+  // not the opener): Ollie or Cal asks Jess, the other one answers her.
+  // The talk stops at the first person who is not here: the opening line
+  // still stands, so a two hander never breaks when the wrong four
+  // friends turned up, and a laugh never follows a joke nobody made.
+  const group = Array.isArray(line.who) ? line.who : [line.who];
+  const whoOf = (r) => {
+    if (r.who === "@first") return first;
+    if (r.who === "@other") return group.find((w) => w !== first && SPEECH.present(w)) || null;
+    return r.who;
+  };
+  let stopped = false;
   (line.reply || []).forEach((r, i) => {
     wait(SPEECH.REPLY_GAP * (i + 1), () => {
-      if (G.paused && !cutscene) return;
-      if (!SPEECH.present(r.who)) return;
-      SPEECH.speak(r.who, r.text);
+      if (stopped) return;
+      if (G.paused && !cutscene) { stopped = true; return; }
+      const w = whoOf(r);
+      if (!w || !SPEECH.present(w)) { stopped = true; return; }
+      SPEECH.speak(w, r.text, !!r.quiet);
     });
   });
 };
@@ -258,7 +353,9 @@ SPEECH.beginArea = (opts) => {
     chapter: opts.chapter || 0,
     area: opts.area || 0,
     tags: opts.tags || [],
-    things: opts.things || [],
+    // the room's own painted things, plus any talk spots the speech data
+    // adds (a floor mark nobody walks behind, like the mayo patch)
+    things: (opts.things || []).concat(SPEECH.talkSpots(opts.roomId)),
     unit: opts.unit || G.TILE,
   };
   SPEECH.lastSpot = {};
@@ -309,6 +406,14 @@ SPEECH.beginArea = (opts) => {
     }
     nearest = found;
   });
+};
+
+// Talk spots: named places that exist only for speech, stored with the
+// lines (SPEECH_DATA.spots, { room: [{ name, box: [x1, y1, x2, y2] }] }
+// in grid units). Nothing collides with them and nothing is drawn.
+SPEECH.talkSpots = (roomId) => {
+  const all = SPEECH.data().spots || {};
+  return (all[roomId] || []).map((s) => ({ name: s.name, foot: s.box, talk: true }));
 };
 
 // The closest named thing whose footprint the player is standing near,
