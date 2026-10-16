@@ -39,7 +39,7 @@ screen offers "carry on" next visit, with "start a new game" underneath.
 Quit mid-fight and you restart that room as you walked into it.
 Finishing the game clears the save.
 
-**Trophies:** 32 PlayStation-style trophies (bronze, silver, gold) plus a
+**Trophies:** 33 PlayStation-style trophies (bronze, silver, gold) plus a
 platinum for earning every one, kept on the device for good. A pop-up under
 PAUSE when one is earned; the cabinet is the "trophies" chip bottom right of
 the title (or T). The platinum opens a screen with the ten, Ollie's note

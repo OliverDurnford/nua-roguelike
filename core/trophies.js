@@ -210,6 +210,10 @@ TROPHIES._note = (ev, d) => {
       // chapter or run that any of was played on Easy does not count
       t.roomEasy = false;
       if (typeof DIFFICULTY !== "undefined" && DIFFICULTY.level === "easy") TROPHIES._note("easy", {});
+      // With Distinction: Hard from Gonzo's to the end (Ollie, 16 Oct 2026).
+      // Set once, on the run's first visit to Gonzo's; anything else, ever, loses it.
+      if (d.chapter === 1 && d.area === 1 && t.allHard === undefined) t.allHard = TROPHIES.onHard();
+      TROPHIES.checkHard();
       return;
     }
     case "easy": {
@@ -241,6 +245,7 @@ TROPHIES._note = (ev, d) => {
       const easy = !!(run && run.trophy && run.trophy.runEasy);
       if (run && !easy && run.deaths === 0) earn("noregrets");
       if (run && !easy && !run.companions.length) earn("billy");
+      if (run && run.trophy && run.trophy.allHard === true) earn("distinction");
       return;
     }
     case "recruit":
@@ -286,10 +291,19 @@ TROPHIES._note = (ev, d) => {
   }
 };
 
+// With Distinction: the run stays on Hard. Checked on every room and every
+// frame, so a switch down in the pause menu loses it as soon as play resumes.
+TROPHIES.onHard = () => typeof DIFFICULTY !== "undefined" && DIFFICULTY.level === "hard";
+TROPHIES.checkHard = () => {
+  const r = typeof G !== "undefined" ? G.run : null;
+  if (r && r.trophy && r.trophy.allHard && !TROPHIES.onHard()) r.trophy.allHard = false;
+};
+
 // Once a frame, from the scene (TROPHIES.attach). c: { paused, standing,
 // song, audible, hold }. Returns the id of a pop-up that has just started.
 TROPHIES.tick = (dt, c) => {
   const s = TROPHIES.get();
+  TROPHIES.checkHard();
   // the music: heard means sounding, with the sound on, for long enough
   if (c.song && c.audible && !(s.sets.songs || []).includes(c.song.id)) {
     const id = c.song.id, T = TROPHIES.songTimes();

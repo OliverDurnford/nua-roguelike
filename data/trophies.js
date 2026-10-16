@@ -51,6 +51,7 @@ const TROPHY_LIST = [
   { id: "cleansheet", tier: "gold", name: "Clean Sheet", how: "Beat a boss without taking a single hit (Medium or Hard)" },
   { id: "chapter", tier: "gold", name: "Didn't Spill a Drop", how: "Finish a whole chapter without dying (Medium or Hard)" },
   { id: "noregrets", tier: "gold", name: "No Regrets", how: "Finish the whole game without dying once (Medium or Hard)" },
+  { id: "distinction", tier: "gold", name: "With Distinction", how: "Finish the game on Hard, all the way through" },
   { id: "billy", tier: "gold", name: "Billy No Mates", how: "Beat Busy You without anyone joining you all run (Medium or Hard)",
     before: "Finish the game without anyone joining you all run (Medium or Hard)" },
 
