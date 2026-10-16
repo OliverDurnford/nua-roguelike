@@ -611,6 +611,61 @@ UI.bigTitle = ({ num, name, sub }) => {
   return DUR;
 };
 
+// ---------- the chapter card ----------
+// A new chapter opens on its own title before its first room (Ollie, 16
+// Oct 2026): on black, which is where the fall through the crack leaves
+// you, "CHAPTER 2" small in steel, the chapter's title big in the room
+// names' chrome, its era and year under it. Fades up, holds, fades, then
+// the black lifts off the room and onDone starts the room's own reveal.
+// Any key or tap after a moment skips to the lift.
+UI.CHAPTER_CARD = { IN: 0.5, HOLD: 2.6, OUT: 0.45, LIFT: 0.6, SKIP_AFTER: 0.6 };
+UI.chapterCard = (ch, onDone) => {
+  const C = UI.CHAPTER_CARD;
+  const head = "CHAPTER " + ch.num;
+  const title = ch.title;
+  const sub = ch.era + (ch.year ? "  ·  " + ch.year : "");
+  // the title as big as fits on the 8px grid, up to 48
+  const w8 = UI.measure(title, UI.PX, 8).width;
+  const SIZE = Math.max(16, Math.min(48, Math.floor(860 * 8 / w8 / 8) * 8));
+  const titleW = Math.ceil(UI.measure(title, UI.PX, SIZE).width);
+  const cy = Math.round(G.H * 0.46);
+  let t = 0, leaving = -1, done = false;
+  const root = add([fixed(), z(226), pos(0, 0)]);
+  const finish = () => {
+    if (done) return;
+    done = true;
+    for (const h of handlers) h.cancel();
+    if (onDone) onDone();
+  };
+  root.onUpdate(() => {
+    t += dt();
+    if (leaving < 0 && t >= C.IN + C.HOLD) leaving = t;
+    if (leaving >= 0 && t - leaving >= C.OUT) finish();
+    if (leaving >= 0 && t - leaving >= C.OUT + C.LIFT) destroy(root);
+  });
+  root.onDraw(() => {
+    // the words fade up and out, then the black lifts off the room
+    const words = leaving >= 0 ? Math.max(0, 1 - (t - leaving) / C.OUT) : UI.ease(Math.min(1, t / C.IN));
+    const black = leaving >= 0 ? Math.max(0, 1 - Math.max(0, t - leaving - C.OUT) / C.LIFT) : 1;
+    UI.R(0, 0, G.W, G.H, [12, 12, 16], black);
+    if (words <= 0) return;
+    const rise = Math.round((1 - UI.ease(Math.min(1, t / C.IN))) * 10);
+    UI.label(head, G.W / 2, cy - SIZE / 2 - 40 + rise, { size: 16, anchor: "center", color: UI.STEEL, shadow: false, opacity: words });
+    UI.R(G.W / 2 - 60, cy - SIZE / 2 - 24 + rise, 120, 2, UI.STEEL, words * 0.7);
+    const nx = Math.round(G.W / 2 - titleW / 2), ny = cy - SIZE / 2 + rise;
+    UI.text(title, nx + SIZE / 8, ny + SIZE / 8, { font: UI.PX, size: SIZE, color: UI.INK, opacity: words });
+    UI.chromeText(title, nx, ny, SIZE, words);
+    UI.text(sub, G.W / 2, cy + SIZE / 2 + 34 + rise, { font: UI.VT, size: 32, anchor: "center", color: UI.SILVER, opacity: words * 0.85 });
+  });
+  SFX.play("whoosh");
+  const skip = () => { if (t >= C.SKIP_AFTER && leaving < 0 && !UI.pauseOpen) leaving = t; };
+  const handlers = [
+    onKeyPress((key) => { if (key !== "escape" && key !== "p") skip(); }),
+    onMousePress(() => { if (!UI.inPauseBtn(mousePos())) skip(); }),
+  ];
+  return root;
+};
+
 // ---------- the room reveal ----------
 // Every room opens pulled back, the whole venue on screen for a moment
 // (Ollie, 18 Sep 2026: appreciate the level design and recognise the
@@ -627,9 +682,12 @@ UI.reveal = (mapW, mapH, opts = {}) => {
   const fit = Math.min(G.W / mapW, G.H / mapH);
   const start = Math.max(0.3, Math.min(1, fit) * 0.85);   // a little air round a room that already fits
   const centre = vec2(mapW / 2, mapH / 2);
-  const r = { t: 0, active: true, pushed: false };
+  // `held`: parked on the pulled-back view with its clock stopped, while
+  // something in front of the room (the chapter card) has the screen
+  const r = { t: 0, active: true, pushed: false, held: false };
   r.apply = (follow) => {
     if (!r.active) { camPos(follow); return; }
+    if (r.held) { camScale(vec2(start)); camPos(centre); return; }
     r.t += dt();
     if (r.t >= HOLD && !r.pushed) { r.pushed = true; if (opts.onPush) opts.onPush(); }
     const k = UI.ease(Math.max(0, (r.t - HOLD) / PUSH));

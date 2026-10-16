@@ -301,7 +301,7 @@ MAPS.buildPlate = (plate, { sealed = false } = {}) => {
 // ---------- the scene ----------
 // NOTE: the second argument is renamed to areaNum inside the scene -
 // calling it "area" would shadow Kaboom's area() component function.
-scene("area", ({ chapter, area: areaNum, retry = false }) => {
+scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
   G.paused = false;
   G.specialSafe = 0;   // a special cut short by leaving the last room
   G.where = "area";   // for the admin arrows (core/admin.js)
@@ -813,6 +813,13 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
         if (a.boss) wait(dur - 0.2, () => SPEECH.fire("bossStart"));
       },
     });
+  // A chapter's first room opens on the chapter's own card, the room held
+  // pulled back behind it (UI.chapterCard). Not when the chapter starts
+  // again after dying in it: you have just seen it.
+  if (areaNum === 1 && !a.finale && !again) {
+    reveal.held = true;
+    UI.chapterCard(ch, () => { reveal.held = false; });
+  }
 
   // --- exit door logic ---
   let aimLean = vec2(0, 0);   // phones: the camera's lean, eased so a flick of the stick never jolts it
@@ -909,7 +916,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
       if (!dead || UI.pauseOpen || ADMIN.arrowAt(mousePos())) return;
       dead = false;
       G.run.hp = G.stats().maxHp;
-      go("area", { chapter, area: retryArea, retry: !!a.boss });   // a retried finale skips its opening
+      go("area", { chapter, area: retryArea, retry: !!a.boss, again: true });   // a retried finale skips its opening; a restarted chapter skips its card
     };
     onKeyPress("enter", retry);
     wait(0.6, () => onMousePress(retry));
