@@ -48,12 +48,15 @@
   // ---------- frame throttle ----------
   // Kaboom asks for the next frame from inside its own callback, so when
   // we decline to call it we have to keep the chain alive ourselves.
+  // Each chain keeps its own clock (a chain asks with the same function
+  // every time): with one clock shared, whichever ran first in a frame
+  // starved the other, such as the title video's poster check.
   const raf = window.requestAnimationFrame.bind(window);
-  let lastRun = 0;
+  const lastRun = new WeakMap();
   window.requestAnimationFrame = function (cb) {
     return raf(function (t) {
-      if (t - lastRun >= (looking ? PHONE_FRAME_MS : IDLE_FRAME_MS)) {
-        lastRun = t;
+      if (t - (lastRun.get(cb) || 0) >= (looking ? PHONE_FRAME_MS : IDLE_FRAME_MS)) {
+        lastRun.set(cb, t);
         cb(t);
       } else {
         window.requestAnimationFrame(cb);
