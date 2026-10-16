@@ -76,7 +76,7 @@ const CHAPTERS = [
       },
       {
         // Real painted level; geometry in data/level-mercy.js.
-        name: "Mercy", feel: "dancefloor, cages, peak chaos", enemyBudget: 9,
+        name: "Mercy - Front Room", feel: "dancefloor, cages, peak chaos", enemyBudget: 9,
         plate: MERCY_PLATE,
       },
       {
@@ -86,7 +86,7 @@ const CHAPTERS = [
       },
       {
         // Real painted level; geometry in data/level-mercystage.js.
-        name: "Mercy Stage", feel: "boss arena, facing the stage", boss: true,
+        name: "Mercy - Main Room", feel: "boss arena, facing the stage", boss: true,
         plate: MERCYSTAGE_PLATE,
       },
     ],
