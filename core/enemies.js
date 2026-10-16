@@ -82,7 +82,7 @@ ENEMIES.spawn = (def, p) => {
     z(45),
     "enemy",
     {
-      hp: base.hp, etype: def.type, ename: def.name,
+      hp: base.hp, etype: def.type, ename: def.name, eid: def.id,
       speed: base.speed, stun: 0, flashT: 0, shootT: rand(0.6, 2),
       real: def.real || null, animT: rand(0, 6), baseScale: 1,
     },
@@ -201,10 +201,12 @@ ENEMIES.hit = (e, dmg, critChance) => {
     const cb = G.onBossDeath;
     // where it fell and which way it faced, for the finale's burial
     const snap = { pos: e.pos.clone(), flipX: !!e.flipX, z: e.z };
+    if (typeof TROPHIES !== "undefined") TROPHIES.note("bossDown", { id: e.bossId });
     destroy(e);
     if (cb) cb(snap);
   } else {
     G.run.kills++;
+    if (typeof TROPHIES !== "undefined") TROPHIES.note("kill", { eid: e.eid });
     UI.pop(e.pos, [200, 200, 210], 24);
     SFX.play("kill");
     SPEECH.fire("kill");

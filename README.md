@@ -39,6 +39,15 @@ screen offers "carry on" next visit, with "start a new game" underneath.
 Quit mid-fight and you restart that room as you walked into it.
 Finishing the game clears the save.
 
+**Trophies:** 32 PlayStation-style trophies (bronze, silver, gold) plus a
+platinum for earning every one, kept on the device for good. A pop-up under
+PAUSE when one is earned; the cabinet is the "trophies" chip bottom right of
+the title (or T). The platinum opens a screen with the ten, Ollie's note
+(PLACEHOLDER), the date and a proof code; first to send Ollie a screenshot
+wins a real prize, and `../tools/trophies/check.html` says whether a code is
+real. Names in `data/trophies.js`, rules in `core/trophies.js`, tests in
+`../tools/tests/trophies.test.js`.
+
 **Long-term memory:** separately, the game permanently remembers every
 friend ever met and every character finished with, across all runs. The
 ending's "What You Missed" uses it: "you've met 7 of the group's 10 so
@@ -70,6 +79,12 @@ friends appear per run).
 ---
 
 ## 3. TESTING CHEATS (for you, not the friends)
+
+Since 16 Oct 2026 these only work with **admin on** (the PIN chip bottom
+left of the title), because the platinum trophy wins a real prize. Turning
+admin on, or using `dev.` in the console, marks that device as tested for
+good, and its platinum proof code reads TEST. Strip these keys before the
+final ship.
 
 While playing:
 - `n` — sound on/off (this one's for everyone, not just testing)

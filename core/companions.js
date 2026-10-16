@@ -162,6 +162,7 @@ COMPANIONS.recruit = (id) => {
   const c = G.char(id);
   G.run.companions.push(id);
   G.run.selected = G.run.companions.length - 1;
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("recruit", { id });
   SAVE.write("area");   // re-checkpoint on the spot: a found friend is never lost
   STORY.foundCompanion(id);   // and remember them across runs, forever
 
@@ -197,6 +198,7 @@ COMPANIONS.checkPairs = () => {
   // Ollie + Lucy: sprites hug briefly when the second one joins
   if (!G.run.pairsShown.includes("hug") && present.includes("ollie") && present.includes("lucy")) {
     G.run.pairsShown.push("hug");
+    if (typeof TROPHIES !== "undefined") TROPHIES.note("hug");
     wait(0.5, () => COMPANIONS.heartsBetween("ollie", "lucy"));
   }
 };
@@ -209,6 +211,7 @@ COMPANIONS.trySpecial = () => {
 
   G.run.meter = 0;
   G.run.specialsUsed++;
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("special", { id: c.id });
   G.specialSafe = Infinity;   // untouchable until the attack lands (PLAYER.hurt)
   // a pointed special goes the way you were aiming when you pressed it,
   // not wherever the mouse has wandered by the end of the cut-in
@@ -260,10 +263,12 @@ COMPANIONS.applyEffect = (c) => {
     UI.ring(pl.pos.add(aim.scale(160)), 140);
   }
 
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("specialStart");   // Overkill counts what this one hit takes down
   for (const t of hitList) {
     if (sp.type === "stun") t.stun = sp.power;
     else ENEMIES.hit(t, sp.power, 0);
   }
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("specialEnd");
 
   // Whatever this friend says over their own special is a line on the
   // board, tagged to the `special` moment; the moment names them as its

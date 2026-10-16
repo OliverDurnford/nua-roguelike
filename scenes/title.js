@@ -309,6 +309,13 @@ scene("title", () => {
     });
   };
 
+  // ---------- trophies ----------
+  // The cabinet (scenes/trophies.js): a chip bottom right, mirroring admin.
+  // It says "platinum!" until a new platinum has been opened.
+  const trophyLabel = TROPHIES.platinumNew() ? "platinum!" : touch ? "trophies" : "t · trophies";
+  const trophyChip = UI.chipObj(trophyLabel, G.W - 70, G.H - 18,
+    { opacity: 0, z: 20, fixed: false, area: true });
+
   let newChip = null;
   if (saved) {
     newChip = UI.chipObj(touch ? "tap here to start a new game" : "n · start a new game", G.W / 2, G.H - 18,
@@ -373,6 +380,9 @@ scene("title", () => {
         UI.fadeObj(newChip, 1, 0.3, 0.55);
       }
       UI.fadeObj(adminChip, 0.45, 0.3, 0.8);
+      UI.fadeObj(trophyChip, 0.85, 0.3, 0.8);
+      // the whole sequence sat through, not skipped and not a replay
+      if (!skipped && !replay) TROPHIES.note("title");
       phase = "ready";
     }
   };
@@ -470,11 +480,16 @@ scene("title", () => {
 
   if (replay) settle();
 
-  onKeyPress((key) => press(key === "n"));
+  const openTrophies = () => launch(() => go("trophies"));
+  onKeyPress((key) => {
+    if (key === "t" && phase === "ready" && !ADMIN.busy()) return openTrophies();
+    press(key === "n");
+  });
   // isHovering understands the letterboxed canvas, so a tap only counts as
   // "new game" when it actually lands on that chip.
   onMousePress(() => {
     if (phase === "ready" && !ADMIN.busy() && adminChip.opacity > 0.1 && adminChip.isHovering()) return adminTap();
+    if (phase === "ready" && !ADMIN.busy() && trophyChip.opacity > 0.1 && trophyChip.isHovering()) return openTrophies();
     press(!!newChip && newChip.isHovering());
   });
 });

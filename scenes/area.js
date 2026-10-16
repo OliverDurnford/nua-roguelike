@@ -310,6 +310,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
   G.run.chapter = chapter;
   G.run.area = areaNum;
   SAVE.write("area");   // checkpoint: the run as it stood at this door
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("areaEnter", { chapter, area: areaNum, retry, a });
   if (!G.run.companions.length) G.run.meter = 0;   // no friend yet, no special (and an old save may have charged it)
 
   // How big people stand in THIS room. Must be set before anything is
@@ -774,6 +775,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     onUpdate(() => {
       if (G.paused) return;
       const f = feet(), along = f.x / m.w;
+      if (typeof TROPHIES !== "undefined") TROPHIES.note("canal", { x: f.x, w: m.w });   // Not Ready to Go: walking back after the rush
       if (f.x >= nextX) {
         nextX = f.x + STEP;
         const at = fit(f.x, f.y, 18, 10, smallest - Math.round(along * 3));
@@ -867,6 +869,7 @@ scene("area", ({ chapter, area: areaNum, retry = false }) => {
     dead = true;
     G.paused = true;
     G.run.deaths++;
+    if (typeof TROPHIES !== "undefined") TROPHIES.note("death", { chapter, area: areaNum });
     // stagger, then flat on his back while the screen dims
     if (ART.hasAnim(G.run.charId, "ko")) player.play("ko");
     else if (ART.hasAnim(G.run.charId, "hurt")) player.play("hurt");

@@ -1088,14 +1088,17 @@ UI.wireControls = () => {
   });
 
   // ----- dev / testing cheats (see README) -----
-  onKeyPress("k", () => { get("enemy").forEach((e) => ENEMIES.hit(e, 999, 0)); get("boss").forEach((b) => ENEMIES.hit(b, 999, 0)); });
-  onKeyPress("h", () => { if (G.run) G.run.hp = G.stats().maxHp; });
-  onKeyPress("m", () => { if (G.run) G.run.meter = 1; });
-  onKeyPress("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });
-  onKeyPress("]", () => { if (G.devSkip) G.devSkip(); });
-  onKeyPress("c", () => { if (G.run && !G.paused) CUTIN.play(CUTIN.forJoin(G.char(G.run.charId))); });
+  // Admin only since 16 Oct 2026: the platinum trophy wins a real prize.
+  // Ollie: strip these before the final ship.
+  const cheat = (key, fn) => onKeyPress(key, () => { if (ADMIN.on) fn(); });
+  cheat("k", () => { get("enemy").forEach((e) => ENEMIES.hit(e, 999, 0)); get("boss").forEach((b) => ENEMIES.hit(b, 999, 0)); });
+  cheat("h", () => { if (G.run) G.run.hp = G.stats().maxHp; });
+  cheat("m", () => { if (G.run) G.run.meter = 1; });
+  cheat("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });
+  cheat("]", () => { if (G.devSkip) G.devSkip(); });
+  cheat("c", () => { if (G.run && !G.paused) CUTIN.play(CUTIN.forJoin(G.char(G.run.charId))); });
   // the selected friend's special screen, without spending the meter or attacking
-  onKeyPress("v", () => {
+  cheat("v", () => {
     if (!G.run || G.paused) return;
     const id = G.run.companions.length ? G.run.companions[G.run.selected] : G.run.charId;
     CUTIN.play(CUTIN.forSpecial(G.char(id)));

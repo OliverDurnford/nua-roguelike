@@ -152,6 +152,7 @@ CRACKVOICE.run = ({ chapter, area, at, delay = 1 }) => {
   if (!beat) return false;
   if (!G.run.voiceSaid) G.run.voiceSaid = [];
   G.run.voiceSaid.push(CRACKVOICE.key(chapter, area));
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("voice");
   const steps = CRACKVOICE.steps(beat, G.run.companions.concat([G.run.charId]));
 
   const hold = CRACKVOICE.freeze();

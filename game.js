@@ -25,7 +25,7 @@ window.dev = {
   // any friend's special screen, from inside a level: dev.special("cal")
   special: (id) => { if (G.run && !G.paused) CUTIN.play(CUTIN.forSpecial(G.char(id || G.run.charId))); },
   god: () => { G.godMode = !G.godMode; },
-  wipe: () => { SAVE.clear(); STORY.clear(); location.reload(); },
+  wipe: () => { SAVE.clear(); STORY.clear(); TROPHIES.clear(); location.reload(); },
   // the bonus characters (core/bonus.js): dev.bonus() unlocks all seven,
   // dev.bonus("reset") forgets them and the run count
   bonus: (what) => {
@@ -43,5 +43,12 @@ window.dev = {
     return s.caps;
   },
 };
+
+// Any of these used marks this device as tested, so its platinum's proof
+// code reads TEST (core/trophies.js). Typed into a console, they are cheats.
+for (const k of Object.keys(window.dev)) {
+  const fn = window.dev[k];
+  window.dev[k] = (...args) => { TROPHIES.taint(); return fn(...args); };
+}
 
 go("title");

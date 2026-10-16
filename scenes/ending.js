@@ -28,6 +28,7 @@ scene("ending", () => {
   const r = G.run;
   // Record the completed run FIRST, so every line below (met counts,
   // first-finish flag) already includes this run.
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("finish", { run: r });   // before the story write, so the ending holds its pop-ups
   const win = STORY.finishRun(r.charId);
   const met = STORY.met(r.charId);
   const allMet = met.length >= CHARACTERS.length;

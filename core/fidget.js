@@ -158,6 +158,7 @@ FIDGET.sheet = (id) =>
 // (same spot, size, depth, facing and flicker) while their own sprite is
 // hidden, so their hitbox and feet never change. Returns a cancel.
 FIDGET.play = (obj, id, onDone) => {
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("fidget", { id });
   const reg = FIDGET.sheet(id);
   const a = reg.anims.fidget || reg.anims.pose;
   const seq = FIDGETS[id];
@@ -200,6 +201,7 @@ FIDGET.play = (obj, id, onDone) => {
 // frozen, for the voice in the cracks' cutscene (core/crackvoice.js), and
 // on top of everyone on the floor, so nobody stood in front hides it.
 FIDGET.kiss = (kisser, shy, onDone, opt = {}) => {
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("kiss");
   const top = opt.whilePaused ? 60 : null;   // the top of the floor band (core/depth.js)
   const regK = G.SPR["ch-" + kisser.charId], regS = G.SPR["ch-" + shy.charId];
   const pair = G.SPR["pair-" + FIDGET.PAIR.id];

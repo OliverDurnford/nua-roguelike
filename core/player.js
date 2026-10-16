@@ -256,6 +256,7 @@ PLAYER.hurt = (p, dmg, onDeath) => {
   if (rand(0, 1) < s.block) { UI.floatText(p.pos, "blocked!", [140, 180, 230]); SFX.play("tick"); return; }
 
   G.run.hp -= dmg;
+  if (typeof TROPHIES !== "undefined") TROPHIES.note("hurt");
   p.iframes = 1.0;
   if (ART.hasAnim(G.run.charId, "hurt")) { p.play("hurt"); p.actionT = 0.4; }
   shake(8);
