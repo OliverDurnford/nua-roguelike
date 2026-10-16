@@ -21,6 +21,8 @@
 //   last   only if nobody else has a line for this moment
 //   quiet  said to themselves: a fainter note in leaning grey letters
 //          (on a line or on any one reply)
+//   withAny   (a "when" clause) at least one of these is in the party
+//   quick     on a reply: comes 0.6s after, not 1.5s
 //   chance    how likely each time the moment comes round (0.33 = 1 in 3)
 //   runChance whether it is on the cards at all this run, rolled once a run
 //   about     (a "when" clause) the friend the moment is about: who joined,
@@ -102,7 +104,7 @@ const SPEECH_DATA = {
     {"id":"ollie-03","who":"ollie","text":"*sniff* alright","on":"join","freq":"run","when":{"with":["sam"],"about":["ollie","sam"]}},
     {"id":"ollie-04","who":"ollie","text":"He went for me!","on":"wave","freq":"run"},
     {"id":"cal-05","who":"cal","text":"That's a well established mayo patch","on":"spot","freq":"run","when":{"room":["hungover"],"spot":["mayo patch"]}},
-    {"id":"boys-meet-megan","who":["ollie","cal","josh","sam","adam","ethan"],"text":"Cause I'm Megan Whiteside!!","on":"meet","freq":"run","mode":"all","when":{"about":["megan"],"room":["propaganda"]}},
+    {"id":"boys-meet-megan","who":["ollie","cal","josh","sam","adam"],"text":"Cause I'm Megan Whiteside!!","on":"meet","freq":"run","mode":"all","when":{"about":["megan"],"room":["propaganda"]}},
     {"id":"ollie-05","who":"ollie","text":"Thank God she's gone","on":"bossDown","freq":"sometimes","last":true},
     {"id":"ollie+cal-ham","who":["ollie","cal"],"text":"Where's the ham man?","on":"wander","freq":"run","mode":"one","when":{"with":["jess"]},"reply":[{"who":"jess","text":"He's not coming."},{"who":"@other","text":"Ham on ham."},{"who":"@first","text":"Hahaha"}]},
     {"id":"hickey","who":["ollie","cal","josh","annie","sam","ana","jess","adam","ethan","olliew","megan","joep","joec","max","dion","jack","ella"],"text":"Isn't this where you got that massive hickey?","on":"wander","freq":"run","mode":"one","when":{"with":["lucy"],"room":["mercystage"]},"reply":[{"who":"@first","text":"You know, the one that looked like it took up your entire neck."},{"who":"lucy","text":"YES, okay"}]},
@@ -121,7 +123,24 @@ const SPEECH_DATA = {
     {"id":"ollie-10","who":"ollie","text":"Naked woman bum","on":"wander","freq":"run","runChance":0.5},
     {"id":"josh-09","who":"josh","text":"Leon!","on":"meet","freq":"run","when":{"about":["dion"]}},
     {"id":"ollie-11","who":"ollie","text":"Let's get Cheady","on":"enter","freq":"run","chance":0.333,"when":{"tag":["boss"]}},
-    {"id":"cal-08","who":"cal","text":"I hate Trivial Pursuit","on":"special","freq":"often"}
+    {"id":"cal-08","who":"cal","text":"I hate Trivial Pursuit","on":"special","freq":"often"},
+    {"id":"ana-05","who":"ana","text":"I love Norwiiiiiich, I love the oooocean","on":"wander","freq":"sometimes"},
+    {"id":"ana-06","who":"ana","text":"You guys are so silly","on":"wander","freq":"sometimes","when":{"withAny":["ollie","cal","josh","sam","adam"]}},
+    {"id":"annie-03","who":"annie","text":"Oh dear","on":"wander","freq":"sometimes"},
+    {"id":"boys-peggy","who":["ollie","cal","josh","sam","adam"],"text":"Peggy Babcock","on":"wander","freq":"run","mode":"one","reply":[{"who":"@other","text":"Peggy Babcock"}]},
+    {"id":"umbrella-man","who":["josh","sam","adam"],"text":"I hope the umbrella man isn't here","on":"wander","freq":"run","mode":"one","when":{"room":["market"]},"reply":[{"who":"@other","text":"*shudders*"}]},
+    {"id":"josh-10","who":"josh","text":"I was taking doses so big it would have killed an amateur.","on":"wander","freq":"run","when":{"with":["ollie"],"room":["lecture"]},"reply":[{"who":"ollie","text":"Doses of what?"},{"who":"josh","text":"Cock."}]},
+    {"id":"ethan-01","who":"ethan","text":"Spit in my mouth","on":"enter","freq":"run","when":{"room":["mischief"]}},
+    {"id":"ollie-12","who":"ollie","text":"Everybody else get in on em","on":"wander","freq":"run","when":{"room":["mischief"]}},
+    {"id":"ordered","who":["ollie","lucy","cal","annie","sam","ana","jess","adam","ethan","olliew","megan","joep","joec","max","dion","jack","ella"],"text":"What do you mean you've already ordered?","on":"wander","freq":"run","mode":"one","when":{"with":["josh"],"room":["fullback"]}},
+    {"id":"lucy-06","who":"lucy","text":"Oi!","on":"wander","freq":"run","when":{"with":["ollie"],"room":["streets"]},"reply":[{"who":"ollie","text":"It's okay, Lucy, I fell off the kerb","quick":true}]},
+    {"id":"sam-04","who":"sam","text":"How the bloody hell are you?","on":"join","freq":"rare","chance":0.25,"when":{"about":["ollie","lucy","cal","josh","annie","ana","jess","adam","ethan"]}},
+    {"id":"josh-11","who":"josh","text":"I'm at least 70% straight","on":"wander","freq":"run","when":{"with":["cal"]},"reply":[{"who":"cal","text":"What?!"},{"who":"josh","text":"I mean 95!!"}]},
+    {"id":"josh-12","who":"josh","text":"Yeahhh, yeahhh, yeahhh","on":"wave","freq":"sometimes","max":{"n":3,"per":"run"}},
+    {"id":"washing","who":["ollie","josh","sam","adam"],"text":"Well, at least the washing machines are living longer","on":"wander","freq":"run","mode":"one","when":{"with":["ollie","josh","sam","adam"],"without":["cal"]},"reply":[{"who":"@other","text":"Yeah, where is the lanky cunt?"}]},
+    {"id":"cal-09","who":"cal","text":"Double coke and rum","on":"spot","freq":"run","when":{"spot":["stairwell and back bar","bar counter","bar counter return","bar back shelf of bottles","bar fridges, counter and taps","bar rounded end, top corner","bar rounded end 3","bar rounded end 4","bar rounded end 5","bar rounded end 6","bar top","bar inside and back","bar right side 1","bar right side 2","bar right side 3","bar right side 4","bar right side 5","bar front","back bar counter 1","back bar counter 2","back bar counter 3","back bar counter 4","back bar counter 5","back bar counter 6","back bar counter 7","bar counter 1","bar counter 2","bar counter 3","bar counter 4","bar counter 5","bar counter 6","bar counter 7","bar counter 8","bar counter 9","bar counter 10","bar top arm","bar left arm 1","bar left arm 2","bar left arm 3","bar left arm 4","bar left arm 5","bar left arm 6","bar left corner 1","bar left corner 2","bar right corner 2","bar right corner 1","bar right arm","back bar 1","back bar 2","back bar 3","back bar 4","bar counter top left","bar counter top","bar counter top right","bar counter left 1","bar counter left 2","bar counter left 3","bar counter left 4","bar counter front left","bar counter right 1","bar counter right 2","bar counter right 3","bar counter right 4","bar counter front right","back bar shelves"]}},
+    {"id":"cal-10","who":"cal","text":"It's got to beeeeee Millieeeeeee","on":"wander","freq":"run"},
+    {"id":"cal-11","who":"cal","text":"CaxiTab.","on":"wander","freq":"run"}
   ],
 
   // Talk spots: places for "near a spot" lines that only speech knows

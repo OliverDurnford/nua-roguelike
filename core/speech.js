@@ -29,9 +29,11 @@ SPEECH.SPOT_CD    = 45;    // s: walking past the bar again does not retrigger
 SPEECH.TICK       = 3;     // s: how often the ambient roll happens
 SPEECH.AMBIENT    = 0.28;  // base chance per tick, scaled by the party's talkativeness
 SPEECH.REPLY_GAP  = 1.5;   // s between a line and its reply
+SPEECH.QUICK_GAP  = 0.6;   // s before a reply marked quick ("It's okay, Lucy, I fell off the kerb")
 SPEECH.COPY_GAP   = 0.8;   // s between one copier and the next ("Ffffffffft")
 SPEECH.IDLE_AFTER = 6;     // s of standing still before the idle moment
 SPEECH.SPOT_RANGE = 1.6;   // grid units from a thing's footprint
+SPEECH.ENTER_WAIT = 3;     // s: chatter holds off this long for the room's "entering" line
 
 // Scripted beats ignore the global gag and always get through. The finale's
 // two cutscene beats are among them (docs/superpowers/specs/2026-10-12-
@@ -174,6 +176,7 @@ SPEECH.matches = (line, extra) => {
   const some = (a) => Array.isArray(a) && a.length > 0;
 
   if (some(w.with) && !w.with.every((id) => party.includes(id))) return false;
+  if (some(w.withAny) && !w.withAny.some((id) => party.includes(id))) return false;
   if (some(w.without) && w.without.some((id) => party.includes(id))) return false;
   if (some(w.playing) && !(G.run && w.playing.includes(G.run.charId))) return false;
   if (some(w.room) && !w.room.includes(c.roomId)) return false;
@@ -331,9 +334,10 @@ SPEECH.play = (line, cutscene = false) => {
     if (r.who === "@other") return group.find((w) => w !== first && SPEECH.present(w)) || null;
     return r.who;
   };
-  let stopped = false;
-  (line.reply || []).forEach((r, i) => {
-    wait(SPEECH.REPLY_GAP * (i + 1), () => {
+  let stopped = false, at = 0;
+  (line.reply || []).forEach((r) => {
+    at += r.quick ? SPEECH.QUICK_GAP : SPEECH.REPLY_GAP;
+    wait(at, () => {
       if (stopped) return;
       if (G.paused && !cutscene) { stopped = true; return; }
       const w = whoOf(r);
@@ -351,6 +355,16 @@ SPEECH.fire = (moment, extra) => {
   if (!G.run || (G.paused && !cutscene) || !SPEECH.ctx) return false;
   if (G.cutscene && !cutscene) return false;   // the finale's own beats only
   const scripted = SPEECH.SCRIPTED.includes(moment);
+  // Walking-about chatter waits for the room's "entering" line: its first
+  // roll comes the moment play starts, a second before that line, and the
+  // gag then swallowed it (Ethan's "Spit in my mouth", 16 Oct 2026).
+  const c = SPEECH.ctx;
+  if (moment === "enter") c.entering = false;
+  if (moment === "wander" && c.entering) {
+    if (c.entering === true) c.entering = time() + SPEECH.ENTER_WAIT;
+    if (time() < c.entering) return false;
+    c.entering = false;
+  }
   if (!scripted && time() - SPEECH.lastAny < SPEECH.QUIET) return false;
   const line = SPEECH.pick(SPEECH.eligible(moment, extra));
   if (!line) return false;
@@ -381,6 +395,7 @@ SPEECH.beginArea = (opts) => {
     // adds (a floor mark nobody walks behind, like the mayo patch)
     things: (opts.things || []).concat(SPEECH.talkSpots(opts.roomId)),
     unit: opts.unit || G.TILE,
+    entering: true,       // until the room's "entering" moment has had its turn
   };
   SPEECH.lastSpot = {};
   SPEECH.bags = {};
