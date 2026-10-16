@@ -38,6 +38,13 @@
   let pausedByUs = false;
   let musicWasPlaying = false;
 
+  // A phone with a 120Hz screen asks for 120 frames a second, twice the
+  // work of the 60 the game is made for, and the battery and the heat pay
+  // for it (16 Oct 2026). On a touch screen, frames come no closer than
+  // this: a 120Hz phone takes every other one (60), a 90Hz one keeps all
+  // of them. Desktop screens are left alone.
+  const PHONE_FRAME_MS = window.matchMedia && matchMedia("(pointer: coarse)").matches ? 9 : 0;
+
   // ---------- frame throttle ----------
   // Kaboom asks for the next frame from inside its own callback, so when
   // we decline to call it we have to keep the chain alive ourselves.
@@ -45,7 +52,7 @@
   let lastRun = 0;
   window.requestAnimationFrame = function (cb) {
     return raf(function (t) {
-      if (looking || t - lastRun >= IDLE_FRAME_MS) {
+      if (t - lastRun >= (looking ? PHONE_FRAME_MS : IDLE_FRAME_MS)) {
         lastRun = t;
         cb(t);
       } else {

@@ -15,6 +15,10 @@ kaboom({
   // of it. See core/titlevideo.js.
   background: [12, 12, 16, 0],
   touchToMouse: true,
+  // Tests read the canvas back with toDataURL(), which needs each frame
+  // kept. Players never need it, and keeping it costs a phone a copy of
+  // the whole screen every frame (lib patch 5).
+  preserveDrawingBuffer: location.search.includes("headless"),
   // No engine debug keys or overlays: F8 would freeze the game behind a
   // stray icon. The game's own pause menu (UI.pause) uses debug.paused.
   debug: false,
