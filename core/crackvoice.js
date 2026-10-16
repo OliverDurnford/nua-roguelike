@@ -99,7 +99,20 @@ CRACKVOICE.hold = (s) => {
 // step starts. pace above 1 speeds both up (the finale's scenes are long).
 CRACKVOICE.stepTime = (s, text, pace = 1) => {
   const type = s.ring ? 0 : CRACKVOICE.typeTime(text, CRACKVOICE.speed(s) * pace);
-  return { type, end: type + CRACKVOICE.hold(s) / pace };
+  let end = type + CRACKVOICE.hold(s) / pace;
+  if (s.fade) { const f = CRACKVOICE.fadeSpan(type); end = Math.max(end, f.from + f.len); }
+  return { type, end };
+};
+
+// A fading line (Mike on the Zoom call) starts to go 30% of the way into its
+// typing and takes FADE_SLOW times (0.7 of the typing and half a second) to
+// be gone, the note with it. Ollie, 16 Oct 2026: three times slower than it
+// was. fadeK is how much of it is left at time t into the step.
+CRACKVOICE.FADE_SLOW = 3;
+CRACKVOICE.fadeSpan = (type) => ({ from: type * 0.3, len: CRACKVOICE.FADE_SLOW * (type * 0.7 + 0.5) });
+CRACKVOICE.fadeK = (t, type) => {
+  const f = CRACKVOICE.fadeSpan(type);
+  return 1 - Math.max(0, Math.min(1, (t - f.from) / f.len));
 };
 
 // A centre y for something halfH tall (world px), kept inside the view and
@@ -432,9 +445,9 @@ CRACKVOICE.play = (steps, at, done, opts = {}) => {
         if (opts.cue) opts.cue(seg.s.then);
       }
       glow.talk = n < seg.text.length ? 1 : 0;
-      // Mike fades away as he is typed, the note with him: gone just after
-      // the last word
-      if (seg.s.fade) note.k = 1 - Math.max(0, Math.min(1, (run.t - seg.type * 0.3) / (seg.type * 0.7 + CRACKVOICE.hold(seg.s))));
+      // Mike fades away as he is typed and after, the note with him
+      // (CRACKVOICE.fadeSpan)
+      if (seg.s.fade) note.k = CRACKVOICE.fadeK(run.t, seg.type);
       // the laugh: HA!s off the crack, a little shake on every one
       if (seg.s.laugh && run.t < seg.type + 0.9) {
         run.haT -= dt();

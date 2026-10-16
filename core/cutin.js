@@ -174,6 +174,7 @@ CUTIN.effectText = (sp) => {
   const where = { aoe: "every enemy in the room", radius: "everything near you", directional: "everything in front of you" }[sp.shape];
   if (sp.type === "heal") return "Heals you fully, then nothing can hurt you for " + secs(sp.power) + ".";
   if (sp.type === "stun") return "Stuns " + where + " for " + secs(sp.power) + ".";
+  if (sp.shape === "aoe") return "Knocks " + where + " down to half health.";   // COMPANIONS.specialDamage
   const strength = sp.power >= 12 ? "Massive" : sp.power >= 10 ? "Heavy" : "Big";
   return strength + " damage to " + where + ".";
 };

@@ -204,6 +204,13 @@ COMPANIONS.checkPairs = () => {
 };
 
 // ---------- specials ----------
+// What a damaging special takes off one target. One that hits every enemy
+// in the room halves each of them instead, so it never clears a room on its
+// own (Ollie, 16 Oct 2026); a boss still takes the special's own power.
+// `t` needs only hp and isBoss.
+COMPANIONS.specialDamage = (sp, t) =>
+  (sp.shape === "aoe" && !t.isBoss ? t.hp / 2 : sp.power);
+
 COMPANIONS.trySpecial = () => {
   if (!G.run || G.paused || G.cutscene) return;
   if (G.run.meter < 1 || G.run.companions.length === 0) return;
@@ -266,7 +273,7 @@ COMPANIONS.applyEffect = (c) => {
   if (typeof TROPHIES !== "undefined") TROPHIES.note("specialStart");   // Overkill counts what this one hit takes down
   for (const t of hitList) {
     if (sp.type === "stun") t.stun = sp.power;
-    else ENEMIES.hit(t, sp.power, 0);
+    else ENEMIES.hit(t, COMPANIONS.specialDamage(sp, { hp: t.hp, isBoss: t.is("boss") }), 0);
   }
   if (typeof TROPHIES !== "undefined") TROPHIES.note("specialEnd");
 
