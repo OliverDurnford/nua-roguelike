@@ -21,7 +21,8 @@
 //   last   only if nobody else has a line for this moment
 //   quiet  said to themselves: a fainter note in leaning grey letters
 //          (on a line or on any one reply)
-//   withAny   (a "when" clause) at least one of these is in the party
+//   withAny   (a "when" clause) at least one of these is in the party, or at
+//             least withMin of them when the line sets withMin
 //   quick     on a reply: comes 0.6s after, not 1.5s
 //   chance    how likely each time the moment comes round (0.33 = 1 in 3)
 //   runChance whether it is on the cards at all this run, rolled once a run
@@ -125,7 +126,7 @@ const SPEECH_DATA = {
     {"id":"ollie-11","who":"ollie","text":"Let's get Cheady","on":"enter","freq":"run","chance":0.333,"when":{"tag":["boss"]}},
     {"id":"cal-08","who":"cal","text":"I hate Trivial Pursuit","on":"special","freq":"often"},
     {"id":"ana-05","who":"ana","text":"I love Norwiiiiiich, I love the oooocean","on":"wander","freq":"sometimes"},
-    {"id":"ana-06","who":"ana","text":"You guys are so silly","on":"wander","freq":"sometimes","when":{"withAny":["ollie","cal","josh","sam","adam"]}},
+    {"id":"ana-06","who":"ana","text":"You guys are so silly","on":"wander","freq":"sometimes","withMin":2,"when":{"withAny":["ollie","cal","josh","sam","adam"]}},
     {"id":"annie-03","who":"annie","text":"Oh dear","on":"wander","freq":"sometimes"},
     {"id":"boys-peggy","who":["ollie","cal","josh","sam","adam"],"text":"Peggy Babcock","on":"wander","freq":"run","mode":"one","reply":[{"who":"@other","text":"Peggy Babcock"}]},
     {"id":"umbrella-man","who":["josh","sam","adam"],"text":"I hope the umbrella man isn't here","on":"wander","freq":"run","mode":"one","when":{"room":["market"]},"reply":[{"who":"@other","text":"*shudders*"}]},

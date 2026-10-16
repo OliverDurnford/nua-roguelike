@@ -176,7 +176,9 @@ SPEECH.matches = (line, extra) => {
   const some = (a) => Array.isArray(a) && a.length > 0;
 
   if (some(w.with) && !w.with.every((id) => party.includes(id))) return false;
-  if (some(w.withAny) && !w.withAny.some((id) => party.includes(id))) return false;
+  // at least one of these, or at least line.withMin of them ("You guys are
+  // so silly" wants two of the boys)
+  if (some(w.withAny) && w.withAny.filter((id) => party.includes(id)).length < (line.withMin || 1)) return false;
   if (some(w.without) && w.without.some((id) => party.includes(id))) return false;
   if (some(w.playing) && !(G.run && w.playing.includes(G.run.charId))) return false;
   if (some(w.room) && !w.room.includes(c.roomId)) return false;
