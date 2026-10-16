@@ -7,6 +7,9 @@
 //
 // tier:   "bronze" | "silver" | "gold" (the platinum is its own)
 // hidden: shows as "???" in the cabinet until it is earned
+// before: what the cabinet says until it is earned, for a trophy whose
+//         own "how" gives the story away (Ollie, 16 Oct 2026); once
+//         earned, the real line shows
 //
 // Adding a trophy later: give it a line here and a rule in the
 // engine. Anyone who already holds the platinum keeps it; everyone
@@ -17,12 +20,12 @@
 
 const TROPHY_LIST = [
   // the story
-  { id: "freshers", tier: "bronze", name: "Freshers' Week", how: "Get through Victoria Park and into Gonzo's" },
-  { id: "dj", tier: "bronze", name: "Drop the DJ", how: "Beat the Obnoxious DJ" },
-  { id: "dean", tier: "bronze", name: "Big Dick Energy", how: "Beat Big Dick Dean" },
-  { id: "grad", tier: "silver", name: "First Class Honours", how: "Beat the Dean's Graduation Form" },
-  { id: "covid", tier: "silver", name: "You're On Mute", how: "Beat COVID" },
-  { id: "pub", tier: "gold", name: "See You at the Pub", how: "Beat Busy You and finish the game" },
+  { id: "freshers", tier: "bronze", name: "Freshers' Week", how: "Get through Victoria Park and into Gonzo's", before: "Get through the opening" },
+  { id: "dj", tier: "bronze", name: "Drop the DJ", how: "Beat the Obnoxious DJ", before: "Beat the chapter 1 boss" },
+  { id: "dean", tier: "bronze", name: "Big Dean Energy", how: "Beat Big Dick Dean", before: "Beat the chapter 2 boss" },
+  { id: "grad", tier: "silver", name: "First Class Honours", how: "Beat the Dean's Graduation Form", before: "Beat the chapter 3 boss" },
+  { id: "covid", tier: "silver", name: "You're On Mute", how: "Beat COVID", before: "Beat the chapter 4 boss" },
+  { id: "pub", tier: "gold", name: "See You at the Pub", how: "Beat Busy You and finish the game", before: "Finish the game" },
 
   // the friends
   { id: "plusone", tier: "bronze", name: "Plus One", how: "A friend joins you" },
@@ -48,7 +51,8 @@ const TROPHY_LIST = [
   { id: "cleansheet", tier: "gold", name: "Clean Sheet", how: "Beat a boss without taking a single hit (Medium or Hard)" },
   { id: "chapter", tier: "gold", name: "Didn't Spill a Drop", how: "Finish a whole chapter without dying (Medium or Hard)" },
   { id: "noregrets", tier: "gold", name: "No Regrets", how: "Finish the whole game without dying once (Medium or Hard)" },
-  { id: "billy", tier: "gold", name: "Billy No Mates", how: "Beat Busy You without anyone joining you all run (Medium or Hard)" },
+  { id: "billy", tier: "gold", name: "Billy No Mates", how: "Beat Busy You without anyone joining you all run (Medium or Hard)",
+    before: "Finish the game without anyone joining you all run (Medium or Hard)" },
 
   // the new secrets
   { id: "foam", tier: "silver", hidden: true, name: "Foam Party", how: "Stand still in the Foam Pit for 20 seconds" },

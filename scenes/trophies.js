@@ -49,7 +49,8 @@ scene("trophies", () => {
     TROPHIES.drawCup(X0 + 14, y + 19, t.tier, 2, 1, !got);
     const tx = X0 + 60, right = X0 + ROW_W - 16;
     UI.label(secret ? "???" : t.name, tx, y + 12, { size: 16, color: got ? UI.TEXT : UI.SLOT_TEXT, shadow: false });
-    UI.text(secret ? "A hidden trophy" : t.how, tx, y + 32, {
+    // a story trophy keeps its spoiler until it is earned
+    UI.text(secret ? "A hidden trophy" : got || !t.before ? t.how : t.before, tx, y + 32, {
       size: 16, width: ROW_W - 60 - (got ? 110 : 150), color: got ? UI.TEXT : UI.SLOT_TEXT, lineSpacing: -2,
     });
     if (got) {
