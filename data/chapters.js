@@ -219,7 +219,7 @@ const CHAPTERS = [
 
   // ========================= CHAPTER 5 =========================
   {
-    num: 5, title: "LATER LONDON", era: "Present day - the group now",
+    num: 5, title: "LATER LONDON", era: "Present day",
     year: 2026, lanyard: "LONDON 2026",   // the HUD lanyard card (12 chars max) and the title card - PLACEHOLDER wording, Ollie's call
     enemySet: [
       { type: "runner",  name: "Pigeon", id: "pigeon",       color: [150, 150, 160] },
