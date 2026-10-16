@@ -108,7 +108,8 @@ const SPEECH_DATA = {
     {"id":"ollie+cal-ham","who":["ollie","cal"],"text":"Where's the ham man?","on":"wander","freq":"run","mode":"one","when":{"with":["jess"]},"reply":[{"who":"jess","text":"He's not coming."},{"who":"@other","text":"Ham on ham."},{"who":"@first","text":"Hahaha"}]},
     {"id":"hickey","who":["ollie","cal","josh","annie","sam","ana","jess","adam","ethan","olliew","megan","joep","joec","max","dion","jack","ella"],"text":"Isn't this where you got that massive hickey?","on":"wander","freq":"run","mode":"one","when":{"with":["lucy"],"room":["mercystage"]},"reply":[{"who":"@first","text":"You know, the one that looked like it took up your entire neck."},{"who":"lucy","text":"YES, okay"}]},
     {"id":"ollie+cal-salsa","who":["ollie","cal"],"text":"Salsa anyone?","on":"wander","freq":"run","mode":"one","when":{"room":["thames"]}},
-    {"id":"ollie-06","who":"ollie","text":"I can't fucking breathe in this stuff","on":"wander","freq":"run","when":{"room":["foampit"]}}
+    {"id":"ollie-06","who":"ollie","text":"I can't fucking breathe in this stuff","on":"wander","freq":"run","when":{"room":["foampit"]}},
+    {"id":"adam-head","who":["ollie","lucy","cal","josh","annie","sam","ana","jess","ethan","olliew","megan","joep","joec","max","dion","jack","ella"],"text":"Adam, isn't this where that photo of you with the giant head was taken?","on":"wander","freq":"run","mode":"one","when":{"with":["adam"],"room":["mercystage"]},"reply":[{"who":"adam","text":"Yessssss"}]}
   ],
 
   // Talk spots: places for "near a spot" lines that only speech knows
