@@ -333,7 +333,18 @@ UI.floatText = (p, str, col, big = false) => {
 // system feedback only, so speech is always clearly attributed. The
 // `accent` argument (the speaker's colour) is kept for every existing call
 // site; the kit's note is plain white, so it is not drawn.
+//
+// A friend's note carries their name in small pixel capitals top left
+// (Ollie, 16 Oct 2026: with the party bunched up you could not tell who
+// was talking), and notes never sit on top of each other: every frame
+// UI.layoutBubbles stacks any that would touch, the oldest keeping its
+// place over its speaker and newer ones climbing above it.
 UI._bubbles = [];
+UI._bubbleSeq = 0;
+UI.BUBBLE_GAP = 6;        // px between two stacked notes
+UI.BUBBLE_EASE = 14;      // how quickly a note slides to its new place in the stack
+UI.NAME_COLOR = UI.BLUE_DEEP;
+UI.NAME_H = 12;           // the name's row on top of the words
 
 // o (optional): { fixed } puts the note in screen space and skips the map
 // clamp, for a note inside a collection screen; { z } overrides the layer;
@@ -341,9 +352,57 @@ UI._bubbles = [];
 // { whilePaused } keeps its clock running while G.paused is true;
 // { dark } is the voice in the cracks' note (Busy You speaks in it);
 // { quiet } is said to oneself: grey letters leaning like italics on a
-// fainter note (Josh about Kinga, 16 Oct 2026).
+// fainter note (Josh about Kinga, 16 Oct 2026); { name } overrides the
+// name on the note, false for none.
 UI.QUIET_TEXT = [104, 104, 112];
 UI.QUIET_LEAN = 9;   // degrees each letter leans; the pixel fonts have no italic
+
+// The name a note shows: a friend's (or a bonus person's) on the field.
+// Not on a collection screen (the screen is theirs already), not on the
+// dark note (Busy You is "???" until the finale says otherwise), not on
+// an NPC (Megan has her own name tag) or anything else without a charId.
+UI.speakerName = (ent, o) => {
+  if (o.name !== undefined) return o.name ? String(o.name).toUpperCase() : null;
+  if (o.fixed || o.dark || !ent.charId) return null;
+  if (ent.is && ent.is("npc")) return null;
+  const c = typeof G.char === "function" ? G.char(ent.charId) : null;
+  return c && c.name ? c.name.toUpperCase() : null;
+};
+
+// Where a note would sit with nobody else talking: centred over its
+// speaker's head, kept inside the map.
+UI.bubbleHome = (b) => {
+  const ent = b.ent;
+  let x = ent.pos.x;
+  let y = ent.pos.y - (ent.speechLift || 50) - b.bh / 2;
+  if (G.mapBounds && !b.fixedNote) {
+    x = G.clamp(x, b.bw / 2 + 10, Math.max(b.bw / 2 + 10, G.mapBounds.x2 - b.bw / 2 - 10));
+  }
+  return vec2(x, y);
+};
+
+// Stack every field note that would overlap another. Oldest first: each
+// keeps its home unless an earlier one is in the way, in which case it
+// climbs to just above it (and above whatever that one is under).
+UI.layoutBubbles = () => {
+  const live = UI._bubbles.filter((b) => b.exists() && !b.fixedNote && b.ent && b.ent.exists());
+  live.sort((a, b) => a.seq - b.seq);
+  const placed = [];
+  const g = UI.BUBBLE_GAP;
+  for (const b of live) {
+    const home = UI.bubbleHome(b);
+    let y = home.y;
+    for (let guard = 0; guard < 16; guard++) {
+      const hit = placed.find((q) => Math.abs(q.x - home.x) < (q.w + b.bw) / 2 + g &&
+        Math.abs(q.y - y) < (q.h + b.bh) / 2 + g);
+      if (!hit) break;
+      y = hit.y - (hit.h + b.bh) / 2 - g;
+    }
+    b.want = home.y - y;
+    placed.push({ x: home.x, y, w: b.bw, h: b.bh });
+  }
+};
+
 UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   if (!ent || !ent.exists()) return;
   // one bubble per character - a new line replaces the old one
@@ -352,20 +411,15 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
 
   const wrapW = 230;
   const fmt = UI.measure(str, UI.VT, 16, { width: wrapW, align: "center" });
-  const w = Math.ceil(fmt.width) + 28;
-  const h = Math.ceil(fmt.height) + 17;
+  const name = UI.speakerName(ent, o);
+  const nameW = name ? Math.ceil(UI.measure(name, UI.PX, 8).width) : 0;
+  const top = name ? UI.NAME_H : 0;
+  const w = Math.max(Math.ceil(fmt.width) + 28, nameW + 22);
+  const h = Math.ceil(fmt.height) + 17 + top;
   const dur = o.dur || (1.7 + Math.min(2, str.length * 0.035));
 
-  // if a neighbour is already speaking, stack this note above theirs
-  let lift = 0;
-  for (const b of UI._bubbles) {
-    if (!b.ent || !b.ent.exists()) continue;
-    if (Math.abs(b.ent.pos.x - ent.pos.x) < 120 && Math.abs(b.ent.pos.y - ent.pos.y) < 90) {
-      lift = Math.max(lift, b.lift + b.bh + 10);
-    }
-  }
-
-  const rootComps = [pos(ent.pos), z(o.z || 140), { t: 0, ent, bh: h, lift }];
+  const rootComps = [pos(ent.pos), z(o.z || 140),
+    { t: 0, ent, bw: w, bh: h, lift: 0, want: 0, seq: UI._bubbleSeq++, fixedNote: !!o.fixed, placed: false }];
   if (o.fixed) rootComps.push(fixed());
   if (o.tag) rootComps.push(o.tag);
   const root = add(rootComps);
@@ -384,23 +438,32 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
     const ty = h / 2 + 1, d = 6.4;
     drawRect({ pos: vec2(0, ty), width: 9, height: 9, anchor: "center", angle: 45, color: UI.rgb(fill), opacity: op });
     drawLines({ pts: [vec2(-d, ty), vec2(0, ty + d), vec2(d, ty)], width: 2, color: UI.rgb(UI.INK), opacity: op });
+    if (name) {
+      UI.label(name, Math.round(-w / 2 + 9), Math.round(-h / 2 + 7),
+        { size: 8, color: UI.NAME_COLOR, shadow: false, opacity: o.quiet ? txt.opacity : op });
+    }
   });
   const txt = root.add([
     text(str, { size: 16, font: UI.VT, width: wrapW, align: "center" }),
-    pos(0, 1), anchor("center"), color(UI.rgb(o.dark ? UI.VOICE_TEXT : o.quiet ? UI.QUIET_TEXT : UI.TEXT)), opacity(0),
+    pos(0, 1 + top / 2), anchor("center"), color(UI.rgb(o.dark ? UI.VOICE_TEXT : o.quiet ? UI.QUIET_TEXT : UI.TEXT)), opacity(0),
   ]);
   if (o.quiet) txt.textTransform = () => ({ angle: UI.QUIET_LEAN });
 
   root.onUpdate(() => {
     const gone = !ent.exists();
     if (!gone) {
-      // a big speaker (the finale's boss, the pile) says how far up its head is
-      root.pos = ent.pos.add(0, -(ent.speechLift || 50) - h / 2 - root.lift);
-      // keep the note inside the map so it never clips off the edges
-      if (G.mapBounds && !o.fixed) {
-        root.pos.x = G.clamp(root.pos.x, w / 2 + 10, Math.max(w / 2 + 10, G.mapBounds.x2 - w / 2 - 10));
-        root.pos.y = Math.max(root.pos.y, h / 2 + 10);
+      if (!o.fixed) {
+        // once a frame, whichever note gets here first stacks them all
+        if (UI._laidAt !== time()) { UI._laidAt = time(); UI.layoutBubbles(); }
+        // a new note starts in its place; after that it slides when the stack changes
+        if (!root.placed) { root.lift = root.want; root.placed = true; }
+        root.lift += (root.want - root.lift) * Math.min(1, dt() * UI.BUBBLE_EASE);
       }
+      // a big speaker (the finale's boss, the pile) says how far up its head is
+      const home = o.fixed ? ent.pos.add(0, -(ent.speechLift || 50) - h / 2) : UI.bubbleHome(root);
+      root.pos = home.sub(0, root.lift);
+      // keep the note inside the map so it never clips off the top
+      if (G.mapBounds && !o.fixed) root.pos.y = Math.max(root.pos.y, h / 2 + 10);
       // in a story beat the black bars cover the top and bottom of the view
       // (core/crackvoice.js): a caged friend's bubble went under them
       if (G.cutscene && !o.fixed && typeof CRACKVOICE !== "undefined") {
