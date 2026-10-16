@@ -456,16 +456,19 @@ TROPHIES.drawPop = () => {
   const P = TROPHIES.POP;
   const k = sh.t < P.IN ? 1 - Math.pow(1 - sh.t / P.IN, 3)
     : sh.t > P.IN + P.HOLD ? Math.max(0, 1 - (sh.t - P.IN - P.HOLD) / P.OUT) : 1;
+  // Compact (Ollie, 16 Oct: "too big, make them smaller but still able to be
+  // seen on a phone"): the name in VT323 at 16, the size of the speech notes
+  // everyone already reads on a phone, at half the width of the pixel face.
   const head = d.tier === "platinum" ? "PLATINUM EARNED" : "TROPHY EARNED";
-  const nameW = Math.ceil(UI.measure(d.name, UI.PX, 16).width);
+  const nameW = Math.ceil(UI.measure(d.name, UI.VT, 16).width);
   const headW = Math.ceil(UI.measure(head, UI.PX, 8).width);
-  const w = 14 + 32 + 14 + Math.max(nameW, headW) + 18, h = 56;
+  const w = 8 + 32 + 8 + Math.max(nameW, headW) + 12, h = 40;
   // it fades in dropping a few pixels, so it never slides through PAUSE above it
-  const x = Math.round(G.W / 2 - w / 2), y = Math.round(TROPHIES.popY() - (1 - k) * 10);
-  UI.card(vec2(x, y), w, h, { drop: 3, opacity: k });
-  TROPHIES.drawCup(x + 14, y + 14, d.tier, 2, k);
-  UI.label(head, x + 60, y + 12, { size: 8, color: UI.BLUE_DEEP, shadow: false, opacity: k });
-  UI.label(d.name, x + 60, y + 28, { size: 16, color: UI.TEXT, shadow: false, opacity: k });
+  const x = Math.round(G.W / 2 - w / 2), y = Math.round(TROPHIES.popY() - (1 - k) * 8);
+  UI.card(vec2(x, y), w, h, { drop: 2, opacity: k });
+  TROPHIES.drawCup(x + 8, y + 6, d.tier, 2, k);
+  UI.label(head, x + 48, y + 7, { size: 8, color: UI.BLUE_DEEP, shadow: false, opacity: k });
+  UI.text(d.name, x + 48, y + 17, { size: 16, color: UI.TEXT, opacity: k });
 };
 
 TROPHIES.holding = () => !!(
