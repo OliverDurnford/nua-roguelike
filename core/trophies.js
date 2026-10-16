@@ -204,8 +204,18 @@ TROPHIES._note = (ev, d) => {
       const t = r.trophy || (r.trophy = {});
       // a chapter run clean from its first room (a death anywhere but a
       // boss sends you back to that first room, which starts it again)
-      if (d.area === 1 && !d.retry) { t.ch = d.chapter; t.chDeaths = r.deaths; }
+      if (d.area === 1 && !d.retry) { t.ch = d.chapter; t.chDeaths = r.deaths; t.chEasy = false; }
       if (a.boss) t.hits = 0;
+      // the skill trophies need Medium or Hard (Ollie, 16 Oct 2026): a room,
+      // chapter or run that any of was played on Easy does not count
+      t.roomEasy = false;
+      if (typeof DIFFICULTY !== "undefined" && DIFFICULTY.level === "easy") TROPHIES._note("easy", {});
+      return;
+    }
+    case "easy": {
+      if (!r) return;
+      const t = r.trophy || (r.trophy = {});
+      t.roomEasy = t.chEasy = t.runEasy = true;
       return;
     }
     case "hurt":
@@ -218,9 +228,9 @@ TROPHIES._note = (ev, d) => {
       if (TROPHIES.BOSSES[d.id]) earn(TROPHIES.BOSSES[d.id]);
       if (!r) return;
       const t = r.trophy || {};
-      if (r.hp === 1) earn("lastorders");
-      if (t.hits === 0) earn("cleansheet");
-      if (t.ch === r.chapter && t.chDeaths === r.deaths) earn("chapter");
+      if (!t.roomEasy && r.hp === 1) earn("lastorders");
+      if (!t.roomEasy && t.hits === 0) earn("cleansheet");
+      if (!t.chEasy && t.ch === r.chapter && t.chDeaths === r.deaths) earn("chapter");
       return;
     }
     case "finish": {
@@ -228,8 +238,9 @@ TROPHIES._note = (ev, d) => {
       TROPHIES.holdT = Math.max(TROPHIES.holdT, TROPHIES.ENDING_HOLD);
       const run = d.run || r;
       earn("pub");
-      if (run && run.deaths === 0) earn("noregrets");
-      if (run && !run.companions.length) earn("billy");
+      const easy = !!(run && run.trophy && run.trophy.runEasy);
+      if (run && !easy && run.deaths === 0) earn("noregrets");
+      if (run && !easy && !run.companions.length) earn("billy");
       return;
     }
     case "recruit":

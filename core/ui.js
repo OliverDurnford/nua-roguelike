@@ -1163,6 +1163,59 @@ UI.wireControls = () => {
   });
 };
 
+// ---------- the Easy offer ----------
+// Three quick deaths on Medium (core/difficulty.js): the YOU DIED screen
+// offers Easy instead of "press ENTER to retry" (Ollie, 16 Oct 2026). Either
+// button retries; "go easy" switches first, so the retry restarts the room.
+// The buttons only answer once they have fully faded in, so a tap mashed
+// through the death never picks for you.
+UI.easyOffer = (koHold, retry, isDead) => {
+  const touch = isTouchscreen();
+  const BW = touch ? 240 : 190, BH = touch ? 46 : 30, GAP = touch ? 24 : 20, BSIZE = touch ? 32 : 16;
+  const LINES = [
+    "Rough night out? Easy mode gives you two extra hearts",
+    "and puts you back at the start of the room.",
+    "Swap back any time from the pause menu.",
+  ];
+  const TOP = Math.round(G.H * 0.47), LINE = 18;
+  const by = TOP + LINES.length * LINE + 18;
+  const btns = [
+    { label: "go easy", x: Math.round(G.W / 2 - GAP / 2 - BW), pick: () => DIFFICULTY.set("easy") },
+    { label: "I've got this", x: Math.round(G.W / 2 + GAP / 2), pick: () => {} },
+  ];
+  const inBtn = (p, b) => p.x >= b.x && p.x <= b.x + BW && p.y >= by && p.y <= by + BH;
+  let sel = 0, t = -(0.7 + koHold), k = 0;
+
+  const box = add([fixed(), z(211), pos(0, 0)]);
+  box.onUpdate(() => { t += dt(); k = Math.max(0, Math.min(1, t / 0.4)); });
+  box.onDraw(() => {
+    if (k <= 0) return;
+    LINES.forEach((ln, i) => UI.text(ln, G.W / 2, TOP + i * LINE, { anchor: "top", color: [200, 202, 214], opacity: k }));
+    btns.forEach((b, i) => {
+      const on = i === sel;
+      UI.card(vec2(b.x, by), BW, BH, { fill: on ? UI.STEEL : UI.CHIP, shade: on ? UI.BLUE : null, notch: false, opacity: k });
+      UI.text(b.label, b.x + BW / 2, by + BH / 2 + 1, { anchor: "center", size: BSIZE, opacity: k });
+    });
+  });
+
+  const ready = () => isDead() && k >= 1 && !UI.pauseOpen;
+  const choose = (i) => {
+    if (!ready()) return;
+    SFX.play("uiconfirm");
+    btns[i].pick();
+    retry();
+  };
+  const pickSide = (i) => { if (ready() && sel !== i) { sel = i; SFX.play("uitick"); } };
+  for (const key of ["left", "a"]) onKeyPress(key, () => pickSide(0));
+  for (const key of ["right", "d"]) onKeyPress(key, () => pickSide(1));
+  onKeyPress("enter", () => choose(sel));
+  onMouseMove(() => { if (ready()) btns.forEach((b, i) => { if (inBtn(mousePos(), b)) sel = i; }); });
+  onMousePress(() => {
+    const m = mousePos();
+    btns.forEach((b, i) => { if (inBtn(m, b)) { sel = i; choose(i); } });
+  });
+};
+
 // ---------- pause menu ----------
 // ESC, P, or the PAUSE chip at the top of the screen. Freezes the whole
 // game with Kaboom's own debug.paused: updates and timers stop, drawing
@@ -1187,7 +1240,7 @@ UI.inTopButtons = (p) => UI.inPauseBtn(p) || ADMIN.arrowAt(p) !== 0;
 
 UI.pause = () => {
   const touch = isTouchscreen();
-  const ITEMS = ["carry on", "sound", "back to the title"];
+  const ITEMS = ["carry on", "sound", "difficulty", "back to the title"];
   // phone rows are taller, wider and in bigger type, so a thumb can hit them
   const W = touch ? 420 : 360, ROW_W = touch ? 320 : 260, ROW_H = touch ? 46 : 28;
   const ROW_GAP = touch ? 12 : 10, LINE = 18, ROW_SIZE = touch ? 32 : 16;
@@ -1199,7 +1252,8 @@ UI.pause = () => {
   const rowsY = y0 + 20 + 16 + 22;
   const rowRect = (i) => ({ x: G.W / 2 - ROW_W / 2, y: rowsY + i * (ROW_H + ROW_GAP), w: ROW_W, h: ROW_H });
   const hit = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
-  const label = (i) => (i === 1 ? "sound: " + (SFX.muted ? "off" : "on") : ITEMS[i]);
+  const label = (i) => (i === 1 ? "sound: " + (SFX.muted ? "off" : "on")
+    : i === 2 ? "difficulty: " + DIFFICULTY.level : ITEMS[i]);
 
   let sel = 0;
   let wasPaused = false;   // a cutscene may already have G.paused up
@@ -1228,6 +1282,11 @@ UI.pause = () => {
     } else if (sel === 1) {
       SFX.toggle();
       SOUNDTRACK.syncMute();
+      SFX.play("uitick");
+    } else if (sel === 2) {
+      // Easy, Medium, Hard (core/difficulty.js): hearts change at once,
+      // enemies from the next ones in
+      DIFFICULTY.cycle();
       SFX.play("uitick");
     } else {
       // the run was checkpointed at this room's door, so the title offers to carry on

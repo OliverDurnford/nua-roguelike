@@ -877,6 +877,9 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     G.paused = true;
     G.run.deaths++;
     if (typeof TROPHIES !== "undefined") TROPHIES.note("death", { chapter, area: areaNum });
+    // three quick deaths on Medium offer Easy, once a run (Ollie, 16 Oct 2026)
+    const offer = DIFFICULTY.noteDeath(G.run);
+    if (offer) G.run.easyOffered = true;
     // stagger, then flat on his back while the screen dims
     if (ART.hasAnim(G.run.charId, "ko")) player.play("ko");
     else if (ART.hasAnim(G.run.charId, "hurt")) player.play("hurt");
@@ -893,10 +896,22 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     const big = UI.labelObj("YOU DIED", G.W / 2, G.H * 0.38, { size: 32, anchor: "center", color: UI.RED, shadowOff: 4, z: 211 });
     UI.slideIn(big, vec2(G.W / 2, G.H * 0.3), vec2(G.W / 2, G.H * 0.38), 0.55, 0.15 + koHold);
     // Losing a boss fight puts you back at the boss, not the start of the
-    // chapter (Ollie, 13 Oct 2026); anywhere else the chapter starts again.
-    const retryArea = a.boss ? areaNum : 1;
+    // chapter (Ollie, 13 Oct 2026); anywhere else the chapter starts again,
+    // or on Easy only this room (core/difficulty.js). Asked at the moment of
+    // retrying, because the Easy offer can switch the level first.
+    const restartsRoom = () => !!a.boss || DIFFICULTY.get().restartRoom;
+    const retry = () => {
+      if (!dead || UI.pauseOpen || ADMIN.arrowAt(mousePos())) return;
+      dead = false;
+      G.run.hp = G.stats().maxHp;
+      const room = restartsRoom();
+      go("area", { chapter, area: room ? areaNum : 1, retry: room, again: true });   // a retried finale skips its opening; a restarted chapter skips its card
+    };
+    if (offer) { UI.easyOffer(koHold, retry, () => dead); return; }
+
     const subT = add([
       text(a.boss ? "The boss fight starts again. Companions stay with you."
+        : restartsRoom() ? "This room starts again. Companions stay with you."
         : "Chapter " + chapter + " starts again. Companions stay with you.", { size: 16, font: UI.VT, align: "center" }),
       pos(G.W / 2, G.H * 0.53), anchor("center"), color(200, 202, 214), fixed(), z(211), opacity(0),
     ]);
@@ -912,12 +927,6 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
       hint.opacity = Math.min(1, htD / 0.4) * (0.6 + Math.sin(time() * 3.2) * 0.4);
     });
 
-    const retry = () => {
-      if (!dead || UI.pauseOpen || ADMIN.arrowAt(mousePos())) return;
-      dead = false;
-      G.run.hp = G.stats().maxHp;
-      go("area", { chapter, area: retryArea, retry: !!a.boss, again: true });   // a retried finale skips its opening; a restarted chapter skips its card
-    };
     onKeyPress("enter", retry);
     wait(0.6, () => onMousePress(retry));
   };

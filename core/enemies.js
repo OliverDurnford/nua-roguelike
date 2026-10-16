@@ -73,6 +73,7 @@ ENEMIES.busyReal = (id) => {
 
 ENEMIES.spawn = (def, p) => {
   const base = ENEMY_BASE[def.type];
+  const diff = DIFFICULTY.get();   // Easy and Hard (core/difficulty.js)
   const comps = ENEMIES.comps(def, def.spr);
   const e = add([
     ...comps,
@@ -83,7 +84,7 @@ ENEMIES.spawn = (def, p) => {
     "enemy",
     {
       hp: base.hp, etype: def.type, ename: def.name, eid: def.id,
-      speed: base.speed, stun: 0, flashT: 0, shootT: rand(0.6, 2),
+      speed: base.speed * diff.enemySpeed, stun: 0, flashT: 0, shootT: rand(0.6, 2) * diff.shotGap,
       real: def.real || null, animT: rand(0, 6), baseScale: 1,
     },
   ]);
@@ -118,7 +119,7 @@ ENEMIES.spawn = (def, p) => {
       else if (d < 220) vel = toP.unit().scale(-e.speed);
       e.shootT -= dt();
       if (e.shootT <= 0) {
-        e.shootT = base.interval;
+        e.shootT = base.interval * diff.shotGap;
         ENEMIES.shootAt(e.pos, pl.pos, base.bulletSpeed, def, ENEMIES.liftOf(e));
       }
     } else {
@@ -170,7 +171,7 @@ ENEMIES.shootAt = (from, to, speed, who, lift = 0) => {
     anchor("center"),
     area({ scale: 0.8 }),
     opacity(1),
-    move(dir, speed),
+    move(dir, speed * DIFFICULTY.get().shotSpeed),
     lifespan(4, { fade: 0.1 }),
     z(40),
     "ebullet",
@@ -312,7 +313,7 @@ ENEMIES.spawnBoss = (chapter, p, opts = {}) => {
     z(46),
     "boss",
     {
-      hp: def.hp, maxHp: def.hp,
+      hp: Math.round(def.hp * DIFFICULTY.get().bossHp), maxHp: Math.round(def.hp * DIFFICULTY.get().bossHp),
       bname: opts.name || def.name,
       bossId: def.id,   // what a "boss:<id>" line on the speech board names
       stun: 0, flashT: 0,

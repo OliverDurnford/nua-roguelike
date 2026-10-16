@@ -109,6 +109,7 @@ G.newRun = (charId) => {
     specialsUsed: 0,
     startTime: Date.now(),
   });
+  G.run.hp = G.stats().maxHp;   // Easy and Hard change the hearts (core/difficulty.js)
 };
 
 // Whose Busy You the finale is: the player's own, or for a bonus player one
@@ -118,6 +119,7 @@ G.busyId = () => (G.run && G.run.busyId) || (G.run && G.run.charId);
 // Current effective stats = base + every recruited companion's passive.
 G.stats = () => {
   const s = Object.assign({}, G.BASE_STATS);
+  if (typeof DIFFICULTY !== "undefined") s.maxHp += DIFFICULTY.extraHearts();
   if (G.run) {
     for (const id of G.run.companions) {
       const c = G.char(id);

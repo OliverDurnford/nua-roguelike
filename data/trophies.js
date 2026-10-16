@@ -44,11 +44,11 @@ const TROPHY_LIST = [
   { id: "flu", tier: "bronze", name: "Freshers' Flu", how: "Get knocked out in the very first room" },
   { id: "seagulls", tier: "bronze", name: "Chips Are Safe", how: "Take down 50 seagulls" },
   { id: "deadlines", tier: "bronze", name: "Extension Granted", how: "Take down 50 Deadlines" },
-  { id: "lastorders", tier: "silver", name: "Last Orders", how: "Beat a boss on your last heart" },
-  { id: "cleansheet", tier: "gold", name: "Clean Sheet", how: "Beat a boss without taking a single hit" },
-  { id: "chapter", tier: "gold", name: "Didn't Spill a Drop", how: "Finish a whole chapter without dying" },
-  { id: "noregrets", tier: "gold", name: "No Regrets", how: "Finish the whole game without dying once" },
-  { id: "billy", tier: "gold", name: "Billy No Mates", how: "Beat Busy You without anyone joining you all run" },
+  { id: "lastorders", tier: "silver", name: "Last Orders", how: "Beat a boss on your last heart (Medium or Hard)" },
+  { id: "cleansheet", tier: "gold", name: "Clean Sheet", how: "Beat a boss without taking a single hit (Medium or Hard)" },
+  { id: "chapter", tier: "gold", name: "Didn't Spill a Drop", how: "Finish a whole chapter without dying (Medium or Hard)" },
+  { id: "noregrets", tier: "gold", name: "No Regrets", how: "Finish the whole game without dying once (Medium or Hard)" },
+  { id: "billy", tier: "gold", name: "Billy No Mates", how: "Beat Busy You without anyone joining you all run (Medium or Hard)" },
 
   // the new secrets
   { id: "foam", tier: "silver", hidden: true, name: "Foam Party", how: "Stand still in the Foam Pit for 20 seconds" },
