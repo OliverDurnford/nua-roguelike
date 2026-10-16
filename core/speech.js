@@ -36,7 +36,7 @@ SPEECH.SPOT_RANGE = 1.6;   // grid units from a thing's footprint
 // Scripted beats ignore the global gag and always get through. The finale's
 // two cutscene beats are among them (docs/superpowers/specs/2026-10-12-
 // busy-boss-design.md).
-SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "meet", "pubInvite", "fromPile"];
+SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "specialStart", "meet", "pubInvite", "fromPile"];
 
 SPEECH.WEIGHT = { often: 3, sometimes: 1.5, rare: 0.5, run: 1.5, ever: 1.5 };
 
@@ -179,9 +179,14 @@ SPEECH.matches = (line, extra) => {
   if (some(w.room) && !w.room.includes(c.roomId)) return false;
   if (some(w.chapter) && !w.chapter.includes(c.chapter)) return false;
   if (some(w.tag) && !w.tag.some((t) => (c.tags || []).includes(t))) return false;
-  // on a join: only when one of these is the friend who just joined, so
-  // somebody already here can greet them ("*sniff* alright")
-  if (some(w.joining) && !(extra && extra.by && w.joining.includes(extra.by))) return false;
+  if (some(w.notPlaying) && G.run && w.notPlaying.includes(G.run.charId)) return false;
+  // a moment about somebody (who joined, whose special it is, who you just
+  // met): only when it is one of these, so somebody else can answer them
+  // ("*sniff* alright", "Mademoiselle", "Leon!")
+  if (some(w.about)) {
+    const subject = extra && (extra.by || extra.met);
+    if (!subject || !w.about.includes(subject)) return false;
+  }
   // a spot clause only means anything on a spot moment, and then it has
   // to be the thing actually being stood next to
   if (some(w.spot)) {
@@ -203,18 +208,32 @@ SPEECH.eligible = (moment, extra) => {
     if (l.on !== moment) return false;
     // Some moments have a subject: the friend whose special just fired,
     // the friend who just joined. Only they get to speak on it.
-    // A line with a `joining` clause is the exception: it is somebody
-    // else answering the friend who just turned up.
-    const answering = l.when && Array.isArray(l.when.joining) && l.when.joining.length;
+    // A line with an `about` clause is the exception: it is somebody
+    // else answering the friend the moment is about.
+    const answering = l.when && Array.isArray(l.when.about) && l.when.about.length;
     if (extra && extra.by && l.who !== extra.by && !answering) return false;
     if (l.freq === "run" && ranRun.includes(l.id)) return false;
     if (l.freq === "ever" && ranEver.includes(l.id)) return false;
     if (l.max && SPEECH.used(l) >= l.max.n) return false;
+    if (l.runChance != null && !SPEECH.onThisRun(l)) return false;
     if (now - (SPEECH.lastLine[l.id] || -999) < SPEECH.LINE_CD) return false;
     if (!scripted && now - (SPEECH.lastBy[SPEECH.key(l.who)] || -999) < SPEECH.CHAR_CD) return false;
     if (!SPEECH.voices(l)) return false;
-    return SPEECH.matches(l, extra);
+    if (!SPEECH.matches(l, extra)) return false;
+    // "1 in 3": rolled every time the moment comes round, last of all, so a
+    // line that could never fire here does not use up a roll
+    if (l.chance != null && rand(0, 1) >= l.chance) return false;
+    return true;
   });
+};
+
+// "Maybe not even every run" (line.runChance): rolled once a run per line
+// and kept, so a line that is off this run stays off.
+SPEECH.onThisRun = (l) => {
+  if (!G.run) return false;
+  if (!G.run.lineDice) G.run.lineDice = {};
+  if (G.run.lineDice[l.id] == null) G.run.lineDice[l.id] = rand(0, 1) < l.runChance;
+  return G.run.lineDice[l.id];
 };
 
 // ---------- the shuffle bag ----------
@@ -303,6 +322,11 @@ SPEECH.play = (line, cutscene = false) => {
   // friends turned up, and a laugh never follows a joke nobody made.
   const group = Array.isArray(line.who) ? line.who : [line.who];
   const whoOf = (r) => {
+    // a list: any one of them who is here (and not whoever opened)
+    if (Array.isArray(r.who)) {
+      const here = r.who.filter((w) => w !== first && SPEECH.present(w));
+      return here.length ? here[Math.floor(rand(0, here.length)) % here.length] : null;
+    }
     if (r.who === "@first") return first;
     if (r.who === "@other") return group.find((w) => w !== first && SPEECH.present(w)) || null;
     return r.who;

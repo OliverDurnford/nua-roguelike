@@ -701,7 +701,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
         UI.speech(npc, a.npc.line, a.npc.colors.top);
         SFX.play("uitick");
         // and whoever is with you answers her (the speech board's "meeting someone")
-        wait(1.5, () => SPEECH.fire("meet", { npc: npc.npcId }));
+        wait(1.5, () => SPEECH.fire("meet", { met: (realId || npc.npcId).toLowerCase() }));
       }
     });
     const above = realId ? h * 0.5 + 10 : 42;

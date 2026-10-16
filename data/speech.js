@@ -21,9 +21,14 @@
 //   last   only if nobody else has a line for this moment
 //   quiet  said to themselves: a fainter note in leaning grey letters
 //          (on a line or on any one reply)
+//   chance    how likely each time the moment comes round (0.33 = 1 in 3)
+//   runChance whether it is on the cards at all this run, rolled once a run
+//   about     (a "when" clause) the friend the moment is about: who joined,
+//             whose special it is, who you just met
 //   reply  up to three answers, 1.5s apart; a reply's who may be "@first"
-//          (whoever opened) or "@other" (another of the group); the talk
-//          stops at the first one who is not there
+//          (whoever opened), "@other" (another of the group) or a list (any
+//          one of them who is here); the talk stops at the first one who is
+//          not there
 //   spots  talk spots: named places for "near a spot" that only speech
 //          knows about, { room: [{ name, box: [x1, y1, x2, y2] }] }
 // ============================================================
@@ -48,32 +53,26 @@ const SPEECH_DATA = {
 
   lines: [
     {"id":"josh-02","who":"josh","text":"Is that a perfectly good leg of lamb in here?!","on":"spot","freq":"sometimes","max":{"n":2,"per":"game"},"when":{"spot":["smoking bin","litter bin","metal bin","kitchen bin","overflowing bin","bin by the left shopfront, top row","bin by the right shopfront","smoking bin 1","smoking bin 2","bin","bin by the path","bin grey","bin blue","bin green","wheelie bin","bin one top row","bin two top row","bin one bottom row","bin two bottom row"]}},
-    {"id":"josh-03","who":"josh","text":"I'd survive a bear attack. Easily.","on":"wander","freq":"sometimes"},
-    {"id":"josh-04","who":"josh","text":"Anyone else smell crisps?","on":"wander","freq":"sometimes"},
-    {"id":"lucy-01","who":"lucy","text":"Howay, keep up!","on":"wander","freq":"sometimes"},
-    {"id":"lucy-02","who":"lucy","text":"Are ye not cold? Ye look cold.","on":"wander","freq":"sometimes"},
-    {"id":"lucy-03","who":"lucy","text":"Gan canny, pet.","on":"wander","freq":"sometimes"},
     {"id":"lucy-04","who":"lucy","text":"Ye cannit fight on an empty stomach!","on":"wander","freq":"sometimes"},
-    {"id":"jess-01","who":"jess","text":"That was a terrible plan.","on":"wander","freq":"sometimes"},
-    {"id":"jess-02","who":"jess","text":"No. Next room.","on":"wander","freq":"sometimes"},
-    {"id":"jess-03","who":"jess","text":"I've seen scarier in Burgess Hill.","on":"wander","freq":"sometimes"},
-    {"id":"jess-04","who":"jess","text":"Just hit it harder.","on":"wander","freq":"sometimes"},
+    {"id":"jess-01","who":"jess","text":"That was a terrible plan.","on":"wander","freq":"rare"},
+    {"id":"jess-02","who":"jess","text":"No. Next room.","on":"wander","freq":"rare"},
+    {"id":"jess-03","who":"jess","text":"I've seen scarier in Burgess Hill.","on":"wander","freq":"rare"},
+    {"id":"jess-04","who":"jess","text":"Just hit it harder.","on":"wander","freq":"rare"},
     {"id":"annie-01","who":"annie","text":"meow~","on":"wander","freq":"often"},
     {"id":"ana-01","who":"ana","text":"¡El mar! ...well. Sort of.","on":"wander","freq":"sometimes","when":{"tag":["water"]}},
     {"id":"ana-02","who":"ana","text":"This is NOT Spanish water.","on":"wander","freq":"sometimes","when":{"tag":["water"]}},
     {"id":"ana-03","who":"ana","text":"I miss the sea...","on":"wander","freq":"sometimes","when":{"tag":["water"]}},
     {"id":"cal-01","who":"cal","text":"Actually, I think we should go the other way.","on":"enter","freq":"rare"},
     {"id":"cal-02","who":"cal","text":"Actually, the other route's faster.","on":"enter","freq":"rare"},
-    {"id":"adam-01","who":"adam","text":"Smell ya later!","on":"exit","freq":"sometimes"},
+    {"id":"adam-01","who":"adam","text":"Smell ya later!","on":"exit","freq":"sometimes","max":{"n":3,"per":"run"},"chance":0.333},
     {"id":"adam-02","who":"adam","text":"KA-CHOW!","on":"special","freq":"often"},
     {"id":"lucy-05","who":"lucy","text":"PUT A COAT ON!","on":"special","freq":"often"},
-    {"id":"ollie-01","who":"ollie","text":"Do you come here often?","on":"special","freq":"often","reply":[{"who":"ollie","text":"Is it hot in here or is it just the boss fight?"},{"who":"ollie","text":"You + me + the smoking area?"}]},
-    {"id":"ollie-02","who":"ollie","text":"I've got a camera, you've got a face. Think about it.","on":"special","freq":"often","reply":[{"who":"ollie","text":"...that came out wrong."}]},
+    {"id":"ollie-01","who":"ollie","text":"Do you come here often?","on":"special","freq":"often","reply":[{"who":"ollie","text":"...maybe I should just keep my mouth shut"},{"who":"adam","text":"You just can't help yourself, can you?"},{"who":"ollie","text":"Hahaha"}]},
+    {"id":"ollie-02","who":"ollie","text":"I've got a camera, you've got a face. Think about it.","on":"special","freq":"often","reply":[{"who":"ollie","text":"...maybe I should just keep my mouth shut"},{"who":"adam","text":"You just can't help yourself, can you?"},{"who":"ollie","text":"Hahaha"}]},
     {"id":"cal-03","who":"cal","text":"That's one milky lady","on":"wander","freq":"run","when":{"with":["sam","lucy"]},"reply":[{"who":"lucy","text":"SAM!"},{"who":"sam","text":"That wasn't me!"}]},
     {"id":"josh-05","who":"josh","text":"How's your mate Kinga doing?","on":"wander","freq":"run","when":{"with":["ana"]},"reply":[{"who":"ana","text":"Josh!"},{"who":"josh","text":"I'd like to climb her like a tree","quiet":true}]},
     {"id":"josh-06","who":"josh","text":"How's Gee Underwood doin?","on":"wander","freq":"run","when":{"with":["annie"]}},
     {"id":"annie+ana-01","who":["annie","ana"],"text":"Silly boys!","on":"wander","freq":"run","when":{"with":["annie","ana"]}},
-    {"id":"josh-07","who":"josh","text":"My hair's never recovered, Sam.","on":"wander","freq":"run","when":{"with":["sam"]},"reply":[{"who":"sam","text":"It was ONE haircut!"}]},
     {"id":"dj-start","who":"boss:dj","text":"Can't hear your mates? GOOD!","on":"bossStart","freq":"often"},
     {"id":"dj-01","who":"boss:dj","text":"No chatting! Face the decks!","on":"wander","freq":"often"},
     {"id":"dj-02","who":"boss:dj","text":"Split up, you lot! You're blocking the dancefloor!","on":"wander","freq":"often"},
@@ -100,16 +99,29 @@ const SPEECH_DATA = {
     {"id":"annie-02","who":"annie","text":"My carbonara!!!","on":"spot","freq":"run","when":{"spot":["stairwell and back bar","upper west rail, beside the top-left stairs","curve down to the lower-left stair head","rail between the lower-left stairs and the arc","rail between the arc and the lower-right stairs","curve up from the lower-right stair head","upper east rail, beside the top-right stairs","wall run flanking the left steps down","wall run flanking the right steps down","stair rail left 1","stair rail left 2","stair rail left 3","stair rail right 1","stair rail right 2","stair rail right 3","cellar steps","left steps rail 1","left steps rail 2","left steps rail 3","right steps left rail 1","right steps left rail 2","right steps left rail 3","right steps right rail 1","right steps right rail 2","right steps right rail 3","stairs rail left 1","stairs rail left 2","stairs rail left 3","stairs rail left 4","stairs rail left 5","stairs rail right 1","stairs rail right 2","stairs rail right 3","stairs rail right 4","stairs rail right 5","stairs and underpass wall","stair post","stair flight upper","stair flight lower"]}},
     {"id":"sam-01","who":"sam","text":"He took 7 cans to the scroll","on":"bossDown","freq":"run"},
     {"id":"sam-02","who":"sam","text":"I'm uncle buckled","on":"death","freq":"often","max":{"n":2,"per":"run"},"when":{"playing":["sam"]}},
-    {"id":"ollie-03","who":"ollie","text":"*sniff* alright","on":"join","freq":"run","when":{"with":["sam"],"joining":["ollie","sam"]}},
+    {"id":"ollie-03","who":"ollie","text":"*sniff* alright","on":"join","freq":"run","when":{"with":["sam"],"about":["ollie","sam"]}},
     {"id":"ollie-04","who":"ollie","text":"He went for me!","on":"wave","freq":"run"},
     {"id":"cal-05","who":"cal","text":"That's a well established mayo patch","on":"spot","freq":"run","when":{"room":["hungover"],"spot":["mayo patch"]}},
-    {"id":"boys-meet-megan","who":["ollie","cal","josh","sam","adam","ethan"],"text":"Cause I'm Megan Whiteside!!","on":"meet","freq":"run","mode":"all","when":{"room":["propaganda"]}},
+    {"id":"boys-meet-megan","who":["ollie","cal","josh","sam","adam","ethan"],"text":"Cause I'm Megan Whiteside!!","on":"meet","freq":"run","mode":"all","when":{"about":["megan"],"room":["propaganda"]}},
     {"id":"ollie-05","who":"ollie","text":"Thank God she's gone","on":"bossDown","freq":"sometimes","last":true},
     {"id":"ollie+cal-ham","who":["ollie","cal"],"text":"Where's the ham man?","on":"wander","freq":"run","mode":"one","when":{"with":["jess"]},"reply":[{"who":"jess","text":"He's not coming."},{"who":"@other","text":"Ham on ham."},{"who":"@first","text":"Hahaha"}]},
     {"id":"hickey","who":["ollie","cal","josh","annie","sam","ana","jess","adam","ethan","olliew","megan","joep","joec","max","dion","jack","ella"],"text":"Isn't this where you got that massive hickey?","on":"wander","freq":"run","mode":"one","when":{"with":["lucy"],"room":["mercystage"]},"reply":[{"who":"@first","text":"You know, the one that looked like it took up your entire neck."},{"who":"lucy","text":"YES, okay"}]},
     {"id":"ollie+cal-salsa","who":["ollie","cal"],"text":"Salsa anyone?","on":"wander","freq":"run","mode":"one","when":{"room":["thames"]}},
     {"id":"ollie-06","who":"ollie","text":"I can't fucking breathe in this stuff","on":"wander","freq":"run","when":{"room":["foampit"]}},
-    {"id":"adam-head","who":["ollie","lucy","cal","josh","annie","sam","ana","jess","ethan","olliew","megan","joep","joec","max","dion","jack","ella"],"text":"Adam, isn't this where that photo of you with the giant head was taken?","on":"wander","freq":"run","mode":"one","when":{"with":["adam"],"room":["mercystage"]},"reply":[{"who":"adam","text":"Yessssss"}]}
+    {"id":"adam-head","who":["ollie","lucy","cal","josh","annie","sam","ana","jess","ethan","olliew","megan","joep","joec","max","dion","jack","ella"],"text":"Adam, isn't this where that photo of you with the giant head was taken?","on":"wander","freq":"run","mode":"one","when":{"with":["adam"],"room":["mercystage"]},"reply":[{"who":"adam","text":"Yessssss"}]},
+    {"id":"ollie-07","who":"ollie","text":"Is it hot in here or is it just the boss fight?","on":"special","freq":"often","reply":[{"who":"ollie","text":"...maybe I should just keep my mouth shut"},{"who":"adam","text":"You just can't help yourself, can you?"},{"who":"ollie","text":"Hahaha"}]},
+    {"id":"ollie-08","who":"ollie","text":"You + me + the smoking area?","on":"special","freq":"often","reply":[{"who":"ollie","text":"...maybe I should just keep my mouth shut"},{"who":"adam","text":"You just can't help yourself, can you?"},{"who":"ollie","text":"Hahaha"}]},
+    {"id":"cal-06","who":"cal","text":"I think I won that","on":"wave","freq":"sometimes","max":{"n":2,"per":"run"},"when":{"notPlaying":["cal"]}},
+    {"id":"sam-03","who":"sam","text":"My hair's never recovered, Josh.","on":"wander","freq":"run","when":{"with":["josh"]},"reply":[{"who":"josh","text":"It was ONE haircut!"}]},
+    {"id":"cal-07","who":"cal","text":"Has someone got smelly chips?","on":"wander","freq":"run","reply":[{"who":["ollie","sam","josh"],"text":"It's a good job your friends would never call you smelly chips for the rest of your life"}]},
+    {"id":"ollie-09","who":"ollie","text":"When I'm having a bad day and I close my eyes, sometimes I can see Fatima's arsehole.","on":"wander","freq":"run"},
+    {"id":"ana-04","who":"ana","text":"I hope someone's feeding Shelley","on":"wander","freq":"run"},
+    {"id":"adam-03","who":"adam","text":"Watch this.","on":"specialStart","freq":"often"},
+    {"id":"josh-08","who":"josh","text":"Mademoiselle","on":"join","freq":"run","chance":0.5,"when":{"about":["lucy","annie","ana","jess"]}},
+    {"id":"ollie-10","who":"ollie","text":"Naked woman bum","on":"wander","freq":"run","runChance":0.5},
+    {"id":"josh-09","who":"josh","text":"Leon!","on":"meet","freq":"run","when":{"about":["dion"]}},
+    {"id":"ollie-11","who":"ollie","text":"Let's get Cheady","on":"enter","freq":"run","chance":0.333,"when":{"tag":["boss"]}},
+    {"id":"cal-08","who":"cal","text":"I hate Trivial Pursuit","on":"special","freq":"often"}
   ],
 
   // Talk spots: places for "near a spot" lines that only speech knows

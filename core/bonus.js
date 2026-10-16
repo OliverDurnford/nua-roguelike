@@ -122,7 +122,11 @@ BONUS.hide = (a, id) => {
     const near = pl.pos.dist(b.pos) < BONUS.SEE();
     b.k = Math.max(0, Math.min(1, b.k + (near ? 1 : -1) * dt() / BONUS.FADE));
     b.opacity = b.k;
-    if (near && !b.seen) { b.seen = true; BONUS.sparkle(b.pos.add(0, -h * 0.4)); SFX.play("uitick"); }
+    if (near && !b.seen) {
+      b.seen = true; BONUS.sparkle(b.pos.add(0, -h * 0.4)); SFX.play("uitick");
+      // the speech board's "meeting someone": Josh spotting Dion ("Leon!")
+      wait(0.6, () => SPEECH.fire("meet", { met: c.id }));
+    }
   });
   // Every frame you touch them, not only the first: a first touch that came
   // while they were still fading in, or with the room held for a moment,

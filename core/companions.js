@@ -229,8 +229,13 @@ COMPANIONS.trySpecial = () => {
   // The special screen: four parallax layers of this friend doing their
   // move, then a hard cut into the attack's own flash and shake.
   // core/cutin.js raises and drops G.paused itself.
-  CUTIN.play(CUTIN.forSpecial(c), () => COMPANIONS.applyEffect(c));
+  const screen = () => CUTIN.play(CUTIN.forSpecial(c), () => COMPANIONS.applyEffect(c));
+  // Something said just before it ("Watch this.", Adam) gets a beat on the
+  // field to be read before the screen takes over; nothing said, no wait.
+  if (SPEECH.fire("specialStart", { by: c.id })) wait(COMPANIONS.BEFORE_SPECIAL, screen);
+  else screen();
 };
+COMPANIONS.BEFORE_SPECIAL = 0.9;   // s
 
 COMPANIONS.applyEffect = (c) => {
   G.specialSafe = PLAYER.SPECIAL_SAFE;   // and a moment after, to get clear
@@ -296,9 +301,16 @@ COMPANIONS.applyEffect = (c) => {
 
 // Hooks for area enter / exit. Both just raise the moment; which line
 // comes out, and whether anybody speaks at all, is the speech system's call.
+// The room opens frozen on its wide shot (UI.reveal holds G.paused), and a
+// line raised then is dropped, so the clock starts when play does: until
+// 16 Oct 2026 no "entering a room" line had ever been heard.
 COMPANIONS.onAreaEnter = () => {
   if (!G.run) return;
-  wait(1.2, () => SPEECH.fire("enter"));
+  const watch = onUpdate(() => {
+    if (G.paused) return;
+    watch.cancel();
+    wait(1.2, () => SPEECH.fire("enter"));
+  });
 };
 
 // Returns true if someone spoke, so the area can hold the exit for a
