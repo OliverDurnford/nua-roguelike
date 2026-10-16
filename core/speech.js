@@ -27,7 +27,7 @@ SPEECH.CHAR_CD    = 12;    // s: one person cannot speak twice inside this
 SPEECH.LINE_CD    = 90;    // s: the same line cannot come back inside this
 SPEECH.SPOT_CD    = 45;    // s: walking past the bar again does not retrigger
 SPEECH.TICK       = 3;     // s: how often the ambient roll happens
-SPEECH.AMBIENT    = 0.28;  // base chance per tick, scaled by the party's talkativeness
+SPEECH.AMBIENT    = 0.14;  // base chance per tick, scaled by the party's talkativeness (0.28 until 16 Oct)
 SPEECH.REPLY_GAP  = 1.5;   // s between a line and its reply
 SPEECH.QUICK_GAP  = 0.6;   // s before a reply marked quick ("It's okay, Lucy, I fell off the kerb")
 SPEECH.COPY_GAP   = 0.8;   // s between one copier and the next ("Ffffffffft")
@@ -41,6 +41,20 @@ SPEECH.ENTER_WAIT = 3;     // s: chatter holds off this long for the room's "ent
 SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "specialStart", "meet", "pubInvite", "fromPile"];
 
 SPEECH.WEIGHT = { often: 3, sometimes: 1.5, rare: 0.5, run: 1.5, ever: 1.5 };
+
+// Standing still in the foam pit with four friends, someone spoke every 12
+// seconds and every once-a-run joke was gone in the first five minutes
+// (Ollie, 16 Oct 2026: "far too much"). So chatter rolls far less often,
+// and a room plays at most ONE of the once-a-run jokes that could happen
+// anywhere, so they spread across the whole run. A room's own jokes (a line
+// with a room clause) are not counted, and go first when they can.
+
+// A joke that could come up in any room, once a run: the ones to ration.
+SPEECH.isJoke = (l) => l.on === "wander" && (l.freq === "run" || l.freq === "ever") &&
+  !(l.when && Array.isArray(l.when.room) && l.when.room.length);
+// This room's own once-a-run line, which gets the first chance at it.
+SPEECH.isRoomJoke = (l) => l.on === "wander" && (l.freq === "run" || l.freq === "ever") &&
+  !!(l.when && Array.isArray(l.when.room) && l.when.room.length);
 
 // Who speaks in the voice in the cracks' dark note rather than a white one.
 SPEECH.VOICE = ["boss:oldage"];
@@ -221,6 +235,7 @@ SPEECH.eligible = (moment, extra) => {
     if (l.freq === "ever" && ranEver.includes(l.id)) return false;
     if (l.max && SPEECH.used(l) >= l.max.n) return false;
     if (l.runChance != null && !SPEECH.onThisRun(l)) return false;
+    if (SPEECH.ctx && SPEECH.ctx.jokeDone && SPEECH.isJoke(l)) return false;
     if (now - (SPEECH.lastLine[l.id] || -999) < SPEECH.LINE_CD) return false;
     if (!scripted && now - (SPEECH.lastBy[SPEECH.key(l.who)] || -999) < SPEECH.CHAR_CD) return false;
     if (!SPEECH.voices(l)) return false;
@@ -368,8 +383,12 @@ SPEECH.fire = (moment, extra) => {
     c.entering = false;
   }
   if (!scripted && time() - SPEECH.lastAny < SPEECH.QUIET) return false;
-  const line = SPEECH.pick(SPEECH.eligible(moment, extra));
+  let cands = SPEECH.eligible(moment, extra);
+  const own = cands.filter(SPEECH.isRoomJoke);
+  if (own.length) cands = own;
+  const line = SPEECH.pick(cands);
   if (!line) return false;
+  if (SPEECH.isJoke(line) && SPEECH.ctx) SPEECH.ctx.jokeDone = true;
   SPEECH.play(line, cutscene);
   return true;
 };
@@ -398,6 +417,7 @@ SPEECH.beginArea = (opts) => {
     things: (opts.things || []).concat(SPEECH.talkSpots(opts.roomId)),
     unit: opts.unit || G.TILE,
     entering: true,       // until the room's "entering" moment has had its turn
+    jokeDone: false,      // one of the anywhere once-a-run jokes has had this room
   };
   SPEECH.lastSpot = {};
   SPEECH.bags = {};
