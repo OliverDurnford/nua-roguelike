@@ -117,7 +117,8 @@ scene("ending", () => {
   const line = ORDER.slice();
   if (!ORDER.includes(r.charId)) line.splice(5, 0, r.charId);
   const STEP = Math.min(84, (G.W - 120) / (line.length - 1));
-  const FEET = G.H - 12, CAST_H = 104;
+  const FEET = G.H - 6, CAST_H = 84;
+  const CARD_FLOOR = FEET - CAST_H - 10;   // the cards stay above their heads
   line.forEach((id, i) => {
     const off = i - (line.length - 1) / 2;
     const front = 1 - Math.abs(off) / ((line.length - 1) / 2);
@@ -176,17 +177,30 @@ scene("ending", () => {
   ];
   const AT = [2.5, 5.0, 8.5, 13.5, 16.0, 17.5];   // s: when each paragraph arrives
   const HINT_AT = 19.5;
-  const MW = 600;   // the message's width on the card
+  const HINT = isTouchscreen() ? "tap to carry on" : "press ENTER";
+  // Big enough to read on a phone (Ollie, 17 Oct 2026): VT323 at 32, which
+  // is about 23pt on an iPhone held sideways, on a card nearly the width of
+  // the screen. VT323 is rasterised at 16, so 16 or 32 are the only sizes
+  // that stay crisp; if a message ever outgrows the card at 32 it drops to 16.
   const STYLES = { ink: { color: UI.rgb(UI.TEXT) }, em: { color: UI.rgb(UI.BLUE_DEEP) } };
   const inked = (m) => "[ink]" + m.replace("[em]", "[/ink][em]").replace("[/em]", "[/em][ink]") + "[/ink]";
-  const MSG = { font: UI.VT, size: 16, lineSpacing: 4, width: MW, align: "center", styles: STYLES };
-  const GAP = 14;
-  const heights = MESSAGE.map((m) => UI.measure(inked(m), MSG.font, MSG.size, MSG).height);
-  const msgH = heights.reduce((a, b) => a + b, 0) + GAP * (MESSAGE.length - 1);
-  const CARD1 = { w: 680, h: 58 + msgH + 44 };
-  CARD1.y = Math.max(24, Math.round((G.H - 150 - CARD1.h) / 2) + 8);
+  const CARD_W = 900, MW = CARD_W - 60;
+  const HEAD_H = 50, HINT_H = 34;   // the heading above the words, the hint below them
+  const layout1 = (size, GAP) => {
+    const MSG = { font: UI.VT, size, lineSpacing: size / 16, width: MW, align: "center", styles: STYLES };
+    const heights = MESSAGE.map((m) => UI.measure(inked(m), MSG.font, MSG.size, MSG).height);
+    const msgH = heights.reduce((a, b) => a + b, 0) + GAP * (MESSAGE.length - 1);
+    return { MSG, GAP, heights, h: HEAD_H + msgH + HINT_H };
+  };
+  // at 32 with the paragraphs as far apart as will fit, else at 16
+  let L1 = null;
+  for (const gap of [11, 8, 5]) { const L = layout1(32, gap); if (L.h <= CARD_FLOOR - 8) { L1 = L; break; } }
+  if (!L1) L1 = layout1(16, 14);
+  const { MSG, GAP, heights } = L1;
+  const CARD1 = { w: CARD_W, h: L1.h };
+  CARD1.y = Math.max(8, Math.round((CARD_FLOOR - CARD1.h) / 2));
   const ys = [];
-  heights.reduce((y, h) => { ys.push(y); return y + h + GAP; }, CARD1.y + 58);
+  heights.reduce((y, h) => { ys.push(y); return y + h + GAP; }, CARD1.y + HEAD_H);
 
   let clock = 0, page = 1, page2At = null, page1Gone = null;
   let shownAt1 = null;
@@ -206,7 +220,7 @@ scene("ending", () => {
     const rise = Math.round((1 - k) * 12);
     const cx0 = CX - CARD1.w / 2, cy0 = CARD1.y + rise;
     UI.card(vec2(cx0, cy0), CARD1.w, CARD1.h, { drop: 4, opacity: k });
-    heading("VICTORIA PARK, RESTORED.", cy0 + 22, k);
+    heading("VICTORIA PARK, RESTORED.", cy0 + 18, k);
     MESSAGE.forEach((m, i) => {
       if (paraAt[i] === null) return;
       const pk = UI.ease((t - paraAt[i]) / 0.8);
@@ -216,8 +230,8 @@ scene("ending", () => {
       }));
     });
     if (hintShown) {
-      UI.text("press ENTER / tap", cx0 + CARD1.w - 18, cy0 + CARD1.h - 14, {
-        anchor: "botright", color: UI.BLUE_DEEP, opacity: k * (0.55 + Math.sin(time() * 3) * 0.25),
+      UI.text(HINT, cx0 + CARD1.w - 18, cy0 + CARD1.h - 8, {
+        size: MSG.size, anchor: "botright", color: UI.BLUE_DEEP, opacity: k * (0.55 + Math.sin(time() * 3) * 0.25),
       });
     }
   });
@@ -234,17 +248,35 @@ scene("ending", () => {
   if (missed.length) TRACKS.push(["STILL OUT THERE", missed.join(", ")]);
   // "first run finished as X" only means something from the second win
   // onward; on the very first completion it goes without saying
+  // Two plain facts rather than one mixed count (Ollie, 17 Oct 2026): who
+  // you have finished the game as, and who you have played alongside, ever.
+  // Friends freed from the cages count as neither.
+  const NUM = ["no one", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+  const ten = CHARACTERS.map((c) => c.id);
+  const playedAs = win.story.finished.filter((id) => ten.includes(id)).length;
+  const alongside = win.story.found.filter((id) => ten.includes(id)).length;
+  const sofar = playedAs && alongside
+    ? "you've played as " + NUM[playedAs] + " of the group so far, and alongside " + NUM[alongside] + "."
+    : playedAs ? "you've played as " + NUM[playedAs] + " of the group so far."
+    : "you've played alongside " + NUM[alongside] + " of the group so far.";
   const outro = (win.firstAsChar && win.story.wins > 1 ? "first run finished as " + G.char(r.charId).name + "\n" : "") +
     (allMet
       ? "across your runs you've met all ten. the whole group, back together."
-      : "you've teamed up with " + met.length + " of the group's 10 so far.\na different four friends appear every run. go again?");
-  const CARD2 = { w: 680, rowH: 26 };
-  const LABEL_W = 210, VALUE_W = CARD2.w - 64 - 40 - LABEL_W;
-  const rowHeights = TRACKS.map(([, v]) => Math.max(CARD2.rowH,
-    UI.measure(v, UI.VT, 16, { width: VALUE_W, align: "right" }).height + 8));
-  const outroH = UI.measure(outro, UI.VT, 16, { width: CARD2.w - 80, align: "center" }).height;
-  CARD2.h = 58 + rowHeights.reduce((a, b) => a + b, 0) + 16 + outroH + 44;
-  CARD2.y = Math.max(16, Math.round((G.H - 150 - CARD2.h) / 2) + 8);
+      : sofar + "\na different four friends appear every run. go again?");
+  const layout2 = (size) => {
+    const C = { w: CARD_W, size, rowH: size + 6, chipW: size === 32 ? 44 : 34, chipH: size === 32 ? 28 : 18 };
+    C.labelW = Math.max(...TRACKS.map(([l]) => UI.measure(l, UI.VT, size).width));
+    C.valueW = C.w - 64 - (C.chipW + 12) - C.labelW - 24;
+    C.rowHeights = TRACKS.map(([, v]) => Math.max(C.rowH,
+      UI.measure(v, UI.VT, size, { width: C.valueW, align: "right" }).height + 6));
+    C.outroH = UI.measure(outro, UI.VT, size, { width: C.w - 80, align: "center" }).height;
+    C.h = HEAD_H + C.rowHeights.reduce((a, b) => a + b, 0) + 12 + C.outroH + HINT_H;
+    return C;
+  };
+  let CARD2 = layout2(32);
+  if (CARD2.h > CARD_FLOOR - 8) CARD2 = layout2(16);
+  CARD2.y = Math.max(8, Math.round((CARD_FLOOR - CARD2.h) / 2));
+  const VALUE_W = CARD2.valueW, rowHeights = CARD2.rowHeights, TS = CARD2.size;
   const page2 = add([pos(0, 0), z(30)]);
   page2.onDraw(() => {
     if (page2At === null) return;
@@ -253,8 +285,8 @@ scene("ending", () => {
     const rise = Math.round((1 - k) * 12);
     const x0 = CX - CARD2.w / 2, y0 = CARD2.y + rise;
     UI.card(vec2(x0, y0), CARD2.w, CARD2.h, { drop: 4, opacity: k });
-    heading("THE RUN", y0 + 22, k);
-    let y = y0 + 58;
+    heading("THE RUN", y0 + 18, k);
+    let y = y0 + HEAD_H;
     TRACKS.forEach(([label, value], i) => {
       // one track at a time, the way a listing is read down
       const tk = UI.ease((t - page2At - 0.6 - i * 0.22) / 0.4) * k;
@@ -262,27 +294,30 @@ scene("ending", () => {
       if (tk > 0) {
         const num = String(i + 1).padStart(2, "0");
         // the track number in a chrome block, as on the rooms' titles
-        UI.R(x0 + 32, y + 2, 34, 18, UI.STEEL, tk);
-        UI.R(x0 + 32, y + 2, 34, 2, UI.SILVER, tk);
-        UI.R(x0 + 32, y + 18, 34, 2, UI.BLUE_DEEP, tk);
-        UI.text(num, x0 + 49, y + 11, { font: UI.PX, size: 8, anchor: "center", color: UI.NAVY, opacity: tk });
-        UI.text(label, x0 + 78, y + 2, { color: UI.TEXT, opacity: tk });
+        const cw = CARD2.chipW, ch = CARD2.chipH, cy = y + Math.round((CARD2.rowH - ch) / 2);
+        UI.R(x0 + 32, cy, cw, ch, UI.STEEL, tk);
+        UI.R(x0 + 32, cy, cw, 2, UI.SILVER, tk);
+        UI.R(x0 + 32, cy + ch - 2, cw, 2, UI.BLUE_DEEP, tk);
+        UI.text(num, x0 + 32 + cw / 2, cy + ch / 2 + 1, { font: UI.PX, size: TS === 32 ? 16 : 8, anchor: "center", color: UI.NAVY, opacity: tk });
+        const lx = x0 + 32 + cw + 12;
+        UI.text(label, lx, y, { size: TS, color: UI.TEXT, opacity: tk });
         // a dotted leader from the name to the value
-        const lw = UI.measure(label, UI.VT, 16).width;
-        const vw = Math.min(VALUE_W, UI.measure(value, UI.VT, 16).width);
-        for (let dx = x0 + 78 + lw + 8; dx < x0 + CARD2.w - 32 - vw - 8; dx += 6) UI.R(dx, y + 15, 2, 2, UI.STEEL, tk);
-        UI.text(value, x0 + CARD2.w - 32, y + 2, {
-          anchor: "topright", align: "right", width: VALUE_W, color: UI.BLUE_DEEP, opacity: tk,
+        const lw = UI.measure(label, UI.VT, TS).width;
+        const vw = Math.min(VALUE_W, UI.measure(value, UI.VT, TS).width);
+        const dy = y + Math.round(TS * 0.72);
+        for (let dx = lx + lw + 8; dx < x0 + CARD2.w - 32 - vw - 8; dx += 8) UI.R(dx, dy, 2, 2, UI.STEEL, tk);
+        UI.text(value, x0 + CARD2.w - 32, y, {
+          size: TS, anchor: "topright", align: "right", width: VALUE_W, color: UI.BLUE_DEEP, opacity: tk,
         });
       }
       y += rh;
     });
     const ok = UI.ease((t - page2At - 0.8 - TRACKS.length * 0.22) / 0.5) * k;
     if (ok > 0) {
-      UI.text(outro, CX, y + 16, { anchor: "top", align: "center", width: CARD2.w - 80, color: UI.TEXT, opacity: ok });
+      UI.text(outro, CX, y + 12, { size: TS, anchor: "top", align: "center", width: CARD2.w - 80, color: UI.TEXT, opacity: ok });
       if (t - page2At >= 2.5) {
-        UI.text("press ENTER / tap - back to the title", x0 + CARD2.w - 18, y0 + CARD2.h - 14, {
-          anchor: "botright", color: UI.BLUE_DEEP, opacity: ok * (0.55 + Math.sin(time() * 3) * 0.25),
+        UI.text(HINT + " - back to the title", x0 + CARD2.w - 18, y0 + CARD2.h - 8, {
+          size: TS, anchor: "botright", color: UI.BLUE_DEEP, opacity: ok * (0.55 + Math.sin(time() * 3) * 0.25),
         });
       }
     }
