@@ -704,6 +704,10 @@ ART.init = () => {
     loadSprite("title-top", REAL_TITLE.top.src);
     loadSprite("title-bottom", REAL_TITLE.bottom.src);
   }
+  // the end screen's backdrop, the sleeve's sunburst (core/ending-real.js)
+  if (typeof REAL_ENDING !== "undefined") {
+    loadSprite("ending-cover", REAL_ENDING.cover);
+  }
 
   // UI polish set
   loadSprite("glow", ART.genGlow());
