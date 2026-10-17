@@ -930,9 +930,14 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     G.paused = true;
     G.run.deaths++;
     if (typeof TROPHIES !== "undefined") TROPHIES.note("death", { chapter, area: areaNum });
-    // three quick deaths on Medium offer Easy, once a run (Ollie, 16 Oct 2026)
+    // three quick deaths on Medium offer Easy, once a run (Ollie, 16 Oct 2026),
+    // and three on Easy offer Very Easy (18 Oct 2026)
     const offer = DIFFICULTY.noteDeath(G.run);
-    if (offer) G.run.easyOffered = true;
+    const offerTo = offer ? (DIFFICULTY.offerTo ? DIFFICULTY.offerTo(G.run) : "easy") : null;
+    if (offer) {
+      if (DIFFICULTY.markOffered) DIFFICULTY.markOffered(G.run, offerTo);
+      else G.run.easyOffered = true;
+    }
     // stagger, then flat on his back while the screen dims
     if (ART.hasAnim(G.run.charId, "ko")) player.play("ko");
     else if (ART.hasAnim(G.run.charId, "hurt")) player.play("hurt");
@@ -962,7 +967,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
       const room = restartsRoom();
       go("area", { chapter, area: room ? areaNum : 1, retry: room, again: true });   // a retried finale skips its opening; a restarted chapter skips its card
     };
-    if (offer) { UI.easyOffer(koHold, retry, () => dead); return; }
+    if (offer) { UI.easyOffer(koHold, retry, () => dead, offerTo); return; }
 
     const subT = add([
       text(a.boss ? "The boss fight starts again. Companions stay with you."

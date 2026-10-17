@@ -207,9 +207,10 @@ TROPHIES._note = (ev, d) => {
       if (d.area === 1 && !d.retry) { t.ch = d.chapter; t.chDeaths = r.deaths; t.chEasy = false; }
       if (a.boss) t.hits = 0;
       // the skill trophies need Medium or Hard (Ollie, 16 Oct 2026): a room,
-      // chapter or run that any of was played on Easy does not count
+      // chapter or run that any of was played on Easy (or Very Easy) does not count
       t.roomEasy = false;
-      if (typeof DIFFICULTY !== "undefined" && DIFFICULTY.level === "easy") TROPHIES._note("easy", {});
+      if (typeof DIFFICULTY !== "undefined"
+        && (DIFFICULTY.isEasy ? DIFFICULTY.isEasy() : DIFFICULTY.level === "easy")) TROPHIES._note("easy", {});
       // With Distinction: Hard from Gonzo's to the end (Ollie, 16 Oct 2026).
       // Set once, on the run's first visit to Gonzo's; anything else, ever, loses it.
       if (d.chapter === 1 && d.area === 1 && t.allHard === undefined) t.allHard = TROPHIES.onHard();

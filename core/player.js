@@ -264,7 +264,7 @@ PLAYER.hurt = (p, dmg, onDeath) => {
 
   G.run.hp -= dmg;
   if (typeof TROPHIES !== "undefined") TROPHIES.note("hurt");
-  p.iframes = 1.0;
+  p.iframes = 1.0 * ((typeof DIFFICULTY !== "undefined" && DIFFICULTY.get().safety) || 1);   // Very Easy: 2 s
   if (ART.hasAnim(G.run.charId, "hurt")) { p.play("hurt"); p.actionT = 0.4; }
   shake(8);
   UI.flash([220, 50, 50], 0.12);

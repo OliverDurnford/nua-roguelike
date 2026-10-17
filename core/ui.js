@@ -924,8 +924,11 @@ UI.hud = () => {
     // ===== top-left: the lanyard card =====
     // Hearts are the kit's 16 x 13 pixel heart at 2x, two pixels apart.
     // The card is the kit's 250 wide unless the party's max HP needs more.
+    // Past 11 hearts (Very Easy, 18 Oct 2026) they draw at 1.5x, or the
+    // card ran under the PAUSE chip on a phone and hid whose go it is.
     const L = UI.LANYARD;
-    const HEART_W = 32, HEART_H = 26, HEART_STEP = 34;
+    const HEART_SC = s.maxHp > 11 ? 1.5 : 2;
+    const HEART_W = 16 * HEART_SC, HEART_STEP = HEART_W + 2;
     const heartsW = s.maxHp * HEART_STEP - 2;
     const cw = Math.max(L.w, heartsW + 20);
     // the strap hangs in from the top edge and clips onto the card
@@ -968,10 +971,10 @@ UI.hud = () => {
     const lowHp = r.hp <= 2;
     for (let i = 0; i < s.maxHp; i++) {
       const filled = i < r.hp;
-      const hx = 24 + i * HEART_STEP + HEART_W / 2, hy = 36 + HEART_H / 2;
-      let sc = 2;
-      if (filled && lowHp) sc = 2 + Math.sin(time() * 7 + i) * 0.22;          // low-health pulse
-      if (hud.hurtPulse > 0 && i === r.hp) sc = 2 + hud.hurtPulse * 0.8;       // the heart you just lost pops
+      const hx = 24 + i * HEART_STEP + HEART_W / 2, hy = 36 + 13;
+      let sc = HEART_SC;
+      if (filled && lowHp) sc = HEART_SC + Math.sin(time() * 7 + i) * 0.22;          // low-health pulse
+      if (hud.hurtPulse > 0 && i === r.hp) sc = HEART_SC + hud.hurtPulse * 0.8;       // the heart you just lost pops
       drawSprite({ sprite: filled ? "heart" : "heart-empty", pos: vec2(hx, hy), anchor: "center", scale: sc });
     }
 
@@ -1239,14 +1242,19 @@ UI.wireControls = () => {
 
 // ---------- the Easy offer ----------
 // Three quick deaths on Medium (core/difficulty.js): the YOU DIED screen
-// offers Easy instead of "press ENTER to retry" (Ollie, 16 Oct 2026). Either
-// button retries; "go easy" switches first, so the retry restarts the room.
+// offers Easy instead of "press ENTER to retry" (Ollie, 16 Oct 2026). Three
+// on Easy offer Very Easy the same way (18 Oct 2026). Either button
+// retries; "go easy" switches first, so the retry restarts the room.
 // The buttons only answer once they have fully faded in, so a tap mashed
 // through the death never picks for you.
-UI.easyOffer = (koHold, retry, isDead) => {
+UI.easyOffer = (koHold, retry, isDead, to = "easy") => {
   const touch = isTouchscreen();
   const BW = touch ? 240 : 190, BH = touch ? 46 : 30, GAP = touch ? 24 : 20, BSIZE = touch ? 32 : 16;
-  const LINES = [
+  const LINES = to === "veryeasy" ? [
+    "Still a rough one? Very Easy gives you four more hearts",
+    "and slows everything right down.",
+    "Swap back any time from the pause menu.",
+  ] : [
     "Rough night out? Easy mode gives you two extra hearts",
     "and puts you back at the start of the room.",
     "Swap back any time from the pause menu.",
@@ -1254,7 +1262,7 @@ UI.easyOffer = (koHold, retry, isDead) => {
   const TOP = Math.round(G.H * 0.47), LINE = 18;
   const by = TOP + LINES.length * LINE + 18;
   const btns = [
-    { label: "go easy", x: Math.round(G.W / 2 - GAP / 2 - BW), pick: () => DIFFICULTY.set("easy") },
+    { label: to === "veryeasy" ? "go very easy" : "go easy", x: Math.round(G.W / 2 - GAP / 2 - BW), pick: () => DIFFICULTY.set(to) },
     { label: "I've got this", x: Math.round(G.W / 2 + GAP / 2), pick: () => {} },
   ];
   const inBtn = (p, b) => p.x >= b.x && p.x <= b.x + BW && p.y >= by && p.y <= by + BH;
@@ -1328,8 +1336,9 @@ UI.pause = () => {
   const rowsY = y0 + 20 + 16 + 22;
   const rowRect = (i) => ({ x: G.W / 2 - ROW_W / 2, y: rowsY + i * (ROW_H + ROW_GAP), w: ROW_W, h: ROW_H });
   const hit = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+  const diffName = (lvl) => (DIFFICULTY.label ? DIFFICULTY.label(lvl) : lvl);
   const label = (i) => (i === 1 ? "sound: " + (SFX.muted ? "off" : "on")
-    : i === 2 ? "difficulty: " + (pending || DIFFICULTY.level) : ITEMS[i]);
+    : i === 2 ? "difficulty: " + diffName(pending || DIFFICULTY.level) : ITEMS[i]);
 
   let sel = 0;
   let wasPaused = false;   // a cutscene may already have G.paused up
@@ -1371,7 +1380,7 @@ UI.pause = () => {
       SOUNDTRACK.syncMute();
       SFX.play("uitick");
     } else if (sel === 2) {
-      // Easy, Medium, Hard (core/difficulty.js): picked here, applied when
+      // Very Easy, Easy, Medium, Hard (core/difficulty.js): picked here, applied when
       // the menu closes (hearts then, enemies from the next ones in)
       const o = DIFFICULTY.ORDER;
       pending = o[(o.indexOf(pending || DIFFICULTY.level) + 1) % o.length];
