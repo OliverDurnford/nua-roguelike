@@ -485,8 +485,13 @@ TROPHIES.drawPop = () => {
   UI.text(d.name, x + 48, y + 17, { size: 16, color: UI.TEXT, opacity: k });
 };
 
+// The end screen holds them for as long as it is up, so nothing covers
+// Ollie's message or the run's listing (Ollie, 17 Oct 2026): they show
+// once you are back on the title. scenes/ending.js raises it.
+TROPHIES.endingHold = false;
 TROPHIES.holding = () => !!(
-  (typeof G !== "undefined" && (G.paused || G.cutscene || G.where === "platinum"))   // nothing over the screenshot
+  TROPHIES.endingHold
+  || (typeof G !== "undefined" && (G.paused || G.cutscene || G.where === "platinum"))   // nothing over the screenshot
   || (typeof UI !== "undefined" && UI.pauseOpen)
   || (typeof CUTIN !== "undefined" && CUTIN.active)
   || (typeof LOADER !== "undefined" && !LOADER.done)

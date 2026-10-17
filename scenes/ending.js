@@ -27,7 +27,12 @@ scene("ending", () => {
   const r = G.run;
   // Record the completed run FIRST, so every line below (met counts,
   // first-finish flag) already includes this run.
-  if (typeof TROPHIES !== "undefined") TROPHIES.note("finish", { run: r });   // before the story write, so the ending holds its pop-ups
+  if (typeof TROPHIES !== "undefined") {
+    TROPHIES.note("finish", { run: r });   // before the story write, so the ending holds its pop-ups
+    // and no pop-up covers the message or the listing: they wait for the title
+    TROPHIES.endingHold = true;
+    onSceneLeave(() => { TROPHIES.endingHold = false; });
+  }
   const win = STORY.finishRun(r.charId);
   const met = STORY.met(r.charId);
   const allMet = met.length >= CHARACTERS.length;
