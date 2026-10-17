@@ -198,6 +198,13 @@ PLAYER.fire = (p, dir, s) => {
   // along a gap between stalls was already over the row behind: it hit
   // their bases or went under their roofs (Ollie, 15 Oct 2026: Josh's
   // chicken down the alleys of Norwich Market).
+  // An enemy stood on you sits inside the first 0.62 h of the throw, which
+  // the item (it appears out at the hand) never touches, so a room could not
+  // be cleared without stepping away first: hit it now instead.
+  const reach = G.charH(0.62);
+  const onYou = get("enemy").concat(get("boss")).find((e) =>
+    [0, 0.33, 0.66].some((k) => e.hasPoint(p.pos.add(dir.scale(reach * k)))));
+  if (onYou) { ENEMIES.hit(onYou, b.dmg, b.crit); destroy(b); return; }
   const lift = p.feet ? p.feet.dy + p.feet.h / 2 : 0;
   PLAYER.flyLow(b, lift);
   // It leaves the hand in FRONT of the thrower. Sorted by its own height

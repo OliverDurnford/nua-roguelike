@@ -70,9 +70,9 @@ const TROPHY_PLATINUM = {
   id: "platinum", tier: "platinum", name: "Now That's What I Call Ten Years", how: "Earn every other trophy",
 };
 
-// The platinum screen. PLACEHOLDER: Ollie writes the real note.
+// The platinum screen's note (Claude's draft, approved by Ollie, 17 Oct 2026).
 const PLATINUM_NOTE = [
-  "PLACEHOLDER: Ollie's note goes here.",
-  "A few lines to whoever got every single trophy.",
+  "Every single trophy. Ten years of us, completed.",
+  "Honestly? Concerning. But I love you for it.",
 ];
 const PLATINUM_ASK = "Screenshot this and send it to Ollie.";

@@ -182,6 +182,7 @@ ENEMIES.shootAt = (from, to, speed, who, lift = 0) => {
 
 // One entry point for everything taking damage from the player.
 ENEMIES.hit = (e, dmg, critChance) => {
+  G.hits = (G.hits || 0) + 1;   // the room's straggler check (scenes/area.js) watches this
   const s = G.stats();
   const isCrit = rand(0, 1) < critChance;
   const d = Math.round(dmg * (isCrit ? 2 : 1) * 10) / 10;

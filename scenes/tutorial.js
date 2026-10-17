@@ -280,12 +280,13 @@ scene("tutorial", () => {
   UI.pause();
   UI.vignette(0.36);
   UI.sceneFade();
-  onKeyPress("]", () => go("area", { chapter: 1, area: 1 }));
+  onKeyPress("]", () => { if (ADMIN.on) go("area", { chapter: 1, area: 1 }); });   // dev skip, admin only
 
   // --- F2: show the geometry over the artwork ---
   // Same dev aid as the plate areas in scenes/area.js. Off by default.
   G.showBlocks = false;
   onKeyPress("f2", () => {
+    if (!ADMIN.on) return;
     G.showBlocks = !G.showBlocks;
     for (const b of get("plateSolid")) b.opacity = G.showBlocks ? 0.35 : 0;
   });

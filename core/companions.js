@@ -212,13 +212,12 @@ COMPANIONS.specialDamage = (sp, t) =>
   (sp.shape === "aoe" && !t.isBoss ? t.hp / 2 : sp.power);
 
 COMPANIONS.trySpecial = () => {
-  if (!G.run || G.paused || G.cutscene) return;
+  if (!G.run || G.paused || G.cutscene || G.leavingRoom) return;
   if (G.run.meter < 1 || G.run.companions.length === 0) return;
   const c = G.char(G.run.companions[G.run.selected]);
 
   G.run.meter = 0;
   G.run.specialsUsed++;
-  if (typeof TROPHIES !== "undefined") TROPHIES.note("special", { id: c.id });
   G.specialSafe = Infinity;   // untouchable until the attack lands (PLAYER.hurt)
   // a pointed special goes the way you were aiming when you pressed it,
   // not wherever the mouse has wandered by the end of the cut-in
@@ -229,10 +228,23 @@ COMPANIONS.trySpecial = () => {
   // The special screen: four parallax layers of this friend doing their
   // move, then a hard cut into the attack's own flash and shake.
   // core/cutin.js raises and drops G.paused itself.
-  const screen = () => CUTIN.play(CUTIN.forSpecial(c), () => COMPANIONS.applyEffect(c));
+  // the trophies hear of it as the screen starts: a special cut off in
+  // Adam's beat below (meter refunded) never counts
+  const screen = () => {
+    if (typeof TROPHIES !== "undefined") TROPHIES.note("special", { id: c.id });
+    CUTIN.play(CUTIN.forSpecial(c), () => COMPANIONS.applyEffect(c));
+  };
   // Something said just before it ("Watch this.", Adam) gets a beat on the
   // field to be read before the screen takes over; nothing said, no wait.
-  if (SPEECH.fire("specialStart", { by: c.id })) wait(COMPANIONS.BEFORE_SPECIAL, screen);
+  if (SPEECH.fire("specialStart", { by: c.id })) wait(COMPANIONS.BEFORE_SPECIAL, () => {
+    if (G.cutscene) {   // the fight ended during the beat (a crack voice, the finale's fall): no screen over it, meter back
+      G.specialSafe = 0;
+      G.run.meter = 1;
+      G.run.specialsUsed = Math.max(0, G.run.specialsUsed - 1);
+      return;
+    }
+    screen();
+  });
   else screen();
 };
 COMPANIONS.BEFORE_SPECIAL = 0.9;   // s
@@ -309,7 +321,9 @@ COMPANIONS.onAreaEnter = () => {
   const watch = onUpdate(() => {
     if (G.paused) return;
     watch.cancel();
-    wait(1.2, () => SPEECH.fire("enter"));
+    // after the room's big title (UI.bigTitle, gone by about 3.2 s), which
+    // sat over the note and hid it
+    wait(3.5, () => SPEECH.fire("enter"));
   });
 };
 

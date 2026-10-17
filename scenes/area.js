@@ -302,7 +302,11 @@ MAPS.buildPlate = (plate, { sealed = false } = {}) => {
 // NOTE: the second argument is renamed to areaNum inside the scene -
 // calling it "area" would shadow Kaboom's area() component function.
 scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
+  // two scene switches queued in one frame (a quit to the title plus a
+  // retry) would arrive here with no run: go back to the title instead
+  if (!G.run) { go("title"); return; }
   G.paused = false;
+  G.leavingRoom = false;
   G.specialSafe = 0;   // a special cut short by leaving the last room
   G.where = "area";   // for the admin arrows (core/admin.js)
   const ch = CHAPTERS[chapter - 1];
@@ -534,7 +538,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     // boss health bar: a paper card at the foot of the screen, the name in
     // pixel type over a wristband meter like the HUD's, in red, with a pink
     // "ghost" that lags behind when the boss takes damage (classic juice)
-    const bar = add([fixed(), z(175), pos(0, 0), { disp: 1, ghost: 1 }]);
+    const bar = add([fixed(), z(175), pos(0, 0), { disp: 1, ghost: 1, op: null }]);
     bar.onDraw(() => {
       const b = get("boss")[0];
       if (!b || G.cutscene) return;
@@ -544,13 +548,19 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
 
       const bw = 460, bh = 13;
       const bx = G.W / 2 - bw / 2, by = G.H - 36;
-      UI.card(vec2(bx - 16, by - 30), bw + 32, 56);
-      UI.label(b.bname, G.W / 2, by - 18, { anchor: "center", color: UI.TEXT, shadow: false });
-      UI.R(bx - 2, by - 2, bw + 4, bh + 4, UI.INK);
-      UI.R(bx, by, bw, bh, UI.WHITE);
+      // see-through while you stand behind it (the finale starts you there)
+      const ps = toScreen(player.pos), ph = G.charH(0.5), pw = G.charH(0.3);
+      const behind = ps.y + ph > by - 30 && ps.x + pw > bx - 16 && ps.x - pw < bx + bw + 16;
+      const want = behind ? 0.35 : 1;
+      bar.op = bar.op === null ? want : bar.op + (want - bar.op) * Math.min(1, dt() * 10);
+      const op = bar.op;
+      UI.card(vec2(bx - 16, by - 30), bw + 32, 56, { opacity: op });
+      UI.label(b.bname, G.W / 2, by - 18, { anchor: "center", color: UI.TEXT, shadow: false, opacity: op });
+      UI.R(bx - 2, by - 2, bw + 4, bh + 4, UI.INK, op);
+      UI.R(bx, by, bw, bh, UI.WHITE, op);
       const blocks = (k, col) => {
         const fw = Math.round((bw - 2) * k);
-        for (let off = 0; off < fw; off += 9) UI.R(bx + 1 + off, by + 1, Math.min(8, fw - off), bh - 2, col);
+        for (let off = 0; off < fw; off += 9) UI.R(bx + 1 + off, by + 1, Math.min(8, fw - off), bh - 2, col, op);
       };
       if (bar.ghost > 0.005) blocks(bar.ghost, UI.PINK);
       if (bar.disp > 0.005) blocks(bar.disp, UI.RED);
@@ -864,9 +874,49 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     }
   });
 
-  onCollide("player", "door", (p, d) => {
-    if (d.unlocked && !exiting) {
+  // --- stragglers (Ollie, 17 Oct 2026) ---
+  // Enemies walk straight at you with no route-finding, so now and then one
+  // wedges itself where no throw reaches (behind the Train's cafe counter,
+  // onto Rowans' bowling lanes) and the room never clears. If nobody lands a
+  // hit for STRAGGLER_STALL seconds of play, any enemy that has stayed put
+  // for STRAGGLER_STILL of them (not one walking in, not one just arrived)
+  // pops back onto open floor in reach of you.
+  const STRAGGLER_STALL = 20, STRAGGLER_STILL = 8;
+  let stall = 0, hitsSeen = G.hits || 0;
+  onUpdate(() => {
+    if (G.paused || G.cutscene || exiting || dead) return;
+    const foes = get("enemy");
+    for (const e of foes) {
+      if (!e.stillAt || e.pos.dist(e.stillAt) > G.charH(1)) { e.stillAt = e.pos.clone(); e.stillFor = 0; }
+      else e.stillFor += dt();
+    }
+    if (!foes.length || (G.hits || 0) !== hitsSeen) { stall = 0; hitsSeen = G.hits || 0; return; }
+    stall += dt();
+    if (stall < STRAGGLER_STALL) return;
+    stall = 0;
+    for (const e of foes) {
+      if (e.stillFor < STRAGGLER_STILL || e.pos.dist(player.pos) < G.charH(1)) continue;
+      const at = toVec(SPAWNS.pick(openFloor(), {
+        from: player.pos, away: AWAY, around: player.pos, within: G.charH(6),
+        used: foes.map((o) => o.pos), gap: G.charH(0.6), rnd,
+      }));
+      if (!at) continue;
+      e.stillAt = null;
+      UI.pop(e.pos, [200, 200, 220], 24);
+      e.pos = at;
+      UI.pop(at, [200, 200, 220], 24);
+    }
+  });
+
+  // onCollideUpdate, not onCollide: a player already pressed against the
+  // door when it unlocks gets no second "collide", so the exit never fired
+  // until they stepped away. Not while paused, so a crack voice beat or a
+  // card that opens as the room clears is never cut short.
+  onCollideUpdate("player", "door", (p, d) => {
+    if (d.unlocked && !exiting && !G.paused) {
       exiting = true;
+      G.specialSafe = Infinity;   // nothing can hurt you on the way out; the next room resets it
+      G.leavingRoom = true;       // and no special screen starts under the cut (COMPANIONS.trySpecial)
       // if someone has an exit line, hold the cut for a beat so it lands
       const spoke = COMPANIONS.onAreaExit();
       wait(spoke ? 0.9 : 0, () => G.advance());
@@ -904,7 +954,9 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     // retrying, because the Easy offer can switch the level first.
     const restartsRoom = () => !!a.boss || DIFFICULTY.get().restartRoom;
     const retry = () => {
-      if (!dead || UI.pauseOpen || ADMIN.arrowAt(mousePos())) return;
+      // not in the frame the pause menu closed: its "back to the title" press
+      // reached here too, and both scene switches ran (a crash)
+      if (!dead || UI.pauseOpen || UI.pauseToggledAt === time() || ADMIN.arrowAt(mousePos())) return;
       dead = false;
       G.run.hp = G.stats().maxHp;
       const room = restartsRoom();
@@ -931,7 +983,9 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     });
 
     onKeyPress("enter", retry);
-    wait(0.6, () => onMousePress(retry));
+    // a tap only retries once the hint is showing: armed earlier, a thumb
+    // going back to the stick mid-fall skipped the whole death screen
+    wait(1.0 + koHold, () => onMousePress(retry));
   };
 
   // --- wiring ---
@@ -954,6 +1008,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
   // against a painting. Off by default.
   G.showBlocks = false;
   onKeyPress("f2", () => {
+    if (!ADMIN.on) return;
     G.showBlocks = !G.showBlocks;
     for (const b of get("plateSolid")) b.opacity = G.showBlocks ? 0.35 : 0;
   });

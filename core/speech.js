@@ -33,12 +33,13 @@ SPEECH.QUICK_GAP  = 0.6;   // s before a reply marked quick ("It's okay, Lucy, I
 SPEECH.COPY_GAP   = 0.8;   // s between one copier and the next ("Ffffffffft")
 SPEECH.IDLE_AFTER = 6;     // s of standing still before the idle moment
 SPEECH.SPOT_RANGE = 1.6;   // grid units from a thing's footprint
-SPEECH.ENTER_WAIT = 3;     // s: chatter holds off this long for the room's "entering" line
+SPEECH.SPOT_WAIT = 4;      // s: spots stay quiet this long after play starts
+SPEECH.ENTER_WAIT = 4.5;   // s: chatter holds off this long for the room's "entering" line (raised 3.5 s in)
 
 // Scripted beats ignore the global gag and always get through. The finale's
 // two cutscene beats are among them (docs/superpowers/specs/2026-10-12-
 // busy-boss-design.md).
-SPEECH.SCRIPTED = ["join", "death", "bossStart", "special", "specialStart", "meet", "pubInvite", "fromPile"];
+SPEECH.SCRIPTED = ["join", "death", "bossStart", "enter", "special", "specialStart", "meet", "pubInvite", "fromPile"];
 
 SPEECH.WEIGHT = { often: 3, sometimes: 1.5, rare: 0.5, run: 1.5, ever: 1.5 };
 
@@ -450,9 +451,13 @@ SPEECH.beginArea = (opts) => {
 
   // spots: the named things the level board already gave every room.
   // Checked four times a second, not every frame - nothing here moves.
-  let spotT = 0, nearest = null;
+  // Not until the room's big title and its "entering" line have had their
+  // turn (3.5 s into play): a spot by the start spoke under the title.
+  let spotT = 0, nearest = null, playT = 0;
   onUpdate(() => {
     if (!G.run || G.paused) return;
+    playT += dt();
+    if (playT < SPEECH.SPOT_WAIT) return;
     spotT += dt();
     if (spotT < 0.25) return;
     spotT = 0;

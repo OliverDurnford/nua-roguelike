@@ -57,6 +57,10 @@ const TSEQ = {
 scene("title", () => {
   SPEECH.endArea();   // no room loaded: nothing to test a line against
   G.paused = false;
+  // quitting during a collection or special screen, or the fall into a
+  // crack, left these up: the next game had no PAUSE chip and no trophy pop-ups
+  G.cutscene = false;
+  if (typeof CUTIN !== "undefined") CUTIN.active = false;
   G.run = null;
   G.areaScale = 1;
 

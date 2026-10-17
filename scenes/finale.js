@@ -544,6 +544,8 @@ FINALE.openCages = (player) => {
   wait(0.08, () => SFX.play("clank"));
   for (const c of get("cageBars")) FINALE.burst(c);
   player.autoWalk = player.pos.clone();
+  // the ending lists them as freed, not "still out there" (scenes/ending.js)
+  if (G.run) G.run.freed = get("cagedFriend").map((f) => f.charId);
   const freed = [];
   for (const f of get("cagedFriend")) {
     const nf = COMPANIONS.addFollower(player, f.charId, f.home);

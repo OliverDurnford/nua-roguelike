@@ -23,7 +23,7 @@ window.dev = {
     go("ending");
   }),
   // any friend's special screen, from inside a level: dev.special("cal")
-  special: (id) => { if (G.run && !G.paused) CUTIN.play(CUTIN.forSpecial(G.char(id || G.run.charId))); },
+  special: (id) => { if (G.run && !G.paused && !G.cutscene) CUTIN.play(CUTIN.forSpecial(G.char(id || G.run.charId))); },
   god: () => { G.godMode = !G.godMode; },
   wipe: () => { SAVE.clear(); STORY.clear(); TROPHIES.clear(); location.reload(); },
   // the bonus characters (core/bonus.js): dev.bonus() unlocks all seven,

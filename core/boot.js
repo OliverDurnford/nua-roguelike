@@ -24,6 +24,20 @@ kaboom({
   debug: false,
 });
 
+// The engine's isTouchscreen() means "has a touch digitiser", so a Windows
+// laptop with a touchscreen got the phone build: sticks, and a mouse that
+// could not throw (stuck at the tutorial's throw). Count a device as touch
+// only when a finger is its main pointer, as core/turn.js and idle.js do;
+// phones and iPads (which can report a fine pointer with a trackpad
+// attached) always count.
+{
+  const engineTouch = isTouchscreen;
+  const mm = (q) => !!(window.matchMedia && matchMedia(q).matches);
+  const ua = navigator.userAgent || "";
+  const mobile = /iPhone|iPad|iPod|Android/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  window.isTouchscreen = () => engineTouch() && (mobile || !mm("(pointer: fine)"));
+}
+
 const G = {
   W: 960,
   H: 540,

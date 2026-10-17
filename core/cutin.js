@@ -395,6 +395,8 @@ CUTIN.play = (opts, onDone) => {
 
   G.paused = true;
   CUTIN.active = true;
+  // a room left under the screen cancels the wait below that clears this
+  onSceneLeave(() => { CUTIN.active = false; });
 
   // the clock every part of the screen reads
   const root = add([fixed(), z(CUTIN.Z), "cutin", { t: 0 }]);
@@ -462,7 +464,7 @@ CUTIN.play = (opts, onDone) => {
   wait(P.TOTAL, () => {
     destroyAll("cutin");
     CUTIN.active = false;
-    G.paused = false;
+    if (!G.cutscene) G.paused = false;   // a story beat that started under the screen keeps the room frozen; its owner unpauses
     if (onDone) onDone();
   });
 };

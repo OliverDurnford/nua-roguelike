@@ -378,6 +378,12 @@ UI.bubbleHome = (b) => {
   if (G.mapBounds && !b.fixedNote) {
     x = G.clamp(x, b.bw / 2 + 10, Math.max(b.bw / 2 + 10, G.mapBounds.x2 - b.bw / 2 - 10));
   }
+  // in a story beat the camera frames the talkers (the finale's group shot
+  // sits 16 px off the end cages), so keep the note in view too
+  if (G.cutscene && !b.fixedNote) {
+    const c = camPos(), sc = camScale().x || 1, hw = G.W / 2 / sc - 12 / sc;
+    if (hw > b.bw / 2) x = G.clamp(x, c.x - hw + b.bw / 2, c.x + hw - b.bw / 2);
+  }
   return vec2(x, y);
 };
 
@@ -1222,10 +1228,10 @@ UI.wireControls = () => {
   cheat("m", () => { if (G.run) G.run.meter = 1; });
   cheat("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });
   cheat("]", () => { if (G.devSkip) G.devSkip(); });
-  cheat("c", () => { if (G.run && !G.paused) CUTIN.play(CUTIN.forJoin(G.char(G.run.charId))); });
+  cheat("c", () => { if (G.run && !G.paused && !G.cutscene) CUTIN.play(CUTIN.forJoin(G.char(G.run.charId))); });
   // the selected friend's special screen, without spending the meter or attacking
   cheat("v", () => {
-    if (!G.run || G.paused) return;
+    if (!G.run || G.paused || G.cutscene) return;
     const id = G.run.companions.length ? G.run.companions[G.run.selected] : G.run.charId;
     CUTIN.play(CUTIN.forSpecial(G.char(id)));
   });
@@ -1266,7 +1272,9 @@ UI.easyOffer = (koHold, retry, isDead) => {
     });
   });
 
-  const ready = () => isDead() && k >= 1 && !UI.pauseOpen;
+  // not in the frame the pause menu closed: the Enter or tap that closed it
+  // reached these buttons too and picked "go easy" for you
+  const ready = () => isDead() && k >= 1 && !UI.pauseOpen && UI.pauseToggledAt !== time();
   const choose = (i) => {
     if (!ready()) return;
     SFX.play("uiconfirm");
@@ -1321,10 +1329,19 @@ UI.pause = () => {
   const rowRect = (i) => ({ x: G.W / 2 - ROW_W / 2, y: rowsY + i * (ROW_H + ROW_GAP), w: ROW_W, h: ROW_H });
   const hit = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
   const label = (i) => (i === 1 ? "sound: " + (SFX.muted ? "off" : "on")
-    : i === 2 ? "difficulty: " + DIFFICULTY.level : ITEMS[i]);
+    : i === 2 ? "difficulty: " + (pending || DIFFICULTY.level) : ITEMS[i]);
 
   let sel = 0;
   let wasPaused = false;   // a cutscene may already have G.paused up
+  // The difficulty row only picks; the choice applies as the menu closes.
+  // Applied on each press, going round from Hard back to Medium passed
+  // through Easy, which marked the run as Easy for the trophies (and lost
+  // With Distinction) and topped the hearts up on the way.
+  let pending = null;
+  const applyPending = () => {
+    if (pending && pending !== DIFFICULTY.level) DIFFICULTY.set(pending);
+    pending = null;
+  };
 
   const open = () => {
     if (UI.pauseOpen) return;
@@ -1334,12 +1351,14 @@ UI.pause = () => {
     G.paused = true;
     debug.paused = true;
     sel = 0;
+    pending = DIFFICULTY.level;
     SFX.play("uitick");
   };
   const close = () => {
     if (!UI.pauseOpen) return;
     UI.pauseOpen = false;
     UI.pauseToggledAt = time();
+    applyPending();
     G.paused = wasPaused;
     debug.paused = false;
     SFX.play("uiconfirm");
@@ -1352,13 +1371,16 @@ UI.pause = () => {
       SOUNDTRACK.syncMute();
       SFX.play("uitick");
     } else if (sel === 2) {
-      // Easy, Medium, Hard (core/difficulty.js): hearts change at once,
-      // enemies from the next ones in
-      DIFFICULTY.cycle();
+      // Easy, Medium, Hard (core/difficulty.js): picked here, applied when
+      // the menu closes (hearts then, enemies from the next ones in)
+      const o = DIFFICULTY.ORDER;
+      pending = o[(o.indexOf(pending || DIFFICULTY.level) + 1) % o.length];
       SFX.play("uitick");
     } else {
       // the run was checkpointed at this room's door, so the title offers to carry on
+      applyPending();   // still remembered on this device
       UI.pauseOpen = false;
+      UI.pauseToggledAt = time();   // the death screen's retry must not take this same press
       G.paused = false;
       debug.paused = false;
       SFX.play("uiconfirm");
