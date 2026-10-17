@@ -40,7 +40,7 @@ const CHARACTERS = [
     id: "cal", name: "Cal", height: 46, real: true,
     colors: { hair: [55, 40, 30], skin: [230, 190, 155], top: [70, 110, 80], bottom: [35, 35, 45] },
     weapon: { name: "Bike handlebars", color: [180, 185, 195] },
-    flavour: "6ft 4\". Loves bikes. Will not agree with you.",
+    flavour: "6ft 4\". Loves bikes. Devil's advocate.",
     passive: {
       name: "I Love Bikes", desc: "+25% movement speed",
       apply: (s) => { s.moveSpeed *= 1.25; },
@@ -57,7 +57,7 @@ const CHARACTERS = [
     weapon: { name: "Chicken", color: [235, 200, 150] },
     flavour: "Keeps to himself. Says the weirdest stuff. Beloved.",
     passive: {
-      name: "Seriously You Shouldn't Have Those Muscles", desc: "+40% damage",
+      name: "Naturally Muscly", desc: "+40% damage",
       apply: (s) => { s.damage *= 1.4; },
     },
     recruitLine: "If it's more than a 3min walk, I'm getting an Uber",
@@ -87,7 +87,7 @@ const CHARACTERS = [
     id: "sam", name: "Sam", height: 41, real: true,
     colors: { hair: [200, 110, 50], skin: [240, 200, 165], top: [90, 140, 95], bottom: [55, 55, 70] },
     weapon: { name: "Plant", color: [110, 170, 90] },
-    flavour: "Ginger, smiley, surprisingly aerodynamic.",
+    flavour: "Smiley, funny, surprisingly aerodynamic.",
     passive: {
       name: "Plant Parent", desc: "20% chance to block a hit",
       apply: (s) => { s.block += 0.2; },
@@ -102,7 +102,7 @@ const CHARACTERS = [
     id: "ana", name: "Ana", height: 34, real: true,
     colors: { hair: [40, 30, 25], skin: [225, 180, 145], top: [210, 60, 60], bottom: [45, 45, 60] },
     weapon: { name: "Sea shell", color: [240, 220, 200] },
-    flavour: "Spanish passion. Matador energy.",
+    flavour: "Spanish passion. Fantastic picture taker.",
     passive: {
       name: "Spanish Passion", desc: "+50% special charge rate",
       apply: (s) => { s.chargeRate *= 1.5; },
@@ -117,7 +117,7 @@ const CHARACTERS = [
     id: "jess", name: "Jess", height: 34, real: true,  // DRAFT sprite, in for play-testing (16 Sep 2026), not yet approved
     colors: { hair: [180, 140, 80], skin: [240, 205, 175], top: [80, 120, 160], bottom: [50, 50, 65] },
     weapon: { name: "Passport", color: [120, 60, 80] },
-    flavour: "Brutally honest. Has an army in Bali.",
+    flavour: "Brutally honest. Lives in Bali.",
     passive: {
       name: "Brutally Honest", desc: "+20% crit chance",
       apply: (s) => { s.crit += 0.2; },
@@ -147,7 +147,7 @@ const CHARACTERS = [
     id: "ethan", name: "Ethan", height: 39, real: true,  // DRAFT sprite, in for play-testing (16 Sep 2026), not yet approved
     colors: { hair: [50, 40, 35], skin: [230, 190, 155], top: [60, 60, 70], bottom: [35, 35, 45] },
     weapon: { name: "Shoes", color: [200, 170, 140] },
-    flavour: "Understated. Until Tala arrives.",
+    flavour: "Quiet, but very fashionable.",
     passive: {
       name: "Silence", desc: "+15% dodge chance",
       apply: (s) => { s.dodge += 0.15; },
