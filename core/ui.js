@@ -1223,7 +1223,7 @@ UI.wireControls = () => {
   // Admin only since 16 Oct 2026: the platinum trophy wins a real prize.
   // Ollie: strip these before the final ship.
   const cheat = (key, fn) => onKeyPress(key, () => { if (ADMIN.on) fn(); });
-  cheat("k", () => { get("enemy").forEach((e) => ENEMIES.hit(e, 999, 0)); get("boss").forEach((b) => ENEMIES.hit(b, 999, 0)); });
+  cheat("k", ADMIN.killAll);   // the admin bar's KILL button too
   cheat("h", () => { if (G.run) G.run.hp = G.stats().maxHp; });
   cheat("m", () => { if (G.run) G.run.meter = 1; });
   cheat("g", () => { G.godMode = !G.godMode; UI.toast(G.godMode ? "god mode ON" : "god mode OFF"); });

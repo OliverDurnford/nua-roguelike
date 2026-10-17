@@ -6,7 +6,9 @@
 // on, on that phone or computer, until the chip is tapped again. With
 // admin on, every room has a back and a forward arrow either side of
 // PAUSE, which jump straight to the previous or next room in the run
-// (the park first, then chapters 1 to 5), at full health.
+// (the park first, then chapters 1 to 5), at full health, and a KILL
+// button beyond the forward arrow that knocks out every enemy and boss
+// in the room (Ollie, 17 Oct 2026: a phone has no K key).
 //
 // The repo is public, so the PIN is no lock against anyone who reads
 // the code: it only keeps the friends from wandering in by accident.
@@ -37,6 +39,7 @@ ADMIN.stops = () => {
 
 ADMIN.jump = (d) => {
   if (!G.run) return;
+  if (d === "kill") { ADMIN.killAll(); return; }
   const stops = ADMIN.stops();
   const i = G.where === "tutorial" ? 0
     : stops.findIndex((s) => s.chapter === G.run.chapter && s.area === G.run.area);
@@ -51,19 +54,32 @@ ADMIN.jump = (d) => {
   else go("area", { chapter: s.chapter, area: s.area });
 };
 
+// Every enemy and boss in the room down at once, the K key's cheat.
+ADMIN.killAll = () => {
+  const all = get("enemy").concat(get("boss"));
+  if (!all.length) { UI.toast("nobody to knock out"); return; }
+  for (const e of all) ENEMIES.hit(e, 999, 0);
+  SFX.play("boom");
+};
+
 // ---------- the arrows beside PAUSE ----------
 // Either side of the pause chip, the same height, with a gap that a
 // thumb's tap zone can sit in. Hidden (and dead) whenever PAUSE is.
+ADMIN.KILL = "KILL";
 ADMIN.arrowRects = () => {
   const b = UI.PAUSE_BTN, w = Math.round(b.h * 1.6), gap = 12;
+  // no wider than an arrow (with room for its word), so it stays clear of
+  // the friends' polaroids top right
+  const kw = Math.max(w, Math.ceil(UI.measure(ADMIN.KILL, UI.PX, 8).width) + 8);
   return [
     { d: -1, x: b.x - gap - w, y: b.y, w, h: b.h },
     { d: 1, x: b.x + b.w + gap, y: b.y, w, h: b.h },
+    { d: "kill", x: b.x + b.w + gap * 2 + w, y: b.y, w: kw, h: b.h },
   ];
 };
 ADMIN.arrowsLive = () => ADMIN.on && !UI.pauseOpen && !G.cutscene
   && !(typeof CUTIN !== "undefined" && CUTIN.active);
-// -1, 1, or 0 when p is on neither
+// -1, 1, "kill", or 0 when p is on none of them
 ADMIN.arrowAt = (p) => {
   if (!ADMIN.arrowsLive()) return 0;
   const pad = isTouchscreen() ? 10 : 0;
@@ -76,6 +92,10 @@ ADMIN.drawArrows = () => {
   if (!ADMIN.arrowsLive()) return;
   for (const r of ADMIN.arrowRects()) {
     UI.card(vec2(r.x, r.y), r.w, r.h, { fill: UI.STEEL, shade: null, notch: false, opacity: 0.85 });
+    if (r.d === "kill") {
+      UI.label(ADMIN.KILL, r.x + r.w / 2, r.y + r.h / 2 + 1, { size: 8, anchor: "center", color: UI.INK, shadow: false, opacity: 0.85 });
+      continue;
+    }
     // a solid pixel triangle, pointing the way it goes
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2, s = Math.round(r.h * 0.26);
     drawTriangle({
