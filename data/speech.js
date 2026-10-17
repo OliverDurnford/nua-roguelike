@@ -14,7 +14,7 @@
 //          them) | copy (one starts, the rest copy) | all (whoever is here)
 //   on     the moment: wander spot enter exit fightStart wave cleared
 //          bossStart bossDown hurt lastHeart healed kill special
-//          join meet idle death
+//          join meet idle death greet (walked up to in the tutorial park)
 //   when   every clause present must pass; absent means no constraint
 //   freq   often | sometimes | rare | run (once a run) | ever (once)
 //   max    at most n times: { n, per: "run" | "game" }
@@ -142,7 +142,17 @@ const SPEECH_DATA = {
     {"id":"cal-09","who":"cal","text":"Double coke and rum","on":"spot","freq":"run","when":{"spot":["stairwell and back bar","bar counter","bar counter return","bar back shelf of bottles","bar fridges, counter and taps","bar rounded end, top corner","bar rounded end 3","bar rounded end 4","bar rounded end 5","bar rounded end 6","bar top","bar inside and back","bar right side 1","bar right side 2","bar right side 3","bar right side 4","bar right side 5","bar front","back bar counter 1","back bar counter 2","back bar counter 3","back bar counter 4","back bar counter 5","back bar counter 6","back bar counter 7","bar counter 1","bar counter 2","bar counter 3","bar counter 4","bar counter 5","bar counter 6","bar counter 7","bar counter 8","bar counter 9","bar counter 10","bar top arm","bar left arm 1","bar left arm 2","bar left arm 3","bar left arm 4","bar left arm 5","bar left arm 6","bar left corner 1","bar left corner 2","bar right corner 2","bar right corner 1","bar right arm","back bar 1","back bar 2","back bar 3","back bar 4","bar counter top left","bar counter top","bar counter top right","bar counter left 1","bar counter left 2","bar counter left 3","bar counter left 4","bar counter front left","bar counter right 1","bar counter right 2","bar counter right 3","bar counter right 4","bar counter front right","back bar shelves"]}},
     {"id":"cal-10","who":"cal","text":"It's got to beeeeee Millieeeeeee","on":"wander","freq":"run"},
     {"id":"cal-11","who":"cal","text":"CaxiTab.","on":"wander","freq":"run"},
-    {"id":"jess-05","who":"jess","text":"Do you remember when that lady offered me a blanket because I was so drunk and lying on the floor?","on":"wander","freq":"run","when":{"room":["streets"]}}
+    {"id":"jess-05","who":"jess","text":"Do you remember when that lady offered me a blanket because I was so drunk and lying on the floor?","on":"wander","freq":"run","when":{"room":["streets"]}},
+    {"id":"ollie-park","who":"ollie","text":"I fucking love rounders.","on":"greet","freq":"often"},
+    {"id":"lucy-park","who":"lucy","text":"I've brought pasta salad. Enough for everyone.","on":"greet","freq":"often"},
+    {"id":"cal-park","who":"cal","text":"I'm not saying the rules are wrong. I'm just not saying they're right.","on":"greet","freq":"often"},
+    {"id":"josh-park","who":"josh","text":"If it goes past the trees, I'm not running for it.","on":"greet","freq":"often"},
+    {"id":"annie-park","who":"annie","text":"Hiii! Meow!","on":"greet","freq":"often"},
+    {"id":"sam-park","who":"sam","text":"I'm uncle buckled.","on":"greet","freq":"often"},
+    {"id":"ana-park","who":"ana","text":"Alriiiiiight, let's do this!","on":"greet","freq":"often"},
+    {"id":"jess-park","who":"jess","text":"Just throw it. We're not getting any younger.","on":"greet","freq":"often"},
+    {"id":"adam-park","who":"adam","text":"Watch this. No, seriously, watch this.","on":"greet","freq":"often"},
+    {"id":"ethan-park","who":"ethan","text":"...hey.","on":"greet","freq":"often"}
   ],
 
   // Talk spots: places for "near a spot" lines that only speech knows

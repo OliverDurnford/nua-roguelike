@@ -261,6 +261,21 @@ scene("tutorial", () => {
     }
   });
 
+  // Walk up to one of the nine before the ground goes and they say their
+  // line, once each (Ollie, 17 Oct 2026). The words are on the speech
+  // board under "walked up to in the park".
+  const greeted = new Set();
+  onUpdate(() => {
+    if (st >= 3 || G.paused) return;
+    for (const f of friends) {
+      if (greeted.has(f.charId) || !f.exists()) continue;
+      if (player.pos.dist(f.pos) > G.charH(1.3)) continue;
+      greeted.add(f.charId);
+      const line = SPEECH.greetLine(f.charId);
+      if (line) UI.speech(f, line);
+    }
+  });
+
   UI.mobileControls();
   UI.pause();
   UI.vignette(0.36);

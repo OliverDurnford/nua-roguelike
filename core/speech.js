@@ -506,6 +506,14 @@ SPEECH.boxOf = (t) => {
   return null;
 };
 
+// The tutorial park is not a room the engine runs in (nobody has joined
+// yet, nobody follows you), so walking up to one of the nine fielders just
+// asks for their line: the speech board's "walked up to in the park".
+SPEECH.greetLine = (id) => {
+  const ls = SPEECH.data().lines.filter((l) => l.on === "greet" && l.who === id);
+  return ls.length ? ls[Math.floor(rand(0, ls.length)) % ls.length].text : null;
+};
+
 // Leaving the field entirely (title, select, ending): stop testing
 // conditions against a room that is no longer loaded.
 SPEECH.endArea = () => { SPEECH.ctx = null; };
