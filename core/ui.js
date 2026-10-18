@@ -1326,7 +1326,10 @@ UI.inTopButtons = (p) => UI.inPauseBtn(p) || ADMIN.arrowAt(p) !== 0;
 
 UI.pause = () => {
   const touch = isTouchscreen();
-  const ITEMS = ["carry on", "sound", "difficulty", "back to the title"];
+  // the save word's row (core/cloudui.js) only when the cloud is on
+  const cloudRow = typeof CLOUDUI !== "undefined" && typeof CLOUD !== "undefined" && CLOUD.enabled();
+  const ITEMS = ["carry on", "sound", "difficulty"].concat(cloudRow ? ["save word"] : [], ["back to the title"]);
+  const cloudBusy = () => typeof CLOUDUI !== "undefined" && CLOUDUI.busy();
   // phone rows are taller, wider and in bigger type, so a thumb can hit them
   const W = touch ? 420 : 360, ROW_W = touch ? 320 : 260, ROW_H = touch ? 46 : 28;
   const ROW_GAP = touch ? 12 : 10, LINE = 18, ROW_SIZE = touch ? 32 : 16;
@@ -1339,8 +1342,8 @@ UI.pause = () => {
   const rowRect = (i) => ({ x: G.W / 2 - ROW_W / 2, y: rowsY + i * (ROW_H + ROW_GAP), w: ROW_W, h: ROW_H });
   const hit = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
   const diffName = (lvl) => (DIFFICULTY.label ? DIFFICULTY.label(lvl) : lvl);
-  const label = (i) => (i === 1 ? "sound: " + (SFX.muted ? "off" : "on")
-    : i === 2 ? "difficulty: " + diffName(pending || DIFFICULTY.level) : ITEMS[i]);
+  const label = (i) => (ITEMS[i] === "sound" ? "sound: " + (SFX.muted ? "off" : "on")
+    : ITEMS[i] === "difficulty" ? "difficulty: " + diffName(pending || DIFFICULTY.level) : ITEMS[i]);
 
   let sel = 0;
   let wasPaused = false;   // a cutscene may already have G.paused up
@@ -1375,18 +1378,21 @@ UI.pause = () => {
     SFX.play("uiconfirm");
   };
   const activate = () => {
-    if (sel === 0) {
+    const item = ITEMS[sel];
+    if (item === "carry on") {
       close();
-    } else if (sel === 1) {
+    } else if (item === "sound") {
       SFX.toggle();
       SOUNDTRACK.syncMute();
       SFX.play("uitick");
-    } else if (sel === 2) {
+    } else if (item === "difficulty") {
       // Very Easy, Easy, Medium, Hard (core/difficulty.js): picked here, applied when
       // the menu closes (hearts then, enemies from the next ones in)
       const o = DIFFICULTY.ORDER;
       pending = o[(o.indexOf(pending || DIFFICULTY.level) + 1) % o.length];
       SFX.play("uitick");
+    } else if (item === "save word") {
+      CLOUDUI.open("pause");
     } else {
       // the run was checkpointed at this room's door, so the title offers to carry on
       applyPending();   // still remembered on this device
@@ -1400,7 +1406,7 @@ UI.pause = () => {
     }
   };
   const move = (d) => { sel = (sel + d + ITEMS.length) % ITEMS.length; SFX.play("uitick"); };
-  const toggle = () => (UI.pauseOpen ? close() : open());
+  const toggle = () => { if (!cloudBusy()) (UI.pauseOpen ? close() : open()); };
 
   const menu = add([fixed(), z(230), pos(0, 0)]);
   // Leaving the game (another app, the home screen, another window) or
@@ -1438,15 +1444,16 @@ UI.pause = () => {
 
   onKeyPress("escape", toggle);
   onKeyPress("p", toggle);
-  for (const k of ["up", "w"]) onKeyPress(k, () => { if (UI.pauseOpen) move(-1); });
-  for (const k of ["down", "s"]) onKeyPress(k, () => { if (UI.pauseOpen) move(1); });
-  for (const k of ["enter", "space"]) onKeyPress(k, () => { if (UI.pauseOpen) activate(); });
+  for (const k of ["up", "w"]) onKeyPress(k, () => { if (UI.pauseOpen && !cloudBusy()) move(-1); });
+  for (const k of ["down", "s"]) onKeyPress(k, () => { if (UI.pauseOpen && !cloudBusy()) move(1); });
+  for (const k of ["enter", "space"]) onKeyPress(k, () => { if (UI.pauseOpen && !cloudBusy()) activate(); });
   onMouseMove(() => {
-    if (!UI.pauseOpen) return;
+    if (!UI.pauseOpen || cloudBusy()) return;
     const m = mousePos();
     ITEMS.forEach((_, i) => { if (hit(m, rowRect(i))) sel = i; });
   });
   onMousePress(() => {
+    if (cloudBusy()) return;
     const m = mousePos();
     if (!UI.pauseOpen) {
       const d = ADMIN.arrowAt(m);

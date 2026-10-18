@@ -248,12 +248,17 @@ scene("title", () => {
   // Until the video is in memory (TITLEVIDEO.preload) it says so, and a tap
   // does nothing: off WiFi the song used to start over a still room.
   const startWord = touch ? "tap to start" : "press any key";
-  const prompt = UI.chipObj(TITLEVIDEO.ready ? startWord : "loading...", G.W / 2, promptY, { opacity: 0, z: 20, fixed: false });
+  // With a save word, the first pull from the cloud (core/cloud.js) gets up
+  // to CLOUD.SETTLE_MS to land first, so CARRY ON offers the newest run.
+  const cloudWait = () => typeof CLOUD !== "undefined" && !CLOUD.settled();
+  const cloudBusy = () => typeof CLOUDUI !== "undefined" && CLOUDUI.busy();
+  const waitWord = () => (!TITLEVIDEO.ready ? "loading..." : cloudWait() ? "syncing..." : startWord);
+  const prompt = UI.chipObj(waitWord(), G.W / 2, promptY, { opacity: 0, z: 20, fixed: false });
   if (!replay) {
-    let said = TITLEVIDEO.ready;
+    let said = waitWord() === startWord;
     prompt.onUpdate(() => {
       if (phase !== "armed") return;
-      if (!said && TITLEVIDEO.ready) { said = true; prompt.set(startWord); }
+      if (!said && prompt.label !== waitWord()) { prompt.set(waitWord()); said = prompt.label === startWord; }
       prompt.opacity = said ? 0.7 + Math.sin(time() * 3.2) * 0.3 : 0.45;
     });
   }
@@ -320,6 +325,24 @@ scene("title", () => {
   const trophyChip = UI.chipObj(trophyLabel, G.W - 70, G.H - 18,
     { opacity: 0, z: 20, fixed: false, area: true });
 
+  // ---------- the save word ----------
+  // The cloud save (core/cloudui.js): a chip just left of the trophies, only
+  // when the cloud is on. A device with nothing on it yet asks
+  // "played before?", so someone opening the game on a new iPad finds the
+  // way in.
+  const cloudLabel = typeof CLOUDUI !== "undefined" ? CLOUDUI.chipLabel() : null;
+  const cloudChip = cloudLabel ? UI.chipObj(cloudLabel, G.W / 2, G.H - 18, { opacity: 0, z: 20, fixed: false, area: true }) : null;
+  if (cloudChip) cloudChip.onUpdate(() => { cloudChip.pos.x = G.W - 70 - trophyChip.w / 2 - 12 - cloudChip.w / 2; });
+  const cloudTap = () => CLOUDUI.open("title", () => {
+    const l = CLOUDUI.chipLabel();
+    if (l) cloudChip.set(l);
+  });
+  // A pull that brings a different run in while the title is up re-enters
+  // it, so CARRY ON offers that run; never mid-sequence or under the panel.
+  let refresh = false;
+  if (typeof CLOUD !== "undefined") CLOUD.onApplied = (changedRun) => { if (changedRun) refresh = true; };
+  onSceneLeave(() => { if (typeof CLOUD !== "undefined") CLOUD.onApplied = null; });
+
   let newChip = null;
   if (saved) {
     newChip = UI.chipObj(touch ? "tap here to start a new game" : "n · start a new game", G.W / 2, G.H - 18,
@@ -385,6 +408,7 @@ scene("title", () => {
       }
       UI.fadeObj(adminChip, 0.45, 0.3, 0.8);
       UI.fadeObj(trophyChip, 0.85, 0.3, 0.8);
+      if (cloudChip) UI.fadeObj(cloudChip, 0.85, 0.3, 0.8);
       // the whole sequence sat through, not skipped and not a replay
       if (!skipped && !replay) TROPHIES.note("title");
       phase = "ready";
@@ -445,7 +469,7 @@ scene("title", () => {
     // a tap on the loading screen (core/loader.js) is not a tap on the title,
     // and nor is one before the video is in memory
     if (window.LOADER && !LOADER.done) return;
-    if (!TITLEVIDEO.ready) return;
+    if (!TITLEVIDEO.ready || cloudWait()) return;
     unhook();
     if (phase === "armed") begin();
   };
@@ -476,7 +500,8 @@ scene("title", () => {
     fn();
   };
   const press = (newGame) => {
-    if (ADMIN.busy()) return;        // the PIN pad has the keys and taps
+    if (ADMIN.busy() || cloudBusy()) return;   // the PIN pad or the save word panel has the keys and taps
+    if (cloudWait()) return;
     if (phase === "armed") return;   // armedPress starts it, inside the browser's event
     if (phase === "running") return skip();
     launch(() => (saved && !newGame ? SAVE.resume(saved) : go("select")));
@@ -484,16 +509,23 @@ scene("title", () => {
 
   if (replay) settle();
 
+  onUpdate(() => {
+    if (refresh && phase !== "running" && !going && !cloudBusy()) { refresh = false; go("title"); }
+  });
+
   const openTrophies = () => launch(() => go("trophies"));
   onKeyPress((key) => {
+    if (cloudBusy()) return;
     if (key === "t" && phase === "ready" && !ADMIN.busy()) return openTrophies();
     press(key === "n");
   });
   // isHovering understands the letterboxed canvas, so a tap only counts as
   // "new game" when it actually lands on that chip.
   onMousePress(() => {
+    if (cloudBusy()) return;
     if (phase === "ready" && !ADMIN.busy() && adminChip.opacity > 0.1 && adminChip.isHovering()) return adminTap();
     if (phase === "ready" && !ADMIN.busy() && trophyChip.opacity > 0.1 && trophyChip.isHovering()) return openTrophies();
+    if (phase === "ready" && !ADMIN.busy() && cloudChip && cloudChip.opacity > 0.1 && cloudChip.isHovering()) return cloudTap();
     press(!!newChip && newChip.isHovering());
   });
 });
