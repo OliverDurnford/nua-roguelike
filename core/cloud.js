@@ -164,7 +164,7 @@ CLOUD.normWord = (s) => {
 
 CLOUD.KEY = "tenyears-cloud";   // this device's word, version and time stamps
 CLOUD.KEYS = { story: "tenyears-story", trophies: "tenyears-trophies", run: "tenyears-run", difficulty: "tenyears-difficulty" };
-CLOUD.LIVE = "";                // the Worker's address once deployed (tools/cloud/README.md)
+CLOUD.LIVE = "https://nua-saves.oliver-c87.workers.dev";   // the Worker (tools/cloud/README.md)
 CLOUD.URL = CLOUD.LIVE;
 CLOUD.PUSH_WAIT = 3000;         // ms after the first change before it goes up
 CLOUD.SETTLE_MS = 4000;         // the longest the title waits for the first pull
