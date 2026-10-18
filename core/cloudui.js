@@ -127,7 +127,7 @@ CLOUDUI.open = (where, onClose) => {
     const word = CLOUD.meta().word;
     switch (screen) {
       case "intro": return {
-        lines: ["Keep your progress on every device you play on. Get a save word here, then type it in on your other phone, iPad or laptop."]
+        lines: ["A save word keeps your progress safe in case the game crashes and you lose it, and lets you carry on on another phone, iPad or laptop."]
           .concat(onTitle ? [] : ["Got a word from another device already? Type it in on the title screen."]),
         buttons: [{ label: "get my save word", act: () => busyWith(CLOUD.create(), (w) => show(typeof w === "string" && CLOUD.WORD_SHAPE.test(w) ? "word" : "offline")) }]
           .concat(onTitle ? [{ label: "I have a word", act: () => { typed = ""; show("type"); } }] : [])
@@ -137,9 +137,12 @@ CLOUDUI.open = (where, onClose) => {
         const st = CLOUD.status();
         const how = st.state === "working" ? "syncing..."
           : st.state === "offline" ? "offline: it will catch up when it can"
-          : "in step, " + CLOUDUI.ago(st.lastSync, Date.now());
+          : st.lastSync ? "in step, " + CLOUDUI.ago(st.lastSync, Date.now()) : "waiting to sync";
         return {
-          lines: ["Your save word. Type it in on your other device.", "Screenshot it: there's no getting it back if you lose it."],
+          lines: [
+            "Keep it safe in case the game crashes and you lose your progress, or if you want to carry on on another device: just type it in.",
+            "Screenshot it now. There's no getting it back if you lose it.",
+          ],
           big: word, after: [how],
           // a friend who got a word on two devices puts them together by
           // typing the other one in here: this device's progress joins it
