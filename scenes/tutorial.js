@@ -70,6 +70,10 @@ scene("tutorial", () => {
   const setPrompt = (s) => prompt.set(s);
 
   let st = 0;            // 0 move, 1 throw, 2 ball in flight, 3+ cutscene
+  // The throw waits for the park's cards (core/tips.js): on a laptop just
+  // pointing throws, and a friend walking at the batter through the title
+  // threw before the cards came, and so never saw them (18 Oct 2026).
+  let tipsDone = false;
   let holdT = 0;
   let batterMark = null;
   let ballFocus = null;  // where the ball is while it flies, for the camera
@@ -211,7 +215,8 @@ scene("tutorial", () => {
       const dur = UI.bigTitle({ num: "00", name: "VICTORIA PARK", sub: "PRESENT DAY · 2026" });
       // once the name has flown through: the save word, then the controls,
       // each once ever (core/tips.js)
-      if (typeof TIPS !== "undefined") wait(dur, () => { if (st < 2) TIPS.park(); });
+      if (typeof TIPS !== "undefined") wait(dur, () => TIPS.park(() => { tipsDone = true; }));
+      else tipsDone = true;
     },
   });
 
@@ -252,7 +257,7 @@ scene("tutorial", () => {
     // On a laptop, as in play, the throw goes where the mouse points, with no
     // click: it used to say HOLD the mouse button, which the game never asks
     // for again (18 Oct 2026). Pointed roughly at the batter for a moment.
-    if (st === 1 && !isTouchscreen() && !G.paused) {
+    if (st === 1 && !isTouchscreen() && !G.paused && tipsDone) {
       const toBatter = batterPos.sub(player.pos).unit();
       const d = toWorld(mousePos()).sub(player.pos);
       if (d.len() > 4 && d.unit().dot(toBatter) > 0.34) {
@@ -262,7 +267,7 @@ scene("tutorial", () => {
     }
     // On a phone the throw teaches the aim stick (Ollie, 13 Oct 2026): it
     // has to point roughly at the batter, within about 70 degrees either side.
-    if (st === 1 && isTouchscreen() && !G.paused) {
+    if (st === 1 && isTouchscreen() && !G.paused && tipsDone) {
       const toBatter = batterPos.sub(player.pos).unit();
       if (G.aim.len() > 0.3 && G.aim.unit().dot(toBatter) > 0.34) {
         holdT += dt();

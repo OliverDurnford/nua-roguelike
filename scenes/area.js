@@ -642,7 +642,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     // Still wandering the room a while after it opened: an arrow to it and
     // a chip saying what to do, and later the camera goes to show it again
     // if it is out of view (Ollie, 18 Oct 2026).
-    if (typeof NUDGE !== "undefined") NUDGE.watch({
+    if (typeof NUDGE !== "undefined" && typeof NUDGE_COPY !== "undefined") NUDGE.watch({
       at: () => at.pos, say: NUDGE_COPY.crack, colour: [200, 110, 240],
       after: NUDGE.CRACK_AFTER, glideAfter: NUDGE.CRACK_GLIDE, lift: G.charH(1.15) + 34,
       ready: () => crack.growT >= GROW * 0.7, done: () => exiting || dead,
@@ -888,7 +888,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
         SFX.play("door");
         // A fight room left open a while: point at the door (Ollie, 18 Oct
         // 2026). Not quiet rooms, which are for wandering and finding people.
-        if (waves.length && !doorNudged && typeof NUDGE !== "undefined") {
+        if (waves.length && !doorNudged && typeof NUDGE !== "undefined" && typeof NUDGE_COPY !== "undefined") {
           doorNudged = true;
           const mid = d.pos.add(d.width / 2, d.height / 2);
           NUDGE.watch({
@@ -987,7 +987,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
     const retry = () => {
       // not in the frame the pause menu closed: its "back to the title" press
       // reached here too, and both scene switches ran (a crash)
-      if (!dead || UI.pauseOpen || UI.pauseToggledAt === time() || ADMIN.arrowAt(mousePos())) return;
+      if (!dead || UI.pauseOpen || UI.pauseToggledAt === time() || UI.modalBusy() || ADMIN.arrowAt(mousePos())) return;
       dead = false;
       G.run.hp = G.stats().maxHp;
       const room = restartsRoom();

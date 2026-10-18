@@ -61,8 +61,12 @@ TIPS.wanted = (id) => {
 };
 
 // true while a card is up, and for a moment after, so the tap that closes
-// it never also lands on the sticks or a button underneath
-TIPS.busy = () => TIPS.open || (typeof time === "function" && time() - TIPS.closedAt < 0.3);
+// it never also lands on the sticks or a button underneath. Only while the
+// card really exists: a room change mid-close throws it away, and a stuck
+// "open" would have kept the phone's sticks off for good.
+TIPS.root = null;
+TIPS.busy = () => (TIPS.open && !!TIPS.root && TIPS.root.exists())
+  || (typeof time === "function" && time() - TIPS.closedAt < 0.3);
 
 // ---------- the card ----------
 // o.force shows it even if seen (the pause menu's "how to play"). o.onDone
@@ -73,7 +77,6 @@ TIPS.show = (id, o = {}) => {
   const c = TIPS.copy(id);
   if (!c || TIPS.open) return done(-1);
   TIPS.open = true;
-  TIPS.mark(id);
   const touch = TIPS.touch();
   const wasPaused = !!G.paused;
   G.paused = true;
@@ -93,15 +96,22 @@ TIPS.show = (id, o = {}) => {
   const btnX = (i) => Math.round(CX - (BW * BTNS.length + BGAP * (BTNS.length - 1)) / 2 + i * (BW + BGAP));
   const btnY = Y0 + H - 22 - BH;
 
+  // The wait before a card answers starts again whenever the pause menu has
+  // been over it (blur, turning the phone): it is hidden then, and the press
+  // that closes the menu must not also throw the card away unread.
   const openedAt = time();
+  let shownAt = openedAt;
   const age = () => time() - openedAt;
   TIPS.targets = () => (BTNS ? BTNS.map((b, i) => ({ label: b, x: btnX(i), y: btnY, w: BW, h: BH })) : []);
   let sel = 0, leaving = -1;
-  const ready = () => age() > 0.6 && leaving < 0 && !(typeof UI !== "undefined" && UI.pauseOpen);
+  const ready = () => time() - shownAt > 0.6 && leaving < 0 && !UI.pauseOpen && UI.pauseToggledAt !== time();
 
   const root = add([fixed(), z(236), pos(0, 0)]);
+  TIPS.root = root;
+  // a room change while it is up (dying, back to the title) takes it with it
+  onSceneLeave(() => { TIPS.open = false; TIPS.root = null; TIPS.targets = () => []; });
   root.onDraw(() => {
-    if (typeof UI !== "undefined" && UI.pauseOpen) return;   // the pause menu is on top: it is drawn under this
+    if (UI.pauseOpen) { shownAt = time(); return; }   // the pause menu is on top: this waits, unseen
     const t = age();
     const inK = UI.ease(Math.min(1, t / 0.25));
     const op = leaving >= 0 ? Math.max(0, 1 - (t - leaving) / 0.2) : inK;
@@ -132,17 +142,23 @@ TIPS.show = (id, o = {}) => {
     }
   });
 
+  // Seen once it has been read and dismissed, not when it opened: a card
+  // lost to a room change comes back next time.
   const finish = (choice) => {
     if (leaving >= 0) return;
     leaving = age();
+    TIPS.mark(id);
     SFX.play("uiconfirm");
     wait(0.2, () => {
       root.destroy();
       for (const h of handlers) h.cancel();
       TIPS.open = false;
+      TIPS.root = null;
       TIPS.closedAt = time();
       TIPS.targets = () => [];
-      G.paused = wasPaused;
+      // only undo the card's own pause: a story beat that paused the room
+      // under it keeps hold of it
+      if (!wasPaused) G.paused = false;
       done(choice);
     });
   };
@@ -150,10 +166,7 @@ TIPS.show = (id, o = {}) => {
   const handlers = [
     onKeyPress((key) => {
       if (!ready()) return;
-      if (key === "escape" || key === "p") {
-        if (BTNS) finish(BTNS.length - 1);   // the last button is always the "not now" one
-        return;
-      }
+      if (key === "escape" || key === "p") return finish(BTNS ? BTNS.length - 1 : 0);   // the last button is always the "not now" one
       if (BTNS && ["left", "right", "up", "down", "a", "d", "w", "s", "tab"].includes(key)) {
         sel = (sel + 1) % BTNS.length;
         SFX.play("uitick");
@@ -165,33 +178,28 @@ TIPS.show = (id, o = {}) => {
       const i = btnAt(mousePos());
       if (i >= 0) sel = i;
     }),
+    // any tap answers it (PAUSE and the admin arrows wait under a card)
     onMousePress(() => {
       if (!ready()) return;
-      const m = mousePos();
-      if (UI.inPauseBtn(m)) return;   // PAUSE still works over a card
       if (!BTNS) return finish(0);
-      const i = btnAt(m);
+      const i = btnAt(mousePos());
       if (i >= 0) finish(i);
     }),
   ];
   SFX.play("uitick");
 };
 
-// Several, one after another, then onDone.
-TIPS.chain = (ids, onDone) => {
-  const next = (i) => (i >= ids.length ? onDone && onDone() : TIPS.show(ids[i], { onDone: () => next(i + 1) }));
-  next(0);
-};
-
-// The park: the save word, then the controls. "get my save word" opens the
-// panel there and then, with play held until it closes.
+// The park: the save word, then the controls. "get my save word" makes the
+// word there and then (the panel opens on it), with play held until the
+// panel closes.
 TIPS.park = (onDone) => {
   const controls = () => TIPS.show(TIPS.controlsId(), { onDone: () => onDone && onDone() });
   TIPS.show("saveword", {
     onDone: (choice) => {
       if (choice !== 0 || typeof CLOUDUI === "undefined") return controls();
       G.paused = true;
-      CLOUDUI.open("pause", () => { G.paused = false; controls(); });
+      CLOUDUI.open("pause", () => { G.paused = false; controls(); }, { create: true });
+      if (!CLOUDUI.isOpen) { G.paused = false; controls(); }   // it could not open: carry on regardless
     },
   });
 };

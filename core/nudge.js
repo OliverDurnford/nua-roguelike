@@ -29,6 +29,19 @@ NUDGE.edge = (p, view, margin) => {
   return { inView: false, x: cx + dx * s, y: cy + dy * s, angle: Math.atan2(dy, dx) };
 };
 
+// The arrow for a point on the screen: { tip, dir } (dir the way it points).
+// In view it hangs `lift` px over the point, pointing down, or, if that
+// would put it off the top, under it pointing up. bob nudges it along dir.
+NUDGE.pointer = (p, view, margin, lift, bob = 0) => {
+  const e = NUDGE.edge(p, view, margin);
+  if (!e.inView) {
+    const out = { x: Math.cos(e.angle), y: Math.sin(e.angle) };
+    return { tip: { x: e.x + out.x * bob, y: e.y + out.y * bob }, dir: out };
+  }
+  if (e.y - lift < margin) return { tip: { x: e.x, y: e.y + 34 + bob }, dir: { x: 0, y: -1 } };
+  return { tip: { x: e.x, y: e.y - lift + bob }, dir: { x: 0, y: 1 } };
+};
+
 // Watch for one way on in this scene. o.at() is its place in the room,
 // o.ready() true once it can be taken, o.done() true once it has been, o.say
 // the chip's words, o.colour the arrow's, o.lift px the arrow sits above it
@@ -60,12 +73,8 @@ NUDGE.watch = (o) => {
   obj.onDraw(() => {
     if (!chip || G.paused || G.cutscene) return;
     const sp = toScreen(o.at());
-    const e = NUDGE.edge(sp, { w: G.W, h: G.H }, NUDGE.MARGIN);
-    const bob = Math.sin(time() * 5) * 5;
-    // in view: over it, pointing down; out of view: on the edge, pointing out
-    const out = vec2(Math.cos(e.angle), Math.sin(e.angle));
-    const tip = e.inView ? vec2(e.x, e.y - lift + bob) : vec2(e.x, e.y).add(out.scale(bob));
-    const dir = e.inView ? vec2(0, 1) : out;
+    const pt = NUDGE.pointer({ x: sp.x, y: sp.y }, { w: G.W, h: G.H }, NUDGE.MARGIN, lift, Math.sin(time() * 5) * 5);
+    const tip = vec2(pt.tip.x, pt.tip.y), dir = vec2(pt.dir.x, pt.dir.y);
     const side = vec2(-dir.y, dir.x);
     const back = tip.sub(dir.scale(22));
     drawTriangle({ p1: tip.add(dir.scale(4)), p2: back.add(side.scale(17)), p3: back.sub(side.scale(17)), color: UI.rgb(UI.INK) });

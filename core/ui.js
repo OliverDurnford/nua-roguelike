@@ -1170,7 +1170,7 @@ UI.specialTutorial = (c, onDone) => {
     }
   });
   const dismiss = () => {
-    if (t < 0.9 || leaving >= 0 || UI.pauseOpen) return;
+    if (t < 0.9 || leaving >= 0 || UI.pauseOpen || UI.pauseToggledAt === time()) return;
     leaving = t;
     SFX.play("uiconfirm");
   };
@@ -1287,7 +1287,7 @@ UI.easyOffer = (koHold, retry, isDead, to = "easy") => {
 
   // not in the frame the pause menu closed: the Enter or tap that closed it
   // reached these buttons too and picked "go easy" for you
-  const ready = () => isDead() && k >= 1 && !UI.pauseOpen && UI.pauseToggledAt !== time();
+  const ready = () => isDead() && k >= 1 && !UI.pauseOpen && UI.pauseToggledAt !== time() && !UI.modalBusy();
   const choose = (i) => {
     if (!ready()) return;
     SFX.play("uiconfirm");
@@ -1398,6 +1398,9 @@ UI.pause = () => {
       pending = o[(o.indexOf(pending || DIFFICULTY.level) + 1) % o.length];
       SFX.play("uitick");
     } else if (item === "how to play") {
+      // not in the middle of a story beat, a collection screen or a special:
+      // those hold the room themselves and a card would fight them for it
+      if (G.cutscene || (typeof CUTIN !== "undefined" && CUTIN.active)) { SFX.play("uitick"); return; }
       close();
       const more = G.run && G.run.companions && G.run.companions.length >= 2;
       TIPS.show(TIPS.controlsId(), { force: true, onDone: () => { if (more) TIPS.show("polaroids", { force: true }); } });
@@ -1418,7 +1421,11 @@ UI.pause = () => {
   const move = (d) => { sel = (sel + d + ITEMS.length) % ITEMS.length; SFX.play("uitick"); };
   // not while a tip card or the save word panel has the keys: Escape there
   // means "not now", not the pause menu
-  const toggle = () => { if (!cloudBusy() && !UI.modalBusy()) (UI.pauseOpen ? close() : open()); };
+  // closing always works; opening waits for a card or the panel to go
+  const toggle = () => {
+    if (UI.pauseOpen) { if (!cloudBusy()) close(); }
+    else if (!cloudBusy() && !UI.modalBusy()) open();
+  };
 
   const menu = add([fixed(), z(230), pos(0, 0)]);
   // Leaving the game (another app, the home screen, another window) or
@@ -1468,6 +1475,7 @@ UI.pause = () => {
     if (cloudBusy()) return;
     const m = mousePos();
     if (!UI.pauseOpen) {
+      if (UI.modalBusy()) return;   // PAUSE and the admin arrows wait under a card
       const d = ADMIN.arrowAt(m);
       if (d) ADMIN.jump(d);
       else if (UI.inPauseBtn(m)) open();

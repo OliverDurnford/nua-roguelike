@@ -9,7 +9,7 @@
 const TIPS_COPY = {
   saveword: {
     title: "KEEP YOUR PROGRESS",
-    lines: ["Get a save word to keep your progress safe in case the game crashes, and to carry on on another phone, iPad or laptop."],
+    lines: ["Get a save word to keep your progress safe in case the game crashes, and to continue on another phone, iPad or laptop."],
     hint: "It's in the pause menu whenever you want it.",
     buttons: ["get my save word", "later"],
   },
