@@ -422,7 +422,9 @@ UI.speech = (ent, str, accent = [255, 255, 255], o = {}) => {
   const top = name ? UI.NAME_H : 0;
   const w = Math.max(Math.ceil(fmt.width) + 28, nameW + 22);
   const h = Math.ceil(fmt.height) + 17 + top;
-  const dur = o.dur || (1.7 + Math.min(2, str.length * 0.035));
+  // long enough to read mid-fight (Ollie, 18 Oct 2026: was 1.7 s plus
+  // 0.035 a letter, capped at 3.7 s, "too fast to read")
+  const dur = o.dur || (2.5 + Math.min(4, str.length * 0.055));
 
   const rootComps = [pos(ent.pos), z(o.z || 140),
     { t: 0, ent, bw: w, bh: h, lift: 0, want: 0, seq: UI._bubbleSeq++, fixedNote: !!o.fixed, placed: false }];

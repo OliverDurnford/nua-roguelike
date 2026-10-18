@@ -28,7 +28,7 @@ SPEECH.LINE_CD    = 90;    // s: the same line cannot come back inside this
 SPEECH.SPOT_CD    = 45;    // s: walking past the bar again does not retrigger
 SPEECH.TICK       = 3;     // s: how often the ambient roll happens
 SPEECH.AMBIENT    = 0.14;  // base chance per tick, scaled by the party's talkativeness (0.28 until 16 Oct)
-SPEECH.REPLY_GAP  = 1.5;   // s between a line and its reply
+SPEECH.REPLY_GAP  = 1.5;   // s between a line and its reply, at least (SPEECH.replyGap)
 SPEECH.QUICK_GAP  = 0.6;   // s before a reply marked quick ("It's okay, Lucy, I fell off the kerb")
 SPEECH.COPY_GAP   = 0.8;   // s between one copier and the next ("Ffffffffft")
 SPEECH.IDLE_AFTER = 6;     // s of standing still before the idle moment
@@ -352,9 +352,10 @@ SPEECH.play = (line, cutscene = false) => {
     if (r.who === "@other") return group.find((w) => w !== first && SPEECH.present(w)) || null;
     return r.who;
   };
-  let stopped = false, at = 0;
+  let stopped = false, at = 0, before = line.text;
   (line.reply || []).forEach((r) => {
-    at += r.quick ? SPEECH.QUICK_GAP : SPEECH.REPLY_GAP;
+    at += r.quick ? SPEECH.QUICK_GAP : SPEECH.replyGap(before);
+    before = r.text;
     wait(at, () => {
       if (stopped) return;
       if (G.paused && !cutscene) { stopped = true; return; }
@@ -364,6 +365,11 @@ SPEECH.play = (line, cutscene = false) => {
     });
   });
 };
+
+// A reply waits until the line before it has been read (Ollie, 18 Oct
+// 2026: it used to come 1.5 s in whatever the length, and pulled the eye
+// away mid-sentence). Never sooner than REPLY_GAP.
+SPEECH.replyGap = (before) => Math.max(SPEECH.REPLY_GAP, 0.8 + String(before || "").length * 0.04);
 
 // The way the rest of the game talks to this file. A cutscene (the
 // finale's opening and ending) pauses play but still wants its lines,

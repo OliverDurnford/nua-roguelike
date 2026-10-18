@@ -14,7 +14,7 @@
 
 const CRACKVOICE = {};
 
-CRACKVOICE.CPS = 40;     // letters a second as the voice types
+CRACKVOICE.CPS = 30;     // letters a second as the voice types (40 until 18 Oct 2026: too fast to read)
 CRACKVOICE.WRAP = 330;   // the note's widest line, px
 CRACKVOICE.BAR = 40;     // the black bars, px tall
 
@@ -92,7 +92,7 @@ CRACKVOICE.hold = (s) => {
   if (s.ring) return 1.5;
   if (s.laugh) return 2.1;   // the last HA! has floated off before the note goes
   if (s.fade) return 0.5;
-  return 0.9 + (s.say || "").length * 0.024;
+  return 1.4 + (s.say || "").length * 0.04;   // 0.9 + 0.024 a letter until 18 Oct 2026
 };
 
 // One step's clock: how long its words take to type, and when the next
