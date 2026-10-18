@@ -1115,13 +1115,13 @@ UI.specialTutorial = (c, onDone) => {
       ? "When it's full, tap SP for " + c.name + "'s special move."
       : "When it's full, press SPACE for " + c.name + "'s special move.",
   ];
-  const hint = touch
-    ? "With more friends, tap a polaroid to choose whose special it is."
-    : "With more friends, Q / E or 1 to 4 chooses whose special it is.";
+  // choosing whose special it is has a card of its own once a second friend
+  // joins (core/tips.js), when there is a choice to make
+  const hint = "";
   const hgt = (str, o) => UI.measure(str, o.font, o.size, o).height;
   const HINT = { font: UI.VT, size: 16, width: W - 72, align: "center" };
   const METER_W = 300, GAP = 18;
-  const H = 28 + 24 + GAP + hgt(lines[0], LINE) + GAP + 13 + GAP + hgt(lines[1], LINE) + 12 + hgt(hint, HINT) + GAP + 20 + 22;
+  const H = 28 + 24 + GAP + hgt(lines[0], LINE) + GAP + 13 + GAP + hgt(lines[1], LINE) + (hint ? 12 + hgt(hint, HINT) : 0) + GAP + 20 + 22;
   const Y0 = Math.round(G.H / 2 - H / 2);
 
   G.paused = true;
@@ -1157,9 +1157,12 @@ UI.specialTutorial = (c, onDone) => {
     if (op > 0.6) UI.specialMeter(CX - METER_W / 2, y, METER_W, k, full);
     y += 13 + GAP;
     UI.text(lines[1], CX, y, o(LINE));
-    y += hgt(lines[1], LINE) + 12;
-    UI.text(hint, CX, y, Object.assign(o(HINT), { color: UI.BLUE_DEEP }));
-    y += hgt(hint, HINT) + GAP;
+    y += hgt(lines[1], LINE);
+    if (hint) {
+      UI.text(hint, CX, y + 12, Object.assign(o(HINT), { color: UI.BLUE_DEEP }));
+      y += 12 + hgt(hint, HINT);
+    }
+    y += GAP;
     if (t > 0.9 && leaving < 0) {
       UI.chip(touch ? "tap to carry on" : "press any key", CX, y + 10, {
         anchor: "center", opacity: op * (0.7 + Math.sin(time() * 3.2) * 0.3),
@@ -1328,13 +1331,16 @@ UI.pause = () => {
   const touch = isTouchscreen();
   // the save word's row (core/cloudui.js) only when the cloud is on
   const cloudRow = typeof CLOUDUI !== "undefined" && typeof CLOUD !== "undefined" && CLOUD.enabled();
-  const ITEMS = ["carry on", "sound", "difficulty"].concat(cloudRow ? ["save word"] : [], ["back to the title"]);
+  // "how to play" shows the controls card again (core/tips.js)
+  const tipsRow = typeof TIPS !== "undefined";
+  const ITEMS = ["carry on", "sound", "difficulty"].concat(tipsRow ? ["how to play"] : [], cloudRow ? ["save word"] : [], ["back to the title"]);
   const cloudBusy = () => typeof CLOUDUI !== "undefined" && CLOUDUI.busy();
   // phone rows are taller, wider and in bigger type, so a thumb can hit them
   const W = touch ? 420 : 360, ROW_W = touch ? 320 : 260, ROW_H = touch ? 46 : 28;
   const ROW_GAP = touch ? 12 : 10, LINE = 18, ROW_SIZE = touch ? 32 : 16;
+  // on a phone the rows fill the screen now, and "how to play" says it with pictures
   const help = touch
-    ? ["left thumb walks, right thumb aims and throws", "tap SP for the special, tap a polaroid to swap"]
+    ? (tipsRow ? [] : ["left thumb walks, right thumb aims and throws", "tap SP for the special, tap a polaroid to swap"])
     : ["WASD or arrows move, the mouse aims", "SPACE special, 1 to 4 or Q / E swap, N sound"];
   const H = 20 + 16 + 22 + ITEMS.length * ROW_H + (ITEMS.length - 1) * ROW_GAP + 22 + help.length * LINE + 18;
   const x0 = G.W / 2 - W / 2, y0 = Math.round(G.H / 2 - H / 2);
@@ -1391,6 +1397,10 @@ UI.pause = () => {
       const o = DIFFICULTY.ORDER;
       pending = o[(o.indexOf(pending || DIFFICULTY.level) + 1) % o.length];
       SFX.play("uitick");
+    } else if (item === "how to play") {
+      close();
+      const more = G.run && G.run.companions && G.run.companions.length >= 2;
+      TIPS.show(TIPS.controlsId(), { force: true, onDone: () => { if (more) TIPS.show("polaroids", { force: true }); } });
     } else if (item === "save word") {
       CLOUDUI.open("pause");
     } else {
@@ -1406,7 +1416,9 @@ UI.pause = () => {
     }
   };
   const move = (d) => { sel = (sel + d + ITEMS.length) % ITEMS.length; SFX.play("uitick"); };
-  const toggle = () => { if (!cloudBusy()) (UI.pauseOpen ? close() : open()); };
+  // not while a tip card or the save word panel has the keys: Escape there
+  // means "not now", not the pause menu
+  const toggle = () => { if (!cloudBusy() && !UI.modalBusy()) (UI.pauseOpen ? close() : open()); };
 
   const menu = add([fixed(), z(230), pos(0, 0)]);
   // Leaving the game (another app, the home screen, another window) or
@@ -1497,6 +1509,10 @@ UI.toGame = (p) => {
 // for one of its own gestures. Either way the player kept walking in the
 // last direction held. So every lift that leaves no finger on the glass,
 // every cancel and every trip away from the page lets go of everything.
+// a tip card or the save word panel is up (or has only just gone): the
+// sticks keep their hands off, as for the pause menu
+UI.modalBusy = () => (typeof TIPS !== "undefined" && TIPS.busy()) || (typeof CLOUDUI !== "undefined" && CLOUDUI.busy());
+
 UI._sticks = [];
 UI.releaseSticks = () => {
   G.joy = vec2(0, 0);
@@ -1553,7 +1569,7 @@ UI.mobileControls = () => {
     UI._sticks.push(st);
 
     onTouchStart((raw, t) => {
-      if (st.id !== null || UI.pauseOpen) return;
+      if (st.id !== null || UI.pauseOpen || UI.modalBusy()) return;
       const p = UI.toGame(raw);
       if (!inZone(p) || UI.inTopButtons(p)) return;
       st.id = t ? t.identifier : 0;

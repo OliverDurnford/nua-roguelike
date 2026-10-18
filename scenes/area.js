@@ -348,6 +348,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
   COMPANIONS.spawnFollowers(player);
   let dead = false;
   let exiting = false;
+  let doorNudged = false;   // the way-out nudge, once a room (core/nudge.js)
   let clearedSaid = false;
 
   // --- where enemies come in (core/spawns.js) ---
@@ -638,6 +639,15 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
       if (exiting || dead || G.cutscene || crack.growT < GROW * 0.7) return;
       if (player.pos.add(0, G.charH(0.39)).dist(at.pos) < G.charH(0.42)) fallIn(at.pos);
     });
+    // Still wandering the room a while after it opened: an arrow to it and
+    // a chip saying what to do, and later the camera goes to show it again
+    // if it is out of view (Ollie, 18 Oct 2026).
+    if (typeof NUDGE !== "undefined") NUDGE.watch({
+      at: () => at.pos, say: NUDGE_COPY.crack, colour: [200, 110, 240],
+      after: NUDGE.CRACK_AFTER, glideAfter: NUDGE.CRACK_GLIDE, lift: G.charH(1.15) + 34,
+      ready: () => crack.growT >= GROW * 0.7, done: () => exiting || dead,
+      glide: (p) => CRACKVOICE.showCrack(p, 1.6),
+    });
   };
 
   // Into the crack: friends first, one after another, then you, spinning
@@ -831,7 +841,13 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
   // again after dying in it: you have just seen it.
   if (areaNum === 1 && !a.finale && !again) {
     reveal.held = true;
-    UI.chapterCard(ch, () => { reveal.held = false; });
+    UI.chapterCard(ch, () => {
+      const release = () => { reveal.held = false; };
+      // chapter 2: the caps and the old faces hiding in the rooms, once ever,
+      // with the room still held behind it (core/tips.js)
+      if (chapter === 2 && typeof TIPS !== "undefined") TIPS.show("hidden", { onDone: release });
+      else release();
+    });
   }
 
   // --- exit door logic ---
@@ -870,6 +886,16 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
         d.color = rgb(90, 200, 110);
         UI.floatText(d.pos.add(24, -10), "open!", [120, 230, 140]);
         SFX.play("door");
+        // A fight room left open a while: point at the door (Ollie, 18 Oct
+        // 2026). Not quiet rooms, which are for wandering and finding people.
+        if (waves.length && !doorNudged && typeof NUDGE !== "undefined") {
+          doorNudged = true;
+          const mid = d.pos.add(d.width / 2, d.height / 2);
+          NUDGE.watch({
+            at: () => mid, say: NUDGE_COPY.door, colour: [90, 210, 120], after: NUDGE.DOOR_AFTER,
+            lift: d.height / 2 + 40, done: () => exiting || dead,
+          });
+        }
       }
     }
   });

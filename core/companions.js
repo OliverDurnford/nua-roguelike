@@ -175,7 +175,11 @@ COMPANIONS.recruit = (id) => {
     COMPANIONS.checkPairs();
     // The screen has already given them their recruit line; this is the
     // first thing they say once they are actually stood next to you.
-    wait(0.8, () => SPEECH.fire("join", { by: id }));
+    const say = () => wait(0.8, () => SPEECH.fire("join", { by: id }));
+    // with two in the party there is a choice of special: how to make it,
+    // once ever (core/tips.js)
+    if (G.run.companions.length >= 2 && typeof TIPS !== "undefined") TIPS.show("polaroids", { onDone: say });
+    else say();
   };
   // The first friend of a run brings the special with them, so a card
   // explaining it follows their screen (Ollie, 13 Oct 2026).

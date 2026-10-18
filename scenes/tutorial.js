@@ -207,7 +207,12 @@ scene("tutorial", () => {
   G.paused = true;
   const reveal = UI.reveal(m.w, m.h, {
     onPush: () => { if (st < 5) G.paused = false; },
-    onDone: () => UI.bigTitle({ num: "00", name: "VICTORIA PARK", sub: "PRESENT DAY · 2026" }),
+    onDone: () => {
+      const dur = UI.bigTitle({ num: "00", name: "VICTORIA PARK", sub: "PRESENT DAY · 2026" });
+      // once the name has flown through: the save word, then the controls,
+      // each once ever (core/tips.js)
+      if (typeof TIPS !== "undefined") wait(dur, () => { if (st < 2) TIPS.park(); });
+    },
   });
 
   // --- state machine ---
@@ -239,20 +244,25 @@ scene("tutorial", () => {
       st = 1;
       setPrompt(isTouchscreen()
         ? "push the right stick towards the batter to throw"
-        : "HOLD the mouse button to throw the ball to the batter");
+        : "point the mouse at the batter to throw the ball");
       batterMark = add([text("v", { size: 16, font: UI.PX }), pos(batterPos.add(0, -52)), anchor("center"), color(255, 220, 120), z(61), opacity(1)]);
       batterMark.onUpdate(() => { batterMark.pos.y = batterPos.y - 52 + Math.sin(time() * 4) * 6; });
     }
 
-    if (st === 1 && !isTouchscreen()) {
-      if (isMouseDown()) {
+    // On a laptop, as in play, the throw goes where the mouse points, with no
+    // click: it used to say HOLD the mouse button, which the game never asks
+    // for again (18 Oct 2026). Pointed roughly at the batter for a moment.
+    if (st === 1 && !isTouchscreen() && !G.paused) {
+      const toBatter = batterPos.sub(player.pos).unit();
+      const d = toWorld(mousePos()).sub(player.pos);
+      if (d.len() > 4 && d.unit().dot(toBatter) > 0.34) {
         holdT += dt();
         if (holdT > 0.35) throwBall();
       } else holdT = 0;
     }
     // On a phone the throw teaches the aim stick (Ollie, 13 Oct 2026): it
     // has to point roughly at the batter, within about 70 degrees either side.
-    if (st === 1 && isTouchscreen()) {
+    if (st === 1 && isTouchscreen() && !G.paused) {
       const toBatter = batterPos.sub(player.pos).unit();
       if (G.aim.len() > 0.3 && G.aim.unit().dot(toBatter) > 0.34) {
         holdT += dt();
