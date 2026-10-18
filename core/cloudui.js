@@ -140,7 +140,7 @@ CLOUDUI.open = (where, onClose) => {
           : st.lastSync ? "in step, " + CLOUDUI.ago(st.lastSync, Date.now()) : "waiting to sync";
         return {
           lines: [
-            "Keep it safe in case the game crashes and you lose your progress, or if you want to carry on on another device: just type it in.",
+            "Keep it safe in case the game crashes and you lose your progress, or if you want to carry on on another device: just type it in. It keeps up with you as you play.",
             "Screenshot it now. There's no getting it back if you lose it.",
           ],
           big: word, after: [how],
