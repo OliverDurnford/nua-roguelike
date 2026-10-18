@@ -516,11 +516,69 @@ scene("title", () => {
     TITLEVIDEO.unmount();
     fn();
   };
+  // ---------- are you sure? ----------
+  // A new game replaces the run waiting to be carried on. Nothing else: the
+  // trophies, caps and everyone found are a separate save and stay. So with
+  // a run waiting it asks first, and keeping the run is the answer already
+  // picked (Ollie, 18 Oct 2026).
+  const ASK = touch ? { W: 660, BW: 290, BH: 46, GAP: 16, SIZE: 32 } : { W: 540, BW: 210, BH: 28, GAP: 14, SIZE: 16 };
+  const ASK_BTNS = ["keep my run", "start a new game"];
+  let asking = null, askClosedAt = -1;   // asking: { sel, at } while the card is up
+  const askBusy = () => !!asking || time() - askClosedAt < 0.3;
+  const askLines = () => {
+    const c = saved ? G.char(saved.run.charId) : null;
+    const where = saved && saved.scene === "tutorial" ? "Victoria Park" : "chapter " + (saved ? saved.run.chapter : 1);
+    const out = [
+      "A new game ends your run" + (c ? " as " + c.name : "") + " in " + where + ".",
+      "Your trophies, caps and everyone you've found stay.",
+    ];
+    if (typeof CLOUD !== "undefined" && CLOUD.meta().word) out.push("With a save word, your other devices start the new game too.");
+    return out;
+  };
+  const askLayout = () => {
+    const lines = askLines();
+    const top = 20 + 16 + 18, h = top + lines.length * 20 + 14 + ASK.BH + 22;
+    const y0 = Math.round(G.H / 2 - h / 2);
+    return {
+      lines, h, y0, top,
+      x0: Math.round(G.W / 2 - ASK.W / 2),
+      by: y0 + top + lines.length * 20 + 14,
+      bx: (i) => Math.round(G.W / 2 - ASK.GAP / 2 - ASK.BW + i * (ASK.BW + ASK.GAP)),
+    };
+  };
+  const askCard = add([fixed(), z(240), pos(0, 0)]);
+  askCard.onDraw(() => {
+    if (!asking) return;
+    const L = askLayout();
+    UI.R(0, 0, G.W, G.H, UI.INK, 0.6);
+    UI.card(vec2(L.x0, L.y0), ASK.W, L.h, { drop: 4 });
+    UI.label("NEW GAME?", G.W / 2, L.y0 + 20, { size: 16, anchor: "top", color: UI.TEXT, shadow: false });
+    L.lines.forEach((ln, i) => UI.text(ln, G.W / 2, L.y0 + L.top + i * 20, { anchor: "top" }));
+    // the cards, then the words: a layer at a time
+    ASK_BTNS.forEach((b, i) => {
+      const on = i === asking.sel;
+      UI.card(vec2(L.bx(i), L.by), ASK.BW, ASK.BH, { fill: on ? UI.STEEL : UI.CHIP, shade: on ? UI.BLUE : null, notch: false });
+    });
+    ASK_BTNS.forEach((b, i) => UI.text(b, L.bx(i) + ASK.BW / 2, L.by + ASK.BH / 2 + 1, { anchor: "center", size: ASK.SIZE }));
+  });
+  const askOpen = () => { asking = { sel: 0, at: time() }; SFX.play("uitick"); };
+  const askPick = (i) => {
+    asking = null;
+    askClosedAt = time();
+    if (i === 1) launch(() => go("select"));
+    else SFX.play("uitick");
+  };
+  const askAt = (m) => {
+    const L = askLayout();
+    return ASK_BTNS.findIndex((_, i) => m.x >= L.bx(i) && m.x <= L.bx(i) + ASK.BW && m.y >= L.by && m.y <= L.by + ASK.BH);
+  };
+
   const press = (newGame) => {
-    if (ADMIN.busy() || cloudBusy()) return;   // the PIN pad or the save word panel has the keys and taps
+    if (ADMIN.busy() || cloudBusy() || askBusy()) return;   // the PIN pad, a panel or the card has the keys and taps
     if (cloudWait()) return;
     if (phase === "armed") return;   // armedPress starts it, inside the browser's event
     if (phase === "running") return skip();
+    if (newGame && saved) return askOpen();
     launch(() => (saved && !newGame ? SAVE.resume(saved) : go("select")));
   };
 
@@ -532,13 +590,31 @@ scene("title", () => {
 
   const openTrophies = () => launch(() => go("trophies"));
   onKeyPress((key) => {
+    if (asking) {
+      if (["left", "right", "up", "down", "a", "d", "w", "s", "tab"].includes(key)) { asking.sel = 1 - asking.sel; SFX.play("uitick"); }
+      else if (key === "enter" || key === "space") askPick(asking.sel);
+      else if (key === "escape") askPick(0);
+      return;
+    }
     if (cloudBusy()) return;
     if (key === "t" && phase === "ready" && !ADMIN.busy()) return openTrophies();
     press(key === "n");
   });
   // isHovering understands the letterboxed canvas, so a tap only counts as
   // "new game" when it actually lands on that chip.
+  onMouseMove(() => {
+    if (!asking) return;
+    const i = askAt(mousePos());
+    if (i >= 0 && i !== asking.sel) asking.sel = i;
+  });
   onMousePress(() => {
+    if (asking) {
+      if (time() - asking.at < 0.15) return;   // the tap that opened it
+      const i = askAt(mousePos());
+      if (i >= 0) askPick(i);
+      return;
+    }
+    if (askBusy()) return;
     if (cloudBusy()) return;
     if (phase === "ready" && !ADMIN.busy() && adminChip.opacity > 0.1 && adminChip.isHovering()) return adminTap();
     if (phase === "ready" && !ADMIN.busy() && trophyChip.opacity > 0.1 && trophyChip.isHovering()) return openTrophies();
