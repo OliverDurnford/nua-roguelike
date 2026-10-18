@@ -339,8 +339,25 @@ scene("title", () => {
   });
   // A pull that brings a different run in while the title is up re-enters
   // it, so CARRY ON offers that run; never mid-sequence or under the panel.
+  // A platinum completed by joining two devices puts "platinum!" on its chip.
   let refresh = false;
-  if (typeof CLOUD !== "undefined") CLOUD.onApplied = (changedRun) => { if (changedRun) refresh = true; };
+  if (typeof CLOUD !== "undefined") {
+    CLOUD.onApplied = (changedRun) => {
+      if (changedRun || (TROPHIES.platinumNew() && trophyLabel !== "platinum!")) refresh = true;
+    };
+    // a difficulty that arrived mid-run, and why a run that moved on elsewhere
+    // brought the player back here (core/cloud.js)
+    CLOUD.catchUp();
+    // held longer than a toast and above the prompt: the room may be waiting
+    // for its first tap while the friend works out what happened
+    if (CLOUD.notice) {
+      const note = UI.chipObj(CLOUD.notice, G.W / 2, G.H - 72,
+        { opacity: 0, z: 190, fill: UI.STEEL, shade: UI.BLUE, padY: 5, fixed: false });
+      UI.fadeObj(note, 1, 0.3);
+      wait(6, () => UI.fadeObj(note, 0, 0.5));
+      CLOUD.notice = null;
+    }
+  }
   onSceneLeave(() => { if (typeof CLOUD !== "undefined") CLOUD.onApplied = null; });
 
   let newChip = null;

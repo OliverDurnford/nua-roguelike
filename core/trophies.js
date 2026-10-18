@@ -496,6 +496,7 @@ TROPHIES.holding = () => !!(
   || (typeof UI !== "undefined" && UI.pauseOpen)
   || (typeof CUTIN !== "undefined" && CUTIN.active)
   || (typeof LOADER !== "undefined" && !LOADER.done)
+  || (typeof CLOUDUI !== "undefined" && CLOUDUI.busy())   // the save word panel: a platinum won by joining waits for it
 );
 
 // Every scene gets the pop-up layer (see the scene() wrapper below).

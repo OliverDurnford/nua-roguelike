@@ -114,7 +114,7 @@ CLOUDUI.open = (where, onClose) => {
   const join = (o) => busyWith(CLOUD.join(found.word, found, o), (r) => show(r === "ok" ? "joined" : "joinedOffline"));
   const check = () => {
     const w = CLOUD.normWord(typed);
-    if (!w) { note = "That doesn't look like a save word: two words and a number, like DISCO-OTTER-42."; return; }
+    if (!w) { note = "That doesn't look like a save word: two words and a number, like DISCO-OTTER-427."; return; }
     busyWith(CLOUD.lookup(w), (r) => {
       if (r === "missing") show("missing");
       else if (r === "offline") show("offline");
@@ -129,7 +129,7 @@ CLOUDUI.open = (where, onClose) => {
       case "intro": return {
         lines: ["Keep your progress on every device you play on. Get a save word here, then type it in on your other phone, iPad or laptop."]
           .concat(onTitle ? [] : ["Got a word from another device already? Type it in on the title screen."]),
-        buttons: [{ label: "get my save word", act: () => busyWith(CLOUD.create(), (w) => show(w ? "word" : "offline")) }]
+        buttons: [{ label: "get my save word", act: () => busyWith(CLOUD.create(), (w) => show(typeof w === "string" && CLOUD.WORD_SHAPE.test(w) ? "word" : "offline")) }]
           .concat(onTitle ? [{ label: "I have a word", act: () => { typed = ""; show("type"); } }] : [])
           .concat([{ label: "back", act: close }]),
       };
@@ -141,7 +141,12 @@ CLOUDUI.open = (where, onClose) => {
         return {
           lines: ["Your save word. Type it in on your other device.", "Screenshot it: there's no getting it back if you lose it."],
           big: word, after: [how],
-          buttons: [{ label: "done", act: close }].concat(onTitle ? [{ label: "forget this device", act: () => show("forget") }] : []),
+          // a friend who got a word on two devices puts them together by
+          // typing the other one in here: this device's progress joins it
+          buttons: [{ label: "done", act: close }].concat(onTitle ? [
+            { label: "use a different word", act: () => { typed = ""; show("type"); } },
+            { label: "forget this device", act: () => show("forget") },
+          ] : []),
         };
       }
       case "type": return {
@@ -189,8 +194,8 @@ CLOUDUI.open = (where, onClose) => {
       case "forget": return {
         lines: ["Forget this device? Everything goes up to the cloud first, then this device starts again like new. Your word still works anywhere."],
         buttons: [
+          { label: "keep it", act: () => show("word") },   // first, so Enter keeps it
           { label: "forget it", act: () => busyWith(CLOUD.forget(), (r) => { if (r !== "ok") show("offline"); }) },
-          { label: "keep it", act: () => show("word") },
         ],
       };
       default: return {
@@ -353,7 +358,7 @@ CLOUDUI.open = (where, onClose) => {
         else close();
         SFX.play("uitick");
       } else if (key === "backspace" && v.keyboard) tap("<");
-      else if (key === "enter") activate();
+      else if (key === "enter") { if (v.keyboard) check(); else activate(); }   // Enter after typing means OK
       else if (!v.keyboard && (key === "up" || key === "left")) move(-1);
       else if (!v.keyboard && (key === "down" || key === "right")) move(1);
     }),

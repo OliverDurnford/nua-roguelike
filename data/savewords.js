@@ -1,6 +1,6 @@
 // ============================================================
 // SAVE WORDS: what a save word is made of (core/cloud.js, 18 Oct 2026).
-// One word from each list and a number, like DISCO-SEAGULL-42.
+// One word from each list and a number, like DISCO-SEAGULL-427.
 //
 // Ollie's to edit. Rules for a word: 3 to 9 capital letters, easy to
 // spell from a screenshot, and nothing that could read as a dig at
@@ -19,10 +19,10 @@ const SAVE_WORDS = {
     "SNAPPY", "SPEEDY", "SPICY", "SPOOKY", "STARRY", "STICKY", "SUPER", "SWEET",
     "TOASTY", "VELVET", "WILD", "ZESTY", "NEON", "RETRO", "ELECTRIC", "FOAMY",
     "MUDDY", "RAINY", "WINDY", "COMFY", "CUDDLY", "DAZZLING", "FANCY", "FEARLESS",
-    "GENTLE", "GLITTERY", "HUNGRY", "HEROIC", "JUMPY", "KINDLY", "LEGENDARY", "LOVELY",
-    "MERRY", "MIDNIGHT", "NOBLE", "PERKY", "POLKA", "PRANCING", "QUIRKY", "ROYAL",
+    "GENTLE", "GLITTERY", "HUNGRY", "HEROIC", "JUMPY", "KINDLY", "LOVELY",
+    "MERRY", "MIDNIGHT", "NOBLE", "PERKY", "POLKA", "QUIRKY", "ROYAL",
     "SNOWY", "SPARKLING", "STORMY", "SUGARY", "SWANKY", "TWINKLY", "VINTAGE", "WACKY",
-    "ZIPPY", "GLOSSY", "BREEZY", "CHIRPY", "DREAMY", "FEISTY", "GLAMOROUS", "HUMBLE",
+    "ZIPPY", "GLOSSY", "BREEZY", "CHIRPY", "DREAMY", "FEISTY", "HUMBLE",
     "MINTY", "PEACHY", "SPARKY", "ATOMIC", "BRILLIANT", "CLASSIC", "CRYSTAL", "DANDY",
     "EPIC", "FABULOUS", "FESTIVE", "FLYING", "FRESH", "GALACTIC", "GRAND", "LIVELY",
     "LUNAR", "MYSTIC", "RADIANT", "SOLAR", "SONIC", "SPRINGY", "STELLAR", "SUNLIT",
@@ -42,9 +42,9 @@ const SAVE_WORDS = {
     "FERRET", "PENGUIN", "LLAMA", "FOX", "OWL", "FROG", "DUCK", "SWAN",
     "GOOSE", "PUFFIN", "WALRUS", "PANDA", "KOALA", "TIGER", "LION", "HAMSTER",
     "CORGI", "ROBIN", "MAGPIE", "HERON", "PELICAN", "LOBSTER", "OCTOPUS", "BANANA",
-    "MANGO", "LEMON", "CHERRY", "PICKLE", "PRETZEL", "CROISSANT", "BAGEL", "MUFFIN",
+    "MANGO", "LEMON", "CHERRY", "PICKLE", "PRETZEL", "BAGEL", "MUFFIN",
     "SCONE", "CUSTARD", "CRUMBLE", "POPCORN", "NACHO", "TACO", "DUMPLING", "GUITAR",
-    "DRUM", "TRUMPET", "BANJO", "UKULELE", "TUBA", "PIANO", "BEANBAG", "HAMMOCK",
+    "DRUM", "TRUMPET", "BANJO", "TUBA", "PIANO", "BEANBAG", "HAMMOCK",
     "LAMP", "SCOOTER", "KITE", "FRISBEE", "PINBALL", "ARCADE", "JOYSTICK",
   ],
 };

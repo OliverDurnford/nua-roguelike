@@ -2,7 +2,7 @@
 // CLOUD: the save word (18 Oct 2026). Some of the friends wanted to
 // play on their iPads without losing what their phones had earned,
 // and to swap back and forth (Ollie, launch night). A friend asks for
-// a word, like DISCO-SEAGULL-42, types it on any other device once,
+// a word, like DISCO-SEAGULL-427, types it on any other device once,
 // and from then on every device with that word stays in step.
 //
 // The cloud end is a tiny Cloudflare Worker over a D1 database
@@ -38,7 +38,10 @@ CLOUD.combine = (a, b) => {
   if (Array.isArray(a) && Array.isArray(b)) {
     const out = a.slice();
     for (const x of b) if (!out.includes(x)) out.push(x);
-    return out;
+    // sorted when every item is a name or a number, so two devices that found
+    // the same things in a different order settle on one order and stop
+    // writing it back and forth
+    return out.every((x) => typeof x === "string" || typeof x === "number") ? out.sort() : out;
   }
   if (typeof a === "number" && typeof b === "number") return Math.max(a, b);
   if (typeof a === "boolean" && typeof b === "boolean") return a || b;
@@ -93,18 +96,40 @@ CLOUD.clean = (b) => {
   return { v: 1, story: part("story"), trophies: part("trophies"), run: run || { at: 0, save: null }, difficulty: diff };
 };
 
-// Two devices' bundles in, one out. o.run is the join's picker: "local" or
-// "remote" keeps that side's run whatever the times say.
+// Two devices' bundles in, one out.
+// o.join: a device typing a word in. Until then the two devices' histories
+// are separate, so their time stamps say nothing about each other (a run
+// saved before this update has none at all): a run in progress beats "no
+// run" whatever the times, o.run ("local" or "remote", the picker) settles
+// two runs, and whatever is kept is stamped o.now, so the other device takes
+// it on its next sync rather than putting its own back.
 CLOUD.merge = (local, remote, o = {}) => {
   const L = CLOUD.clean(local), R = CLOUD.clean(remote);
+  let run = o.run === "local" ? L.run : o.run === "remote" ? R.run
+    : o.join && !L.run.save !== !R.run.save ? (L.run.save ? L.run : R.run)
+    : CLOUD.mergeRun(L.run, R.run);
+  let difficulty = CLOUD.mergeDifficulty(L.difficulty, R.difficulty);
+  if (o.join) {
+    run = { at: o.now || 0, save: run.save };
+    if (difficulty) difficulty = { at: o.now || 0, level: difficulty.level };
+  }
   const out = {
     v: 1,
     story: CLOUD.mergeStory(L.story, R.story),
     trophies: CLOUD.mergeTrophies(L.trophies, R.trophies),
-    run: o.run === "local" ? L.run : o.run === "remote" ? R.run : CLOUD.mergeRun(L.run, R.run),
-    difficulty: CLOUD.mergeDifficulty(L.difficulty, R.difficulty),
+    run,
+    difficulty,
   };
   return JSON.parse(JSON.stringify(out));
+};
+
+// No stamp from another device may be later than now: a clock a year fast
+// would otherwise win every comparison until the year was up.
+CLOUD.clamp = (bundle, now) => {
+  const b = JSON.parse(JSON.stringify(CLOUD.clean(bundle)));
+  b.run.at = Math.min(b.run.at, now);
+  if (b.difficulty) b.difficulty.at = Math.min(b.difficulty.at, now);
+  return b;
 };
 
 // JSON with every object's keys in order, so two saves written in a different
@@ -140,17 +165,26 @@ CLOUD.hasProgress = (bundle) => {
 // ---------- the words ----------
 // One from each list in data/savewords.js and a number from 10 to 99. Only
 // the SHAPE is ever checked, so a word stays good if the lists change.
-CLOUD.WORD_SHAPE = /^[A-Z]{2,12}-[A-Z]{2,12}-\d{2}$/;
+CLOUD.WORD_SHAPE = /^[A-Z]{2,12}-[A-Z]{2,12}-\d{3}$/;
 
-CLOUD.makeWord = (rand = Math.random) => {
+// The word is the only key to a save, so it is picked with the browser's
+// secure randomness, and the number has three digits (about 14 million
+// words), for nothing more to type than one digit.
+CLOUD.secureRand = () => {
+  if (typeof crypto === "undefined" || !crypto.getRandomValues) return Math.random();
+  const a = new Uint32Array(1);
+  crypto.getRandomValues(a);
+  return a[0] / 4294967296;
+};
+CLOUD.makeWord = (rand = CLOUD.secureRand) => {
   const pick = (list) => list[Math.floor(rand() * list.length)];
-  return pick(SAVE_WORDS.first) + "-" + pick(SAVE_WORDS.second) + "-" + (10 + Math.floor(rand() * 90));
+  return pick(SAVE_WORDS.first) + "-" + pick(SAVE_WORDS.second) + "-" + (100 + Math.floor(rand() * 900));
 };
 
 // What a friend typed, forgiven: any case, spaces or dots for hyphens.
 CLOUD.normWord = (s) => {
   if (typeof s !== "string") return null;
-  const m = s.toUpperCase().match(/^\s*([A-Z]{2,12})[\s\-_.]+([A-Z]{2,12})[\s\-_.]*(\d{2})\s*$/);
+  const m = s.toUpperCase().match(/^\s*([A-Z]{2,12})[\s\-_.]+([A-Z]{2,12})[\s\-_.]*(\d{3})\s*$/);
   return m ? m[1] + "-" + m[2] + "-" + m[3] : null;
 };
 
@@ -167,6 +201,7 @@ CLOUD.KEYS = { story: "tenyears-story", trophies: "tenyears-trophies", run: "ten
 CLOUD.LIVE = "https://nua-saves.oliver-c87.workers.dev";   // the Worker (tools/cloud/README.md)
 CLOUD.URL = CLOUD.LIVE;
 CLOUD.PUSH_WAIT = 3000;         // ms after the first change before it goes up
+CLOUD.PUSH_WAIT_PLAYING = 60000; // mid-fight every kill counts a trophy: no radio on for each
 CLOUD.SETTLE_MS = 4000;         // the longest the title waits for the first pull
 CLOUD.RETRY_MS = 30000;         // a failed push tries again this much later
 CLOUD.CALL_MS = 15000;          // a request that takes longer than this has failed
@@ -176,6 +211,7 @@ CLOUD.applying = false;         // writing a combined save: the hooks keep out o
 CLOUD.dirty = false;            // something changed that the cloud has not had yet
 CLOUD.last = null;              // "synced" | "offline": how the last call went
 CLOUD.onApplied = null;         // (changedRun) => {}: the title refreshes itself
+CLOUD.notice = null;            // a line for the title to show once (a run that moved on)
 CLOUD.fetch = (u, o) => fetch(u, o);
 CLOUD.now = () => Date.now();
 CLOUD.timer = (fn, ms) => setTimeout(fn, ms);
@@ -220,18 +256,13 @@ CLOUD.enabled = () => {
   return !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 };
 
-CLOUD._meta = null;
+// Read fresh every time, never kept: another tab of the game on the same
+// device may have just set a word, and a copy kept here would write over it.
 CLOUD.meta = () => {
-  if (!CLOUD._meta) {
-    const m = cloudJSON(CLOUD.KEY);
-    CLOUD._meta = Object.assign({ word: null, version: 0, runAt: 0, diffAt: 0, lastSync: 0 }, cloudIsObj(m) ? m : {});
-  }
-  return CLOUD._meta;
+  const m = cloudJSON(CLOUD.KEY);
+  return Object.assign({ word: null, version: 0, runAt: 0, diffAt: 0, lastSync: 0 }, cloudIsObj(m) ? m : {});
 };
-CLOUD.setMeta = (patch) => {
-  CLOUD._meta = Object.assign({}, CLOUD.meta(), patch);
-  cloudSet(CLOUD.KEY, JSON.stringify(CLOUD._meta));
-};
+CLOUD.setMeta = (patch) => cloudSet(CLOUD.KEY, JSON.stringify(Object.assign(CLOUD.meta(), patch)));
 
 // The four synced saves as one bundle, with the times the run and the
 // difficulty last changed on this device.
@@ -249,38 +280,72 @@ CLOUD.read = () => {
 
 CLOUD.playing = () => typeof G !== "undefined" && !!G.run && (G.where === "area" || G.where === "tutorial");
 
-// Write a combined bundle back. o.keepRun leaves the run alone (it is being
-// played). Afterwards anything the combination completes is earned, with
-// its pop-up, exactly as if won in play; trophies that simply arrived from
-// the other device arrive quietly.
+// Write a combined bundle back. o.playing: a run is being played on this
+// device, so the difficulty only goes into storage and reaches the game once
+// the player is off the field (CLOUD.catchUp): changing it mid-room rescales
+// the hearts and marks the run as played on Easy. Afterwards anything the
+// combination completes is earned, with its pop-up, exactly as if won in
+// play; trophies that simply arrived from the other device arrive quietly.
 CLOUD.apply = (b, o = {}) => {
   const before = CLOUD.read();
   CLOUD.applying = true;
   try {
     if (b.story) cloudSet(CLOUD.KEYS.story, JSON.stringify(b.story));
     if (b.trophies) cloudSet(CLOUD.KEYS.trophies, JSON.stringify(b.trophies));
-    if (!o.keepRun) {
-      if (b.run.save) cloudSet(CLOUD.KEYS.run, JSON.stringify(b.run.save));
-      else cloudDel(CLOUD.KEYS.run);
-    }
+    if (b.run.save) cloudSet(CLOUD.KEYS.run, JSON.stringify(b.run.save));
+    else cloudDel(CLOUD.KEYS.run);
     CLOUD.setMeta({ runAt: b.run.at });
     if (b.difficulty) {
       CLOUD.setMeta({ diffAt: b.difficulty.at });
-      const lvl = b.difficulty.level;
-      if (typeof DIFFICULTY === "undefined") cloudSet(CLOUD.KEYS.difficulty, lvl);
-      else if (DIFFICULTY.LEVELS[lvl] && lvl !== DIFFICULTY.level) DIFFICULTY.set(lvl);
+      cloudSet(CLOUD.KEYS.difficulty, b.difficulty.level);
     }
   } finally { CLOUD.applying = false; }
+  if (!o.playing) CLOUD.catchUp();
   if (typeof TROPHIES !== "undefined") {
     TROPHIES._s = null;
+    // seconds of songs heard here and not yet written down: never fewer
+    // than the combined save now says, or the next write would count down
+    if (TROPHIES._songT) {
+      const c = TROPHIES.get().counts;
+      for (const k in c) {
+        if (k.indexOf("song:") === 0) TROPHIES._songT[k.slice(5)] = Math.max(TROPHIES._songT[k.slice(5)] || 0, c[k]);
+      }
+    }
     try {
       TROPHIES.checkStory();
       TROPHIES.checkProgress(["repertoire", "fidgets", "music"].concat(Object.keys(TROPHIES.COUNTED || {})));
       if (!TROPHIES.has("platinum") && TROPHIES.list().every((t) => TROPHIES.has(t.id))) TROPHIES.earn("platinum");
     } catch (e) { /* trophies are decoration: never break the sync */ }
   }
-  const changedRun = !o.keepRun && !CLOUD.same(before.run.save, b.run.save);
+  const changedRun = !CLOUD.same(before.run.save, b.run.save);
   if (CLOUD.onApplied) { try { CLOUD.onApplied(changedRun); } catch (e) {} }
+};
+
+// A difficulty that arrived mid-run, put into the game once nobody is playing
+// (the title calls this too).
+CLOUD.catchUp = () => {
+  if (typeof DIFFICULTY === "undefined" || CLOUD.playing()) return;
+  const lvl = cloudGet(CLOUD.KEYS.difficulty);
+  if (!lvl || !DIFFICULTY.LEVELS[lvl] || lvl === DIFFICULTY.level) return;
+  CLOUD.applying = true;
+  try { DIFFICULTY.set(lvl); } finally { CLOUD.applying = false; }
+};
+
+// The run being played here has moved on on another device (saved further,
+// or finished). Carrying on would save this older run over it at the next
+// door, so the player goes back to the title, where CARRY ON offers the newer
+// one, with a line saying why. The same as the pause menu's "back to the title".
+CLOUD.leaveStaleRun = () => {
+  CLOUD.notice = "Your run moved on on another device, so carry on from there.";
+  if (typeof go !== "function") return;
+  if (typeof UI !== "undefined") {
+    UI.pauseOpen = false;
+    if (typeof time === "function") UI.pauseToggledAt = time();
+  }
+  if (typeof G !== "undefined") G.paused = false;
+  if (typeof debug !== "undefined") debug.paused = false;
+  if (typeof SOUNDTRACK !== "undefined" && SOUNDTRACK.stop) SOUNDTRACK.stop();
+  go("title");
 };
 
 // ---------- talking to the cloud ----------
@@ -328,22 +393,25 @@ CLOUD._fail = () => {
 // missing something this device has.
 CLOUD._take = (remote, version) => {
   const local = CLOUD.read();
-  const keepRun = CLOUD.playing();
-  const merged = CLOUD.merge(local, remote);
-  if (keepRun) merged.run = { at: CLOUD.now(), save: local.run.save };
-  if (!CLOUD.same(merged, local)) CLOUD.apply(merged, { keepRun });
+  const R = CLOUD.clamp(remote, CLOUD.now());
+  const playing = CLOUD.playing();
+  const merged = CLOUD.merge(local, R);
+  const moved = playing && !CLOUD.same(merged.run.save, local.run.save);
+  if (!CLOUD.same(merged, local)) CLOUD.apply(merged, { playing });
   CLOUD.setMeta({ version });
-  return !CLOUD.same(merged, CLOUD.clean(remote));
+  if (moved) CLOUD.leaveStaleRun();
+  return !CLOUD.same(merged, R);
 };
 
 CLOUD._push = async (o = {}) => {
   for (let i = 0; i < 3; i++) {
     const m = CLOUD.meta();
     if (!CLOUD.enabled() || !m.word) return "off";
+    const gen = CLOUD._gen;
     const r = await CLOUD.call("POST", m.word, { data: CLOUD.read(), base: m.version }, o);
     if (r.status === 200 && r.json && Number.isInteger(r.json.version)) {
       CLOUD.setMeta({ version: r.json.version, lastSync: CLOUD.now() });
-      CLOUD.dirty = false;
+      CLOUD.dirty = CLOUD._gen !== gen;   // anything changed while it was on its way
       CLOUD.last = "synced";
       return "ok";
     }
@@ -378,12 +446,23 @@ CLOUD._pull = async () => {
 CLOUD.pull = () => CLOUD.queue(CLOUD._pull);
 CLOUD.push = () => CLOUD.queue(() => CLOUD._push());
 
-// A save changed: send it up PUSH_WAIT after the first change of a batch.
-CLOUD.changed = () => {
+// A save changed: send it up PUSH_WAIT after the first change of a batch, or
+// PUSH_WAIT_PLAYING mid-run for anything but the run itself. urgent (a door,
+// the difficulty) brings a later push forward. The page going away sends
+// whatever is waiting at once (CLOUD.hidden).
+CLOUD._gen = 0;
+CLOUD._pushT = null;
+CLOUD._pushDue = 0;
+CLOUD.changed = (urgent) => {
   if (CLOUD.applying || !CLOUD.enabled() || !CLOUD.meta().word) return;
   CLOUD.dirty = true;
-  if (CLOUD._pushT) return;
-  CLOUD._pushT = CLOUD.timer(() => { CLOUD._pushT = null; CLOUD.push(); }, CLOUD.PUSH_WAIT);
+  CLOUD._gen++;
+  const wait = urgent || !CLOUD.playing() ? CLOUD.PUSH_WAIT : CLOUD.PUSH_WAIT_PLAYING;
+  const due = CLOUD.now() + wait;
+  if (CLOUD._pushT && CLOUD._pushDue <= due) return;
+  if (CLOUD._pushT) CLOUD.untimer(CLOUD._pushT);
+  CLOUD._pushDue = due;
+  CLOUD._pushT = CLOUD.timer(() => { CLOUD._pushT = null; CLOUD.push(); }, wait);
 };
 
 // ---------- what the panel asks for ----------
@@ -419,7 +498,7 @@ CLOUD.lookup = async (typed) => {
 // Bring a looked-up word in. o.run: "local" or "remote" when the player
 // picked which run to carry on with.
 CLOUD.join = (word, found, o = {}) => CLOUD.queue(async () => {
-  const merged = CLOUD.merge(CLOUD.read(), found.bundle, { run: o.run });
+  const merged = CLOUD.merge(CLOUD.read(), found.bundle, { run: o.run, join: true, now: CLOUD.now() });
   CLOUD.apply(merged);
   CLOUD.setMeta({ word: found.word || word, version: found.version, lastSync: CLOUD.now() });
   CLOUD.last = "synced";
@@ -435,7 +514,6 @@ CLOUD.forget = () => CLOUD.queue(async () => {
   CLOUD.dirty = true;
   if ((await CLOUD._push()) !== "ok") return "offline";
   for (const k of Object.values(CLOUD.KEYS).concat([CLOUD.KEY])) cloudDel(k);
-  CLOUD._meta = null;
   CLOUD.dirty = false;
   if (typeof TROPHIES !== "undefined") TROPHIES._s = null;
   if (typeof location !== "undefined" && typeof location.reload === "function") location.reload();
@@ -469,11 +547,22 @@ CLOUD.hook = (obj, name, after) => {
   };
 };
 CLOUD.touched = (key) => {
-  if (CLOUD.applying || !CLOUD.storageOk()) return;
+  if (CLOUD.applying || CLOUD._reading || !CLOUD.storageOk()) return;
   CLOUD.setMeta({ [key]: CLOUD.now() });
-  CLOUD.changed();
+  CLOUD.changed(true);
 };
 if (typeof SAVE !== "undefined") for (const n of ["write", "patch", "clear"]) CLOUD.hook(SAVE, n, () => CLOUD.touched("runAt"));
+// SAVE.read throws away a save it cannot make sense of (a phone holding stale
+// cached files can do that to a good one). That is no news worth sending:
+// unstamped, a good copy on another device still wins.
+CLOUD._reading = false;
+if (typeof SAVE !== "undefined" && typeof SAVE.read === "function") {
+  const read = SAVE.read;
+  SAVE.read = function (...a) {
+    CLOUD._reading = true;
+    try { return read.apply(this, a); } finally { CLOUD._reading = false; }
+  };
+}
 if (typeof STORY !== "undefined") CLOUD.hook(STORY, "set", () => CLOUD.changed());
 if (typeof TROPHIES !== "undefined") CLOUD.hook(TROPHIES, "save", () => CLOUD.changed());
 if (typeof DIFFICULTY !== "undefined" && typeof DIFFICULTY.set === "function") {
