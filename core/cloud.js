@@ -171,7 +171,9 @@ CLOUD.WORD_SHAPE = /^[A-Z]{2,12}-[A-Z]{2,12}-\d{3}$/;
 // secure randomness, and the number has three digits (about 14 million
 // words), for nothing more to type than one digit.
 CLOUD.secureRand = () => {
-  if (typeof crypto === "undefined" || !crypto.getRandomValues) return Math.random();
+  // every browser the game runs in has this; one that does not gets no word
+  // (the panel says the cloud can't be reached) rather than a guessable one
+  if (typeof crypto === "undefined" || !crypto.getRandomValues) throw new Error("no secure randomness");
   const a = new Uint32Array(1);
   crypto.getRandomValues(a);
   return a[0] / 4294967296;
