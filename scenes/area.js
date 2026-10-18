@@ -313,6 +313,7 @@ scene("area", ({ chapter, area: areaNum, retry = false, again = false }) => {
   const a = ch.areas[areaNum - 1];
   G.run.chapter = chapter;
   G.run.area = areaNum;
+  if (DIFFICULTY.lockRun) DIFFICULTY.lockRun(G.run);   // from here the run only goes easier (core/difficulty.js)
   SAVE.write("area");   // checkpoint: the run as it stood at this door
   if (typeof TROPHIES !== "undefined") TROPHIES.note("areaEnter", { chapter, area: areaNum, retry, a });
   if (!G.run.companions.length) G.run.meter = 0;   // no friend yet, no special (and an old save may have charged it)

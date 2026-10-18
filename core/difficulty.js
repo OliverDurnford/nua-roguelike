@@ -64,11 +64,39 @@ DIFFICULTY.get = () => DIFFICULTY.LEVELS[DIFFICULTY.level];
 // Hearts above or below Medium's six, added to the stats in G.stats().
 DIFFICULTY.extraHearts = () => DIFFICULTY.get().hearts - DIFFICULTY.LEVELS.medium.hearts;
 
+// Down only, mid-run (Ollie, 18 Oct 2026): once a run reaches Gonzo's it
+// can go easier but never harder again. The park before it is free, so a
+// new run can always start on any level. run.diffCap is the hardest level
+// the run may still use, saved with the run; a run from before this rule
+// gets one the first time it enters a room (lockRun, from scenes/area.js).
+// Admin (core/admin.js) is never held to it, for testing.
+DIFFICULTY.rank = (lvl) => DIFFICULTY.ORDER.indexOf(lvl);
+DIFFICULTY.free = () => typeof ADMIN !== "undefined" && !!ADMIN.on;
+
+// The levels the run may switch to, easiest first.
+DIFFICULTY.allowed = (run) => {
+  const cap = run && DIFFICULTY.LEVELS[run.diffCap] ? run.diffCap : null;
+  if (!cap || DIFFICULTY.free()) return DIFFICULTY.ORDER.slice();
+  return DIFFICULTY.ORDER.slice(0, DIFFICULTY.rank(cap) + 1);
+};
+
+// On entering a room: the run is held to the level it is on now, or to
+// an easier one it has already been on.
+DIFFICULTY.lockRun = (run) => {
+  if (!run) return;
+  const R = DIFFICULTY.rank;
+  if (!DIFFICULTY.LEVELS[run.diffCap] || R(DIFFICULTY.level) < R(run.diffCap)) run.diffCap = DIFFICULTY.level;
+  // a phone that went harder on an older copy of the pause menu comes back down
+  if (R(DIFFICULTY.level) > R(run.diffCap) && !DIFFICULTY.free()) DIFFICULTY.set(run.diffCap);
+};
+
 // Switching mid-run keeps the hearts already lost: two of six left on
 // Medium is four of eight on Easy, never fewer than one.
 DIFFICULTY.set = (lvl) => {
   if (!DIFFICULTY.LEVELS[lvl] || lvl === DIFFICULTY.level) return;
   const run = typeof G !== "undefined" ? G.run : null;
+  if (!DIFFICULTY.allowed(run).includes(lvl)) return;   // never harder mid-run
+  if (run && DIFFICULTY.LEVELS[run.diffCap] && DIFFICULTY.rank(lvl) < DIFFICULTY.rank(run.diffCap)) run.diffCap = lvl;
   const before = run ? G.stats().maxHp : 0;
   DIFFICULTY.level = lvl;
   try { localStorage.setItem(DIFFICULTY.KEY, lvl); } catch (e) {}
@@ -82,8 +110,9 @@ DIFFICULTY.set = (lvl) => {
 };
 
 DIFFICULTY.cycle = () => {
-  const i = DIFFICULTY.ORDER.indexOf(DIFFICULTY.level);
-  DIFFICULTY.set(DIFFICULTY.ORDER[(i + 1) % DIFFICULTY.ORDER.length]);
+  const o = DIFFICULTY.allowed(typeof G !== "undefined" ? G.run : null);
+  const i = o.indexOf(DIFFICULTY.level);
+  DIFFICULTY.set(o[(i + 1) % o.length]);
 };
 
 // Tell the trophies whenever the run is being played on Easy or Very Easy:

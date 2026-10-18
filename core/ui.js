@@ -1342,6 +1342,8 @@ UI.pause = () => {
   const help = touch
     ? (tipsRow ? [] : ["left thumb walks, right thumb aims and throws", "tap SP for the special, tap a polaroid to swap"])
     : ["WASD or arrows move, the mouse aims", "SPACE special, 1 to 4 or Q / E swap, N sound"];
+  // mid-run the difficulty only goes down (core/difficulty.js): say so in a room
+  if (G.where === "area" && DIFFICULTY.allowed && !DIFFICULTY.free()) help.push("mid-run you can go easier, never harder");
   const H = 20 + 16 + 22 + ITEMS.length * ROW_H + (ITEMS.length - 1) * ROW_GAP + 22 + help.length * LINE + 18;
   const x0 = G.W / 2 - W / 2, y0 = Math.round(G.H / 2 - H / 2);
   const rowsY = y0 + 20 + 16 + 22;
@@ -1392,9 +1394,10 @@ UI.pause = () => {
       SOUNDTRACK.syncMute();
       SFX.play("uitick");
     } else if (item === "difficulty") {
-      // Very Easy, Easy, Medium, Hard (core/difficulty.js): picked here, applied when
+      // Very Easy, Easy, Medium, Hard (core/difficulty.js), but never harder
+      // than the run has been since Gonzo's: picked here, applied when
       // the menu closes (hearts then, enemies from the next ones in)
-      const o = DIFFICULTY.ORDER;
+      const o = DIFFICULTY.allowed ? DIFFICULTY.allowed(G.run) : DIFFICULTY.ORDER;
       pending = o[(o.indexOf(pending || DIFFICULTY.level) + 1) % o.length];
       SFX.play("uitick");
     } else if (item === "how to play") {
