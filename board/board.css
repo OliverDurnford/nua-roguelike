@@ -1,0 +1,76 @@
+/* Who's Winning (21 Oct 2026): the sports day board. The look is the
+   mockup Ollie chose ("C, sports day"): the game's night, its two pixel
+   fonts, the title's silver and blue chrome, never yellow. Press Start 2P
+   at 8 or 16 px only, VT323 at 16 or 32 px only, or the pixels go uneven. */
+
+@font-face { font-family: "pixel"; src: url("fonts/PressStart2P-Regular.ttf") format("truetype"); font-display: block; }
+@font-face { font-family: "vt"; src: url("fonts/VT323-Regular.ttf") format("truetype"); font-display: block; }
+
+:root {
+  --night: #0c0c10;
+  --ink: #090a10;
+  --paper: #f4efe4;
+  --silver: #e7ecff;
+  --steel: #b9c4e8;
+  --blue: #8a97c9;
+  --deep: #5a6aa8;
+  --red: #e63946;      /* the live dot, and nothing else */
+  --lane: 62px;        /* BOARD.LANE_H */
+}
+
+html { background: var(--night); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; background: var(--night); color: var(--paper); font-family: "vt", monospace; overflow-x: hidden; }
+
+.board { max-width: 480px; margin: 0 auto; padding-bottom: 24px; }
+
+/* ---------- the heading ---------- */
+.head { padding: 22px 14px 10px; text-align: center; }
+.chrome {
+  margin: 0; font-family: "pixel"; font-weight: normal; font-size: 16px; line-height: 20px; letter-spacing: 1px;
+  background: linear-gradient(180deg, #fff 0 22%, var(--steel) 22% 44%, var(--deep) 44% 52%, var(--silver) 52% 68%, var(--steel) 68% 84%, var(--blue) 84%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(2px 2px 0 var(--ink));
+}
+.sub { font-family: "pixel"; font-size: 8px; line-height: 8px; color: var(--blue); margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; align-items: center; }
+.status { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--deep); display: inline-block; }
+[data-state="loading"] .dot { animation: pulse 1.4s infinite; }
+[data-state="live"] .dot { background: var(--red); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* ---------- the track ---------- */
+.ticks { position: relative; height: 16px; margin: 4px 0 12px; font-family: "pixel"; font-size: 8px; line-height: 8px; color: var(--deep); }
+.ticks span { position: absolute; top: 4px; transform: translateX(-50%); }
+
+.track { position: relative; height: 0; margin-bottom: 16px; }
+.rows .row { height: var(--lane); box-sizing: border-box; border-bottom: 2px dashed rgba(244, 239, 228, .12); }
+.rows .row:nth-child(even) { background: rgba(90, 106, 168, .10); }
+.finish {
+  position: absolute; top: 0; bottom: 0; right: 14px; width: 12px; opacity: .9;
+  background: repeating-conic-gradient(var(--silver) 0 25%, var(--deep) 0 50%) 0 0 / 8px 8px;
+}
+.lanes { position: absolute; inset: 0; }
+
+/* One lane per player, keyed by who they are, so a change of places is a
+   glide (top) and a new trophy is a run along the lane (left). */
+.lane { position: absolute; left: 0; right: 0; height: var(--lane); transition: top .8s ease-in-out; }
+.runner { position: absolute; bottom: 3px; transform: translateX(-50%); transition: left 1.2s ease-in-out; }
+.fig { position: relative; }
+.fig img { height: 52px; display: block; }
+.runner.live .fig { animation: bob .5s infinite alternate ease-in-out; }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+.crown { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); display: none; }
+.runner.plat .crown { display: block; }
+.px { display: block; image-rendering: pixelated; }
+
+.tag { position: absolute; top: 50%; transform: translate(var(--shift, 0px), -50%); white-space: nowrap; line-height: 13px; }
+.tag.r { left: 100%; margin-left: 6px; }   /* BOARD.GAP */
+.tag.l { right: 100%; margin-right: 6px; text-align: right; }
+.t1 { font-family: "pixel"; font-size: 8px; color: var(--silver); }
+.t2 { font-family: "vt"; font-size: 16px; color: var(--blue); }
+
+.note { margin: 0; padding: 28px 14px; font-family: "pixel"; font-size: 8px; line-height: 16px; color: var(--blue); text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dot, .runner.live .fig { animation: none !important; }
+}
