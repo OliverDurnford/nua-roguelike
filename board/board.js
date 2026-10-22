@@ -68,7 +68,7 @@
   const drawTicks = () => {
     const w = width();
     ticksEl.textContent = "";
-    for (const v of [0, 10, 20, 30, BOARD.MAX]) {
+    for (const v of [0, 20, 40, 60, BOARD.MAX]) {
       const s = el("span");
       s.textContent = String(v);
       s.style.left = BOARD.trackX(v, w) + "px";
@@ -80,7 +80,7 @@
   // side keeps a long name inside the lane (BOARD.tagPlace).
   const place = (l) => {
     const w = width();
-    const x = BOARD.trackX(l.p.trophies, w);
+    const x = BOARD.trackX(l.p.points, w);
     l.runner.style.left = x + "px";
     const at = BOARD.tagPlace(x, l.fig.offsetWidth / 2, l.tag.offsetWidth, w);
     l.tag.className = "tag " + at.side;

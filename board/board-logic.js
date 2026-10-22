@@ -4,8 +4,9 @@
 // (node tools/tests/board.test.js). board.js draws with it.
 //
 // The page asks the save worker's read-only GET /v1/board, which answers
-// { at, players: [{ id, name, sprite, trophies, platinum, runs, playing,
-// chapter }] } already ranked, best first. No save word is ever in it.
+// { at, players: [{ id, name, sprite, points, platinum, runs, playing,
+// chapter }] } already ranked, best first. Points (Ollie, 22 Oct 2026): bronze
+// 1, silver 2, gold 3, finishing the game 5. No save word is ever in it.
 // Anything odd in an answer counts as no answer: the page then keeps the
 // last board it had and says OFFLINE.
 // ============================================================
@@ -16,7 +17,7 @@ BOARD.API = "https://nua-saves.oliver-c87.workers.dev";   // the save worker (to
 BOARD.POLL_MS = 30000;   // ask again this often while the page is on screen
 BOARD.CALL_MS = 15000;   // an answer that takes longer than this has failed
 BOARD.LANE_H = 62;       // one lane, in CSS pixels
-BOARD.MAX = 34;          // 33 trophies and the platinum
+BOARD.MAX = 66;          // every trophy's points, the finish line (the worker's MAX_POINTS)
 
 // The words the page shows for its states. Placeholder copy: Ollie's to change.
 BOARD.WORDS = {
@@ -26,12 +27,12 @@ BOARD.WORDS = {
   empty: "NOBODY ON THE BOARD YET",
 };
 
-// The track, in pixels across the lane: 0 trophies stand at START, 33 just
-// before the chequered finish line (which is drawn centred on width - 20) and
-// 34, the platinum, on top of it.
+// The track, in pixels across the lane: 0 points stand at START, one short
+// of MAX just before the chequered finish line (which is drawn centred on
+// width - 20) and MAX, the platinum holder, on top of it.
 BOARD.START = 30;
-BOARD.LAST = 44;         // 33 trophies stand this far in from the right edge
-BOARD.FINISH = 20;       // 34 stands this far in, over the line
+BOARD.LAST = 44;         // one point short of MAX stands this far in from the right edge
+BOARD.FINISH = 20;       // MAX stands this far in, over the line
 BOARD.GAP = 6;           // between a runner and its label
 BOARD.EDGE = 2;          // a label never comes closer than this to the lane's ends
 
@@ -55,9 +56,9 @@ BOARD.endpoint = (search, host) => {
   return base + "/v1/board";
 };
 
-// Where a runner with this many trophies stands on a track this wide.
-BOARD.trackX = (trophies, width) => {
-  const t = Math.min(BOARD.MAX, typeof trophies === "number" && isFinite(trophies) ? Math.max(0, trophies) : 0);
+// Where a runner with this many points stands on a track this wide.
+BOARD.trackX = (points, width) => {
+  const t = Math.min(BOARD.MAX, typeof points === "number" && isFinite(points) ? Math.max(0, points) : 0);
   if (t >= BOARD.MAX) return width - BOARD.FINISH;
   return Math.round(BOARD.START + (width - BOARD.LAST - BOARD.START) * t / (BOARD.MAX - 1));
 };
@@ -88,10 +89,11 @@ BOARD.tagPlace = (x, half, tagW, width) => {
   return Math.abs(otherShift) < Math.abs(shift) ? { side: other, shift: otherShift } : { side, shift };
 };
 
-// "JOE P 11"
+// "JOE P 11 PTS", "DION 1 PT"
 BOARD.topLine = (p) => {
   const name = p && typeof p.name === "string" ? p.name : "";
-  return (name.toUpperCase() + " " + Math.min(BOARD.MAX, boardCount(p && p.trophies))).trim();
+  const points = Math.min(BOARD.MAX, boardCount(p && p.points));
+  return (name.toUpperCase() + " " + points + (points === 1 ? " PT" : " PTS")).trim();
 };
 
 // "playing · chapter 4", "playing · the park", "playing now" (a run whose
@@ -123,7 +125,7 @@ BOARD.read = (body) => {
       id: p.id,
       name: typeof p.name === "string" ? p.name : "",
       sprite: boardSprite(p.sprite),
-      trophies: Math.min(BOARD.MAX, boardCount(p.trophies)),
+      points: Math.min(BOARD.MAX, boardCount(p.points)),
       platinum: p.platinum === true,
       runs: boardCount(p.runs),
       playing: p.playing === true,
