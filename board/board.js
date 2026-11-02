@@ -66,7 +66,7 @@
     }));
     return svg;
   };
-  $("capkey").appendChild(pixels(CAP, 2));   // the key under the heading
+  $("capkey").appendChild(pixels(CAP, 1.5));   // the key under the heading
 
   const el = (tag, cls) => {
     const e = document.createElement(tag);
@@ -126,7 +126,7 @@
     l.t1 = el("div", "t1");
     l.name = el("span");
     l.cap = el("span", "cap");
-    l.cap.appendChild(pixels(CAP, 2));
+    l.cap.appendChild(pixels(CAP, 1.5));
     l.t1.append(l.name, l.cap);
     l.t2 = el("div", "t2");
     l.tag.append(l.t1, l.t2);
