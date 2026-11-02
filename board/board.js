@@ -26,9 +26,23 @@
 
   // ---------- the pixel crown (the mockup's), for the platinum, and the
   // mortarboard for whoever has finished the story (Ollie, 2 Nov 2026) ----------
-  const INKS = { k: "#090a10", W: "#ffffff", L: "#e7ecff", S: "#b9c4e8", D: "#5a6aa8" };
+  const INKS = { k: "#090a10", W: "#ffffff", L: "#e7ecff", S: "#b9c4e8", B: "#8a97c9", D: "#5a6aa8", N: "#222640", M: "#343a60" };
   const CROWN = ["k...k...k", "kk.kWk.kk", "kLkLWLkLk", "kLLLDLLLk", "kSSSSSSSk", "kWWWWWWWk", "kkkkkkkkk"];
-  const CAP = [".......k.......", ".....kkLkk.....", "...kkLLLLLkk...", ".kkLLLLLLLLLkk.", "kLLLLLLLLLLLLLk", ".kkLLLLLLLLLkkS", "...kkDDDDDkk..S", "....kDDDDDk...W", "....kkkkkkk...W"];
+  // Ollie picked 3 of three redraws (2 Nov 2026): a dark board with a silver edge, the
+  // cap showing under its front point, the tassel hanging off the right corner.
+  const CAP = [
+    ".........L.........",
+    ".......LLNLL.......",
+    ".....LLNNNNNLL.....",
+    "...LLNNNNNNNNNLL...",
+    ".LLNNNNNNWNNNNNNLL.",
+    "...BBNNNNNNNNNBB.S.",
+    ".....BBNNNNNBB...S.",
+    ".....BMBBNBBMB...S.",
+    ".....BMMMBMMMB...S.",
+    ".....BMMMMMMMB...S.",
+    ".....BBBBBBBBB..WWW",
+  ];
   const SVG = "http://www.w3.org/2000/svg";
   const pixels = (art, scale) => {
     const h = art.length;
