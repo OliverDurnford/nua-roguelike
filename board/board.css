@@ -67,6 +67,11 @@ body { margin: 0; background: var(--night); color: var(--paper); font-family: "v
 .tag.r { left: 100%; margin-left: 6px; }   /* BOARD.GAP */
 .tag.l { right: 100%; margin-right: 6px; text-align: right; }
 .t1 { font-family: "pixel"; font-size: 8px; color: var(--silver); }
+/* the mortarboard: finished the story (Ollie, 2 Nov 2026) */
+.cap { display: inline-block; margin-left: 6px; vertical-align: -6px; line-height: 0; }
+.cap[hidden] { display: none; }
+.sub.key { margin-top: 8px; gap: 6px; }
+.sub.key .cap { margin-left: 0; }
 .t2 { font-family: "vt"; font-size: 16px; color: var(--blue); }
 
 .note { margin: 0; padding: 28px 14px; font-family: "pixel"; font-size: 8px; line-height: 16px; color: var(--blue); text-align: center; }

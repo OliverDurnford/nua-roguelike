@@ -4,8 +4,8 @@
 // (node tools/tests/board.test.js). board.js draws with it.
 //
 // The page asks the save worker's read-only GET /v1/board, which answers
-// { at, players: [{ id, name, sprite, points, platinum, runs, playing,
-// chapter }] } already ranked, best first. Points (Ollie, 22 Oct 2026): bronze
+// { at, players: [{ id, name, sprite, points, platinum, finished, runs,
+// playing, chapter }] } already ranked, best first. Points (Ollie, 22 Oct 2026): bronze
 // 1, silver 2, gold 3, finishing the game 5. No save word is ever in it.
 // Anything odd in an answer counts as no answer: the page then keeps the
 // last board it had and says OFFLINE.
@@ -127,6 +127,7 @@ BOARD.read = (body) => {
       sprite: boardSprite(p.sprite),
       points: Math.min(BOARD.MAX, boardCount(p.points)),
       platinum: p.platinum === true,
+      finished: p.finished === true,   // reached the ending: the mortarboard
       runs: boardCount(p.runs),
       playing: p.playing === true,
       chapter: Number.isInteger(p.chapter) && p.chapter >= 0 ? p.chapter : null,

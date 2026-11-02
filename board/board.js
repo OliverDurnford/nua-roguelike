@@ -24,9 +24,11 @@
   let timer = 0;
   let busy = false;
 
-  // ---------- the pixel crown (the mockup's), for the platinum ----------
+  // ---------- the pixel crown (the mockup's), for the platinum, and the
+  // mortarboard for whoever has finished the story (Ollie, 2 Nov 2026) ----------
   const INKS = { k: "#090a10", W: "#ffffff", L: "#e7ecff", S: "#b9c4e8", D: "#5a6aa8" };
   const CROWN = ["k...k...k", "kk.kWk.kk", "kLkLWLkLk", "kLLLDLLLk", "kSSSSSSSk", "kWWWWWWWk", "kkkkkkkkk"];
+  const CAP = [".......k.......", ".....kkLkk.....", "...kkLLLLLkk...", ".kkLLLLLLLLLkk.", "kLLLLLLLLLLLLLk", ".kkLLLLLLLLLkkS", "...kkDDDDDkk..S", "....kDDDDDk...W", "....kkkkkkk...W"];
   const SVG = "http://www.w3.org/2000/svg";
   const pixels = (art, scale) => {
     const h = art.length;
@@ -50,6 +52,7 @@
     }));
     return svg;
   };
+  $("capkey").appendChild(pixels(CAP, 2));   // the key under the heading
 
   const el = (tag, cls) => {
     const e = document.createElement(tag);
@@ -107,6 +110,10 @@
     l.img.addEventListener("load", () => place(l));
     l.tag = el("div", "tag");
     l.t1 = el("div", "t1");
+    l.name = el("span");
+    l.cap = el("span", "cap");
+    l.cap.appendChild(pixels(CAP, 2));
+    l.t1.append(l.name, l.cap);
     l.t2 = el("div", "t2");
     l.tag.append(l.t1, l.t2);
     l.fig.append(crown, l.img);
@@ -121,7 +128,9 @@
       l.sprite = p.sprite;
       l.img.src = BOARD.spriteURL(p.sprite);
     }
-    l.t1.textContent = BOARD.topLine(p);
+    l.name.textContent = BOARD.topLine(p);
+    l.cap.hidden = !p.finished;
+    l.t1.setAttribute("aria-label", BOARD.topLine(p) + (p.finished ? ", finished the story" : ""));
     l.t2.textContent = BOARD.subLine(p);
     l.runner.classList.toggle("live", p.playing);
     l.runner.classList.toggle("plat", p.platinum);
