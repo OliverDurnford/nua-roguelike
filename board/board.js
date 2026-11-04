@@ -7,6 +7,12 @@
 // at all while it is hidden, and at once when it comes back. A failed ask
 // keeps the last board, greys the dot and says OFFLINE until the next good
 // answer. Every name and number goes in as text, never as markup.
+//
+// Idle animations (Ollie, 4 Nov 2026): everyone breathes and blinks, never in
+// step, and one at a time does their fidget, with the game's own clocks
+// (core/fidget.js) and fidget timings (data/fidgets.js). Someone playing right
+// now bobs as before and is left out of the fidgets. With reduced motion asked
+// for, or if the idle cells did not load, everyone stands still.
 // ============================================================
 
 (() => {
@@ -20,6 +26,8 @@
   const note = $("note");
 
   const URL_BOARD = BOARD.endpoint(location.search);
+  const IDLE = typeof BOARD_IDLE !== "undefined" && typeof FIDGET !== "undefined" && typeof FIDGETS !== "undefined" ? BOARD_IDLE : null;
+  const STILL = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const lanes = new Map();   // player id -> that lane's elements and its last player
   let timer = 0;
   let busy = false;
@@ -104,6 +112,58 @@
     l.tag.style.setProperty("--shift", at.shift + "px");
   };
 
+  // ---------- the idle animation ----------
+  // Puts a person's idle strip on a lane, sized so the standing figure is
+  // BOARD.FIG_H tall. Someone with no cells of their own gets the stand-in's.
+  const setLook = (l, sprite) => {
+    l.idle = Object.hasOwn(IDLE, sprite) ? IDLE[sprite] : IDLE.standin;
+    const name = l.idle === IDLE[sprite] ? sprite : "standin";
+    l.L = BOARD.cellLayout(l.idle, BOARD.FIG_H);
+    Object.assign(l.fig.style, { width: l.L.figW + "px", height: BOARD.FIG_H + "px" });
+    Object.assign(l.spr.style, { left: l.L.left + "px", top: l.L.top + "px", width: l.L.w + "px", height: l.L.h + "px" });
+    Object.assign(l.img.style, { width: l.L.stripW + "px", height: l.L.h + "px" });
+    l.img.src = "board/sprites/" + name + "-idle.png";
+    l.life.cell = -1;
+    show(l, 0);
+  };
+
+  const show = (l, cell) => {
+    if (cell === l.life.cell) return;
+    l.life.cell = cell;
+    l.img.style.left = -cell * l.L.step + "px";
+  };
+
+  // One person's fidget at a time, the game's shuffle bag choosing whose.
+  const turns = IDLE ? FIDGET.turns(Math.random) : null;
+  let fidget = null;   // { id, t, seq } while someone is doing theirs
+  let lastT = 0;
+
+  const tick = (now) => {
+    requestAnimationFrame(tick);
+    const dt = lastT ? Math.min(0.1, (now - lastT) / 1000) : 0;
+    lastT = now;
+    if (fidget) {
+      fidget.t += dt;
+      if (!lanes.has(fidget.id) || FIDGET.at(fidget.seq, fidget.t) === null) {
+        fidget = null;
+        turns.done();
+      }
+    }
+    const ready = [];
+    for (const l of lanes.values()) {
+      if (l.idle && l.idle.fidget && !l.p.playing && Object.hasOwn(FIDGETS, l.sprite)) ready.push(l.p.id);
+    }
+    const pick = turns.update(dt, { calm: true, moving: false, ready });
+    if (pick) fidget = { id: pick, t: 0, seq: FIDGETS[lanes.get(pick).sprite] };
+    for (const l of lanes.values()) {
+      if (!l.idle) continue;
+      l.life.t += dt;
+      const shut = l.life.blink.update(dt);
+      const f = fidget && fidget.id === l.p.id ? FIDGET.at(fidget.seq, fidget.t) : null;
+      show(l, BOARD.idleFrame(l.idle, FIDGET.breathe(l.life.t), shut, f));
+    }
+  };
+
   const makeLane = (p) => {
     const l = { p, sprite: null };
     l.el = el("div", "lane");
@@ -118,10 +178,12 @@
     // A picture that will not load (a lane added before its sprite was made)
     // falls back to the stand-in, once.
     l.img.addEventListener("error", () => {
+      if (l.idle && l.idle !== IDLE.standin) return setLook(l, "standin");
       const standin = BOARD.spriteURL("standin");
-      if (!l.img.src.endsWith(standin)) l.img.src = standin;
+      if (!l.idle && !l.img.src.endsWith(standin)) l.img.src = standin;
     });
     l.img.addEventListener("load", () => place(l));
+    l.life = IDLE ? { t: Math.random() * 2 * FIDGET.BREATHE, blink: FIDGET.blinker(Math.random), cell: -1 } : null;
     l.tag = el("div", "tag");
     l.t1 = el("div", "t1");
     l.name = el("span");
@@ -130,7 +192,13 @@
     l.t1.append(l.name, l.cap);
     l.t2 = el("div", "t2");
     l.tag.append(l.t1, l.t2);
-    l.fig.append(crown, l.img);
+    if (IDLE) {
+      l.spr = el("div", "spr");
+      l.spr.appendChild(l.img);
+      l.fig.append(crown, l.spr);
+    } else {
+      l.fig.append(crown, l.img);
+    }
     l.runner.append(l.fig, l.tag);
     l.el.appendChild(l.runner);
     return l;
@@ -140,7 +208,8 @@
     l.p = p;
     if (l.sprite !== p.sprite) {
       l.sprite = p.sprite;
-      l.img.src = BOARD.spriteURL(p.sprite);
+      if (IDLE) setLook(l, p.sprite);
+      else l.img.src = BOARD.spriteURL(p.sprite);
     }
     l.name.textContent = BOARD.topLine(p);
     l.cap.hidden = !p.finished;
@@ -237,4 +306,7 @@
   setState("loading");
   drawTicks();
   if (document.visibilityState === "visible") ask();
+  // The browser pauses this while the page is hidden; the first frame back
+  // takes at most a tenth of a second's step, so nobody jumps.
+  if (IDLE && !STILL) requestAnimationFrame(tick);
 })();

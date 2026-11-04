@@ -56,7 +56,11 @@ body { margin: 0; background: var(--night); color: var(--paper); font-family: "v
 .lane { position: absolute; left: 0; right: 0; height: var(--lane); transition: top .8s ease-in-out; }
 .runner { position: absolute; bottom: 3px; transform: translateX(-50%); transition: left 1.2s ease-in-out; }
 .fig { position: relative; }
-.fig img { height: 52px; display: block; }
+.fig > img { height: 52px; display: block; }   /* a still picture, if the idle cells could not load */
+/* The idle animation (Ollie, 4 Nov 2026): the cell round the standing figure,
+   showing one cell of the person's strip at a time (board.js sets the sizes). */
+.spr { position: absolute; overflow: hidden; }
+.spr img { position: absolute; top: 0; max-width: none; display: block; }
 .runner.live .fig { animation: bob .5s infinite alternate ease-in-out; }
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-4px); } }
 .crown { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); display: none; }

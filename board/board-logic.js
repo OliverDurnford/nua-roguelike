@@ -116,6 +116,41 @@ BOARD.subLine = (p) => {
   return runs + (runs === 1 ? " run" : " runs");
 };
 
+// ---------- the idle animations (Ollie, 4 Nov 2026) ----------
+// Everyone on the board breathes, blinks and, one at a time, does their fidget,
+// with the game's own clocks (core/fidget.js) and frames. A person's frames are
+// cells side by side in board/sprites/<id>-idle.png, described in BOARD_IDLE
+// (board/sprites/idle.js, made by tools/board/build_sprites.py).
+
+BOARD.FIG_H = 52;   // the standing figure's height on the board, in CSS pixels
+
+// Which cell shows: `k` is the breathe frame (0 or 1), `shut` a blink, `fid` a
+// fidget's frame ("I1" or "I2") or null. The choice the game makes
+// (FIDGET.idle): a fidget over a blink, a blink over plain breathing.
+BOARD.idleFrame = (e, k, shut, fid) => {
+  if (!e) return 0;
+  if (fid && e.fidget) return e.fidget[fid === "I2" ? 1 : 0];
+  if (shut && e.blink) return e.blink[k];
+  return e.breathe[k];
+};
+
+// Where a person's cell sits, scaled so the standing figure is figH tall. The
+// figure box (figW x figH) is what the lane lays out; the cell round it can
+// reach further (a fidget's raised arm) without moving anything else.
+BOARD.cellLayout = (e, figH) => {
+  const s = figH / e.sh;
+  return {
+    s,
+    figW: e.sw * s,
+    left: -e.sx * s,
+    top: -e.sy * s,
+    w: e.cw * s,
+    h: e.ch * s,
+    step: (e.cw + e.gap) * s,
+    stripW: (e.n * e.cw + (e.n - 1) * e.gap) * s,
+  };
+};
+
 // A runner's picture, always from the board's own folder.
 BOARD.spriteURL = (sprite) => "board/sprites/" + boardSprite(sprite) + ".png";
 
