@@ -123,7 +123,7 @@ BOARD.subLine = (p) => {
 // (board/sprites/idle.js, made by tools/board/build_sprites.py).
 
 BOARD.FIG_H = 52;   // the standing figure's height on the board, in CSS pixels
-BOARD.WALK_FPS = 9; // the game's walk speed (sprites-anim.js, anim "walk")
+BOARD.WALK_FPS = 6; // steps a second: a bit slower than the game's 9 (Ollie, 4 Nov 2026)
 
 // Which walk frame shows t seconds in.
 BOARD.walkStep = (t) => Math.floor(t * BOARD.WALK_FPS) % 2;
