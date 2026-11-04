@@ -5,7 +5,8 @@
 //
 // The page asks the save worker's read-only GET /v1/board, which answers
 // { at, players: [{ id, name, sprite, points, platinum, finished, runs,
-// playing, chapter }] } already ranked, best first. Points (Ollie, 22 Oct 2026): bronze
+// playing, chapter, as }] } already ranked, best first. `as` is who a run is
+// being played as: one of the ten, or "secret" for a bonus person (Ollie, 4 Nov 2026). Points (Ollie, 22 Oct 2026): bronze
 // 1, silver 2, gold 3, finishing the game 5. No save word is ever in it.
 // Anything odd in an answer counts as no answer: the page then keeps the
 // last board it had and says OFFLINE.
@@ -36,9 +37,14 @@ BOARD.FINISH = 20;       // MAX stands this far in, over the line
 BOARD.GAP = 6;           // between a runner and its label
 BOARD.EDGE = 2;          // a label never comes closer than this to the lane's ends
 
+// The ten a run can be played as by name. A bonus person arrives as "secret".
+BOARD.NAMES = { ollie: "Ollie", lucy: "Lucy", cal: "Cal", josh: "Josh", annie: "Annie", sam: "Sam", ana: "Ana", jess: "Jess", adam: "Adam", ethan: "Ethan" };
+BOARD.SECRET = "???";
+
 const boardIsObject = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
 const boardCount = (n) => (typeof n === "number" && isFinite(n) ? Math.max(0, Math.floor(n)) : 0);
 const boardSprite = (s) => (typeof s === "string" && /^[a-z0-9]{1,24}$/.test(s) ? s : "standin");
+const boardAs = (a) => typeof a === "string" && Object.hasOwn(BOARD.NAMES, a);
 const BOARD_LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/;
 
 // Where to ask. ?cloud=<address> points it at a test worker, as in the game,
@@ -96,13 +102,15 @@ BOARD.topLine = (p) => {
   return (name.toUpperCase() + " " + points + (points === 1 ? " PT" : " PTS")).trim();
 };
 
-// "playing · chapter 4", "playing · the park", "playing now" (a run whose
-// chapter could not be read), or "12 runs" / "1 run".
+// "playing as Jess · chapter 4", "playing as ??? · the park" (a bonus person),
+// "playing · chapter 4" (nobody could say as whom), "playing now" (nor which
+// chapter), or "12 runs" / "1 run".
 BOARD.subLine = (p) => {
   if (p && p.playing === true) {
-    if (p.chapter === 0) return "playing · the park";
-    if (Number.isInteger(p.chapter) && p.chapter > 0) return "playing · chapter " + p.chapter;
-    return "playing now";
+    const who = p.as === "secret" ? BOARD.SECRET : boardAs(p.as) ? BOARD.NAMES[p.as] : "";
+    const where = p.chapter === 0 ? "the park" : Number.isInteger(p.chapter) && p.chapter > 0 ? "chapter " + p.chapter : "";
+    if (who) return "playing as " + who + (where ? " · " + where : "");
+    return where ? "playing · " + where : "playing now";
   }
   const runs = boardCount(p && p.runs);
   return runs + (runs === 1 ? " run" : " runs");
@@ -131,6 +139,7 @@ BOARD.read = (body) => {
       runs: boardCount(p.runs),
       playing: p.playing === true,
       chapter: Number.isInteger(p.chapter) && p.chapter >= 0 ? p.chapter : null,
+      as: p.as === "secret" || boardAs(p.as) ? p.as : null,
     });
   }
   return out;
