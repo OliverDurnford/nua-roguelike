@@ -158,6 +158,18 @@ BOARD.cellLayout = (e, figH) => {
   };
 };
 
+// Whether a loaded strip is the one these cells describe. Just after the board
+// is updated a phone can hold an older copy of one and a newer copy of the
+// other, which would show halves of two frames side by side (Ollie's phone,
+// 4 Nov 2026); a strip that does not fit is not used, and a still picture
+// stands in until the two match again.
+BOARD.stripFits = (e, w, h) => !!e && w === e.n * e.cw + (e.n - 1) * e.gap && h === e.ch;
+
+// A person's strip, asked for by its version, so a newer list of cells never
+// reuses an older strip the phone kept.
+BOARD.idleURL = (name, e) => "board/sprites/" + boardSprite(name) + "-idle.png"
+  + (e && typeof e.v === "string" && /^[0-9a-f]{6,40}$/.test(e.v) ? "?v=" + e.v : "");
+
 // A runner's picture, always from the board's own folder.
 BOARD.spriteURL = (sprite) => "board/sprites/" + boardSprite(sprite) + ".png";
 

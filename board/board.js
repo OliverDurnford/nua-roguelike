@@ -123,9 +123,21 @@
     Object.assign(l.fig.style, { width: l.L.figW + "px", height: BOARD.FIG_H + "px" });
     Object.assign(l.spr.style, { left: l.L.left + "px", top: l.L.top + "px", width: l.L.w + "px", height: l.L.h + "px" });
     Object.assign(l.img.style, { width: l.L.stripW + "px", height: l.L.h + "px" });
-    l.img.src = "board/sprites/" + name + "-idle.png";
+    l.fig.classList.remove("still");
+    Object.assign(l.img.style, { transform: "" });
+    l.img.src = BOARD.idleURL(name, l.idle);
     l.life.cell = -1;
     show(l, 0);
+  };
+
+  // The still picture, for a strip that is not the size its cells say
+  // (BOARD.stripFits). Whoever is playing bobs again.
+  const stillLook = (l) => {
+    l.idle = null;
+    l.fig.classList.add("still");
+    Object.assign(l.spr.style, { left: "0px", top: "0px", width: "100%", height: "100%" });
+    Object.assign(l.img.style, { left: "50%", width: "auto", height: BOARD.FIG_H + "px", transform: "translateX(-50%)" });
+    l.img.src = BOARD.spriteURL(l.sprite);
   };
 
   const show = (l, cell) => {
@@ -184,7 +196,10 @@
       const standin = BOARD.spriteURL("standin");
       if (!l.idle && !l.img.src.endsWith(standin)) l.img.src = standin;
     });
-    l.img.addEventListener("load", () => place(l));
+    l.img.addEventListener("load", () => {
+      if (l.idle && !BOARD.stripFits(l.idle, l.img.naturalWidth, l.img.naturalHeight)) return stillLook(l);
+      place(l);
+    });
     l.life = IDLE ? { t: Math.random() * 2 * FIDGET.BREATHE, blink: FIDGET.blinker(Math.random), cell: -1 } : null;
     l.tag = el("div", "tag");
     l.t1 = el("div", "t1");

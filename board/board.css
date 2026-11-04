@@ -64,6 +64,7 @@ body { margin: 0; background: var(--night); color: var(--paper); font-family: "v
 .runner.live .fig { animation: bob .5s infinite alternate ease-in-out; }
 /* With the idle cells on, whoever is playing walks on the spot instead (Ollie, 4 Nov 2026). */
 .walks .runner.live .fig { animation: none; }
+.walks .runner.live .fig.still { animation: bob .5s infinite alternate ease-in-out; }   /* a still picture standing in */
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-4px); } }
 .crown { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); display: none; }
 .runner.plat .crown { display: block; }
