@@ -123,12 +123,19 @@ BOARD.subLine = (p) => {
 // (board/sprites/idle.js, made by tools/board/build_sprites.py).
 
 BOARD.FIG_H = 52;   // the standing figure's height on the board, in CSS pixels
+BOARD.WALK_FPS = 9; // the game's walk speed (sprites-anim.js, anim "walk")
+
+// Which walk frame shows t seconds in.
+BOARD.walkStep = (t) => Math.floor(t * BOARD.WALK_FPS) % 2;
 
 // Which cell shows: `k` is the breathe frame (0 or 1), `shut` a blink, `fid` a
-// fidget's frame ("I1" or "I2") or null. The choice the game makes
-// (FIDGET.idle): a fidget over a blink, a blink over plain breathing.
-BOARD.idleFrame = (e, k, shut, fid) => {
+// fidget's frame ("I1" or "I2") or null, and `walk` the step (0 or 1) of
+// someone playing right now, who walks on the spot (Ollie, 4 Nov 2026), or
+// null. The choice the game makes (FIDGET.idle): a walk over everything, a
+// fidget over a blink, a blink over plain breathing.
+BOARD.idleFrame = (e, k, shut, fid, walk) => {
   if (!e) return 0;
+  if ((walk === 0 || walk === 1) && e.walk) return e.walk[walk];
   if (fid && e.fidget) return e.fidget[fid === "I2" ? 1 : 0];
   if (shut && e.blink) return e.blink[k];
   return e.breathe[k];

@@ -62,6 +62,8 @@ body { margin: 0; background: var(--night); color: var(--paper); font-family: "v
 .spr { position: absolute; overflow: hidden; }
 .spr img { position: absolute; top: 0; max-width: none; display: block; }
 .runner.live .fig { animation: bob .5s infinite alternate ease-in-out; }
+/* With the idle cells on, whoever is playing walks on the spot instead (Ollie, 4 Nov 2026). */
+.walks .runner.live .fig { animation: none; }
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-4px); } }
 .crown { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); display: none; }
 .runner.plat .crown { display: block; }

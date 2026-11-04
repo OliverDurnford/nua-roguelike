@@ -11,8 +11,9 @@
 // Idle animations (Ollie, 4 Nov 2026): everyone breathes and blinks, never in
 // step, and one at a time does their fidget, with the game's own clocks
 // (core/fidget.js) and fidget timings (data/fidgets.js). Someone playing right
-// now bobs as before and is left out of the fidgets. With reduced motion asked
-// for, or if the idle cells did not load, everyone stands still.
+// now walks on the spot with the game's walk and is left out of the fidgets.
+// With reduced motion asked for, or if the idle cells did not load, everyone
+// stands still and whoever is playing bobs instead.
 // ============================================================
 
 (() => {
@@ -160,7 +161,8 @@
       l.life.t += dt;
       const shut = l.life.blink.update(dt);
       const f = fidget && fidget.id === l.p.id ? FIDGET.at(fidget.seq, fidget.t) : null;
-      show(l, BOARD.idleFrame(l.idle, FIDGET.breathe(l.life.t), shut, f));
+      const walk = l.p.playing ? BOARD.walkStep(l.life.t) : null;
+      show(l, BOARD.idleFrame(l.idle, FIDGET.breathe(l.life.t), shut, f, walk));
     }
   };
 
@@ -308,5 +310,8 @@
   if (document.visibilityState === "visible") ask();
   // The browser pauses this while the page is hidden; the first frame back
   // takes at most a tenth of a second's step, so nobody jumps.
-  if (IDLE && !STILL) requestAnimationFrame(tick);
+  if (IDLE && !STILL) {
+    root.classList.add("walks");
+    requestAnimationFrame(tick);
+  }
 })();
